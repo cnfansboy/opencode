@@ -111,7 +111,8 @@ button{font:inherit; color:inherit}
   background:var(--surface); border:1px solid var(--line); border-radius:10px;
   padding:16px 16px 15px; box-shadow:var(--shadow);
 }
-.panel-head{display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom:14px}
+.panel-head{display:flex; flex-wrap:wrap; align-items:baseline; justify-content:space-between; gap:8px 12px; margin-bottom:14px}
+.panel-head h2{flex:0 0 auto}
 .panel-head h2{font-size:14px; font-weight:700; letter-spacing:.01em}
 .legend{display:flex; gap:12px; align-items:center}
 .legend span{display:inline-flex; align-items:center; gap:5px; font-size:11.5px; color:var(--ink-2)}
@@ -409,6 +410,8 @@ input.cell.wide{width:88px}
 
 /* ---------- player page ---------- */
 .pp-head{display:flex; flex-wrap:wrap; align-items:flex-end; gap:12px; margin-bottom:16px}
+.pp-main{flex:1 1 260px; min-width:0}
+.pp-head .toolbar{flex:0 0 auto}
 .back{
   display:inline-flex; align-items:center; gap:6px; text-decoration:none; color:var(--ink-2);
   font-size:12.5px; margin-bottom:2px;
@@ -2008,7 +2011,7 @@ function renderPlayerPage(id) {
     (p.leftTo ? " for <b>" + esc(p.leftTo) + "</b>" : ""));
 
   $("#viewPlayer").innerHTML =
-    '<div class="pp-head"><div style="flex:1;min-width:0">' +
+    '<div class="pp-head"><div class="pp-main">' +
       '<a class="back" href="#/">&larr; All-time squad</a>' +
       '<div class="pp-id">' + (p.number ? '<span class="pp-num">' + esc(p.number) + "</span>" : "") +
         "<h2>" + esc(p.name) + "</h2>" + posChip(p.position) + "</div>" +

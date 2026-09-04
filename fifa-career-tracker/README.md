@@ -8,6 +8,13 @@ the page there stores data server-side and can read stats out of screenshots. Th
 file also runs on its own in a browser; without those runtime capabilities it
 falls back to `localStorage` and hides the screenshot import.
 
+## Mobile
+
+The page already renders as an Artifact, which scales to any screen. Under
+900px wide the sidebar becomes a slide-out drawer (the ☰ button top-left;
+tap outside it or navigate to close), wide tables scroll horizontally inside
+their own panel, and dialogs stack to one column.
+
 ## The three views
 
 A sidebar carries the club, the two sections and the squad list — click any name
