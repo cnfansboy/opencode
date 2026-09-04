@@ -1,0 +1,1228 @@
+<title>Career Mode Ledger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=IBM+Plex+Mono:wght@400;500;600&family=Public+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap">
+<style>
+:root{
+  --ground:#ECEFE9; --surface:#FFFFFF; --surface-2:#F4F7F1; --surface-3:#E7EBE3;
+  --line:#D5DCD2; --line-strong:#BDC7B9;
+  --ink:#101A14; --ink-2:#54635A; --ink-3:#7C8B81;
+  --accent:#0F6B45; --accent-soft:#DDEBE2; --accent-ink:#0B5637;
+  --gold:#8F6613; --gold-soft:#F3E9D2; --gold-line:#DCC48A;
+  --goals:#0F6B45; --assists:#7A4FC0;
+  --gk:#8F6613; --def:#2C5AA0; --mid:#0F6B45; --att:#A83A2B;
+  --danger:#A83A2B;
+  --shadow:0 1px 2px rgba(16,26,20,.06), 0 8px 24px -18px rgba(16,26,20,.5);
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#0B100D; --surface:#141B17; --surface-2:#1A231D; --surface-3:#222D26;
+    --line:#26332B; --line-strong:#38493E;
+    --ink:#E7EFE8; --ink-2:#95A69A; --ink-3:#75887C;
+    --accent:#2E9A6C; --accent-soft:#16281F; --accent-ink:#7FD3AC;
+    --gold:#D8AC4A; --gold-soft:#2A2317; --gold-line:#5A4820;
+    --goals:#2E9A6C; --assists:#9A79DE;
+    --gk:#D8AC4A; --def:#7BA6E8; --mid:#2E9A6C; --att:#E08072;
+    --danger:#E08072;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px -20px #000;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0B100D; --surface:#141B17; --surface-2:#1A231D; --surface-3:#222D26;
+  --line:#26332B; --line-strong:#38493E;
+  --ink:#E7EFE8; --ink-2:#95A69A; --ink-3:#75887C;
+  --accent:#2E9A6C; --accent-soft:#16281F; --accent-ink:#7FD3AC;
+  --gold:#D8AC4A; --gold-soft:#2A2317; --gold-line:#5A4820;
+  --goals:#2E9A6C; --assists:#9A79DE;
+  --gk:#D8AC4A; --def:#7BA6E8; --mid:#2E9A6C; --att:#E08072;
+  --danger:#E08072;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px -20px #000;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{
+  background:var(--ground); color:var(--ink);
+  font-family:"Public Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  font-size:15px; line-height:1.5; -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3{margin:0; text-wrap:balance}
+button{font:inherit; color:inherit}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:3px}
+.wrap{max-width:1200px; margin-inline:auto; padding:22px 18px 90px}
+.mono{font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace}
+.eyebrow{
+  font-family:"IBM Plex Mono",monospace; font-size:10.5px; font-weight:500;
+  letter-spacing:.16em; text-transform:uppercase; color:var(--ink-3);
+}
+.num{font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums}
+
+/* ---------- masthead ---------- */
+.masthead{
+  display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between;
+  gap:14px; padding-bottom:16px; border-bottom:2px solid var(--ink); margin-bottom:14px;
+}
+.crest{display:flex; align-items:center; gap:14px}
+.crest-mark{
+  width:44px; height:44px; flex:none; border-radius:6px; background:var(--accent);
+  display:grid; place-items:center; color:#fff;
+  font-family:"Anton",Impact,sans-serif; font-size:23px; letter-spacing:.02em;
+  box-shadow:inset 0 -14px 0 rgba(0,0,0,.14);
+}
+#clubName{
+  font-family:"Anton",Impact,"Arial Narrow",sans-serif; font-weight:400;
+  font-size:clamp(28px,5vw,42px); line-height:.98; letter-spacing:.005em;
+  text-transform:uppercase; background:none; border:0; padding:2px 4px; margin-left:-4px;
+  color:var(--ink); width:min(58vw,420px); border-radius:4px;
+}
+#clubName:hover{background:var(--surface-3)}
+#clubName:focus{background:var(--surface); outline:2px solid var(--accent)}
+.mast-right{display:flex; flex-direction:column; align-items:flex-end; gap:7px}
+.chip-row{display:flex; gap:7px; align-items:center; flex-wrap:wrap; justify-content:flex-end}
+.status{
+  display:inline-flex; align-items:center; gap:6px; padding:4px 9px; border-radius:999px;
+  border:1px solid var(--line); background:var(--surface); font-size:11.5px; color:var(--ink-2);
+  font-family:"IBM Plex Mono",monospace;
+}
+.status i{width:6px; height:6px; border-radius:50%; background:var(--accent); flex:none}
+.status.local i{background:var(--gold)}
+
+/* ---------- season rail ---------- */
+.rail-wrap{margin-bottom:20px}
+.rail{
+  display:flex; gap:7px; overflow-x:auto; padding:3px 2px 9px; scrollbar-width:thin;
+}
+.season-chip{
+  flex:none; display:flex; flex-direction:column; gap:1px; align-items:flex-start;
+  padding:7px 14px; border-radius:7px; cursor:pointer; white-space:nowrap;
+  border:1px solid var(--line); background:var(--surface); color:var(--ink-2);
+  transition:border-color .12s, color .12s, background .12s;
+}
+.season-chip:hover{border-color:var(--line-strong); color:var(--ink)}
+.season-chip .sc-label{font-family:"IBM Plex Mono",monospace; font-size:13px; font-weight:500; letter-spacing:.01em}
+.season-chip .sc-meta{font-size:10.5px; color:var(--ink-3)}
+.season-chip[aria-pressed="true"]{background:var(--accent); border-color:var(--accent); color:#fff}
+.season-chip[aria-pressed="true"] .sc-meta{color:rgba(255,255,255,.78)}
+.season-chip.add{border-style:dashed; color:var(--ink-3); justify-content:center}
+
+/* ---------- generic panel ---------- */
+.panel{
+  background:var(--surface); border:1px solid var(--line); border-radius:10px;
+  padding:16px 16px 15px; box-shadow:var(--shadow);
+}
+.panel-head{display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom:14px}
+.panel-head h2{font-size:14px; font-weight:700; letter-spacing:.01em}
+.legend{display:flex; gap:12px; align-items:center}
+.legend span{display:inline-flex; align-items:center; gap:5px; font-size:11.5px; color:var(--ink-2)}
+.swatch{width:9px; height:9px; border-radius:2px; flex:none}
+.sw-goals{background:var(--goals)} .sw-assists{background:var(--assists)}
+
+/* ---------- tiles ---------- */
+.tiles{display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:10px; margin-bottom:18px}
+.tile{
+  background:var(--surface); border:1px solid var(--line); border-radius:10px;
+  padding:13px 14px 12px; display:flex; flex-direction:column; gap:2px; box-shadow:var(--shadow);
+}
+.tile .t-val{
+  font-family:"Anton",Impact,sans-serif; font-size:38px; line-height:1; letter-spacing:.01em;
+  font-variant-numeric:tabular-nums;
+}
+.tile .t-sub{font-size:11px; color:var(--ink-3)}
+.tile.is-trophies{background:var(--gold-soft); border-color:var(--gold-line)}
+.tile.is-trophies .t-val{color:var(--gold)}
+.tile.is-contrib .t-val{color:var(--accent)}
+
+/* ---------- layout rows ---------- */
+.duo{display:grid; grid-template-columns:1.55fr 1fr; gap:14px; margin-bottom:14px; align-items:start}
+@media (max-width:860px){ .duo{grid-template-columns:1fr} }
+
+/* ---------- leaderboard ---------- */
+.lb{display:flex; flex-direction:column; gap:11px}
+.lb-row{display:grid; grid-template-columns:minmax(120px,168px) 1fr; gap:12px; align-items:center}
+.lb-id{display:flex; flex-direction:column; gap:2px; min-width:0}
+.lb-name{display:flex; align-items:center; gap:6px; min-width:0}
+.lb-rank{font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--ink-3); flex:none}
+.lb-name b{font-weight:600; font-size:13.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.lb-meta{font-family:"IBM Plex Mono",monospace; font-size:10.5px; color:var(--ink-3)}
+.lb-track{display:flex; align-items:center; gap:9px}
+.bar{display:flex; gap:2px; height:15px; flex:1; min-width:0}
+.seg{height:100%; min-width:2px}
+.seg.g{background:var(--goals); border-radius:4px 0 0 4px}
+.seg.a{background:var(--assists); border-radius:0 4px 4px 0}
+.seg.only{border-radius:4px}
+.seg:hover{filter:brightness(1.08)}
+.lb-total{font-family:"IBM Plex Mono",monospace; font-size:13px; font-weight:600; width:34px; text-align:right; flex:none}
+.lb-row.top .lb-name b{color:var(--accent)}
+#tip{
+  position:fixed; z-index:60; pointer-events:none; opacity:0; transform:translate(-50%,-124%);
+  background:var(--ink); color:var(--ground); padding:5px 9px; border-radius:6px;
+  font-family:"IBM Plex Mono",monospace; font-size:11.5px; white-space:nowrap; transition:opacity .1s;
+}
+
+/* ---------- trophy cabinet ---------- */
+.cab{display:flex; flex-direction:column; gap:13px}
+.cab-season{display:flex; flex-direction:column; gap:6px}
+.cab-season .cs-head{display:flex; align-items:baseline; gap:8px}
+.cab-season .cs-head .yr{font-family:"IBM Plex Mono",monospace; font-size:11.5px; color:var(--ink-2)}
+.cab-season .cs-head .rule{flex:1; height:1px; background:var(--line)}
+.trophy{
+  display:flex; align-items:center; gap:9px; padding:7px 9px; border-radius:7px;
+  background:var(--gold-soft); border:1px solid var(--gold-line);
+}
+.trophy .tr-ico{color:var(--gold); flex:none; display:grid; place-items:center}
+.trophy .tr-name{font-weight:600; font-size:13px; flex:1; min-width:0}
+.trophy .tr-type{font-family:"IBM Plex Mono",monospace; font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--gold)}
+
+/* ---------- squad table ---------- */
+.table-scroll{overflow-x:auto; margin:0 -16px; padding:0 16px}
+table{border-collapse:collapse; width:100%; min-width:640px}
+th{
+  text-align:right; font-family:"IBM Plex Mono",monospace; font-weight:500; font-size:10.5px;
+  letter-spacing:.1em; text-transform:uppercase; color:var(--ink-3);
+  padding:0 8px 8px; border-bottom:1px solid var(--line); white-space:nowrap;
+}
+th:first-child,th.l{text-align:left}
+th button{background:none; border:0; padding:0; font:inherit; letter-spacing:inherit; color:inherit; cursor:pointer}
+th button:hover{color:var(--ink)}
+th[aria-sort] button{color:var(--ink)}
+th .caret{opacity:.75}
+td{padding:9px 8px; border-bottom:1px solid var(--line); text-align:right; vertical-align:middle}
+td:first-child,td.l{text-align:left}
+tbody tr:hover{background:var(--surface-2)}
+tbody tr:last-child td{border-bottom:0}
+.p-name{font-weight:600; font-size:14px}
+.pos{
+  display:inline-block; min-width:34px; text-align:center; padding:2px 6px; border-radius:4px;
+  font-family:"IBM Plex Mono",monospace; font-size:10.5px; font-weight:600; letter-spacing:.06em;
+  border:1px solid currentColor;
+}
+.pos.gk{color:var(--gk)} .pos.def{color:var(--def)} .pos.mid{color:var(--mid)} .pos.att{color:var(--att)}
+td.stat{font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums; font-size:13.5px}
+td.contrib{font-weight:600; color:var(--accent)}
+input.cell{
+  width:56px; padding:5px 7px; text-align:right; border:1px solid var(--line); border-radius:5px;
+  background:var(--surface-2); color:var(--ink);
+  font-family:"IBM Plex Mono",monospace; font-size:13px; font-variant-numeric:tabular-nums;
+}
+input.cell:hover{border-color:var(--line-strong)}
+input.cell:focus{background:var(--surface); border-color:var(--accent); outline:none}
+input.cell::-webkit-outer-spin-button,input.cell::-webkit-inner-spin-button{-webkit-appearance:none; margin:0}
+input.cell[type=number]{-moz-appearance:textfield}
+.row-x{
+  background:none; border:0; cursor:pointer; color:var(--ink-3); padding:4px 6px; border-radius:5px; line-height:1;
+}
+.row-x:hover{color:var(--danger); background:var(--surface-3)}
+tfoot td{
+  border-top:2px solid var(--ink); border-bottom:0; padding-top:10px;
+  font-family:"IBM Plex Mono",monospace; font-weight:600; font-size:13.5px;
+}
+tfoot td:first-child{font-family:"Public Sans",sans-serif; font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-3); font-weight:500}
+
+/* ---------- buttons ---------- */
+.btn{
+  display:inline-flex; align-items:center; gap:6px; padding:7px 13px; border-radius:7px; cursor:pointer;
+  border:1px solid var(--line); background:var(--surface); color:var(--ink); font-size:13px; font-weight:500;
+  transition:border-color .12s, background .12s;
+}
+.btn:hover{border-color:var(--line-strong); background:var(--surface-2)}
+.btn.primary{background:var(--accent); border-color:var(--accent); color:#fff}
+.btn.primary:hover{filter:brightness(1.07); background:var(--accent)}
+.btn.ghost{border-color:transparent; background:none; color:var(--ink-2); padding-inline:8px}
+.btn.ghost:hover{color:var(--ink); background:var(--surface-3)}
+.btn.danger{color:var(--danger); border-color:transparent; background:none}
+.btn.danger:hover{background:var(--surface-3)}
+.btn:disabled{opacity:.45; cursor:not-allowed}
+.toolbar{display:flex; gap:8px; flex-wrap:wrap; align-items:center}
+
+/* ---------- banners & notes ---------- */
+.banner{
+  display:flex; gap:12px; align-items:center; flex-wrap:wrap; justify-content:space-between;
+  padding:10px 14px; border-radius:9px; margin-bottom:14px; font-size:13px;
+  background:var(--gold-soft); border:1px solid var(--gold-line); color:var(--ink);
+}
+.banner b{color:var(--gold)}
+.note{font-size:12px; color:var(--ink-3)}
+.empty{padding:22px 6px; text-align:center; color:var(--ink-3); font-size:13px}
+.empty b{display:block; color:var(--ink-2); font-size:14px; margin-bottom:4px}
+
+/* ---------- dialog ---------- */
+dialog{
+  border:1px solid var(--line); border-radius:12px; background:var(--surface); color:var(--ink);
+  padding:0; width:min(640px,calc(100vw - 28px)); max-height:88vh; overflow:auto; box-shadow:0 24px 60px -20px rgba(0,0,0,.45);
+}
+dialog::backdrop{background:rgba(8,14,10,.55)}
+.dlg-head{
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  padding:15px 18px; border-bottom:1px solid var(--line); position:sticky; top:0; background:var(--surface); z-index:2;
+}
+.dlg-head h3{font-size:15px; font-weight:700}
+.dlg-body{padding:18px; display:flex; flex-direction:column; gap:15px}
+.dlg-foot{
+  display:flex; justify-content:flex-end; gap:8px; padding:13px 18px; border-top:1px solid var(--line);
+  position:sticky; bottom:0; background:var(--surface);
+}
+.field{display:flex; flex-direction:column; gap:5px}
+.field > label{font-family:"IBM Plex Mono",monospace; font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-3)}
+.field input,.field select,.field textarea{
+  padding:9px 11px; border-radius:7px; border:1px solid var(--line); background:var(--surface-2);
+  color:var(--ink); font:inherit; font-size:14px; width:100%;
+}
+.field input:focus,.field select:focus{background:var(--surface); border-color:var(--accent); outline:none}
+.grid2{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+.grid4{display:grid; grid-template-columns:repeat(4,1fr); gap:10px}
+@media (max-width:560px){ .grid4{grid-template-columns:repeat(2,1fr)} .grid2{grid-template-columns:1fr} }
+.radio-row{display:flex; gap:9px; flex-wrap:wrap}
+.radio-card{
+  flex:1; min-width:180px; display:flex; gap:9px; align-items:flex-start; padding:10px 12px;
+  border:1px solid var(--line); border-radius:8px; cursor:pointer; background:var(--surface-2);
+}
+.radio-card input{margin-top:3px; accent-color:var(--accent)}
+.radio-card:has(input:checked){border-color:var(--accent); background:var(--accent-soft)}
+.radio-card .rc-t{font-weight:600; font-size:13px}
+.radio-card .rc-d{font-size:11.5px; color:var(--ink-2)}
+.drop{
+  border:1.5px dashed var(--line-strong); border-radius:10px; padding:24px 16px; text-align:center;
+  background:var(--surface-2); cursor:pointer;
+}
+.drop.over{border-color:var(--accent); background:var(--accent-soft)}
+.drop .d-t{font-weight:600; font-size:14px; margin-bottom:3px}
+.thumbs{display:flex; gap:8px; flex-wrap:wrap}
+.thumbs figure{margin:0; position:relative; width:96px}
+.thumbs img{width:96px; height:66px; object-fit:cover; border-radius:6px; border:1px solid var(--line); display:block}
+.thumbs figcaption{font-size:10px; color:var(--ink-3); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-top:3px}
+.thumbs button{position:absolute; top:-6px; right:-6px; width:20px; height:20px; border-radius:50%; border:1px solid var(--line); background:var(--surface); color:var(--ink-2); cursor:pointer; line-height:1; font-size:12px; padding:0}
+.review-table td,.review-table th{padding:6px 6px}
+.review-table input[type=text]{width:100%; min-width:110px; padding:5px 7px; border-radius:5px; border:1px solid var(--line); background:var(--surface-2); color:var(--ink); font:inherit; font-size:13px}
+.review-table input.n{width:52px; text-align:right; font-family:"IBM Plex Mono",monospace}
+.review-table select{padding:5px 6px; border-radius:5px; border:1px solid var(--line); background:var(--surface-2); color:var(--ink); font:inherit; font-size:12.5px}
+.review-table tr.off{opacity:.4}
+.delta{font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--ink-3); white-space:nowrap}
+.spinner{
+  width:15px; height:15px; border-radius:50%; border:2px solid var(--line-strong); border-top-color:var(--accent);
+  animation:spin .7s linear infinite; flex:none;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.err{color:var(--danger); font-size:13px}
+@media (prefers-reduced-motion:reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important} }
+.sr{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap}
+</style>
+
+<div class="wrap">
+  <header class="masthead">
+    <div class="crest">
+      <div class="crest-mark" id="crest">CM</div>
+      <div>
+        <div class="eyebrow">Career Mode Ledger</div>
+        <input id="clubName" value="" placeholder="YOUR CLUB" aria-label="Club name" maxlength="28">
+      </div>
+    </div>
+    <div class="mast-right">
+      <div class="chip-row" id="statusRow"></div>
+      <div class="chip-row">
+        <button class="btn" id="btnPlayer">Add player</button>
+        <button class="btn" id="btnTrophy">Add trophy</button>
+        <button class="btn primary" id="btnImport">Import screenshot</button>
+      </div>
+    </div>
+  </header>
+
+  <div id="banner"></div>
+
+  <div class="rail-wrap">
+    <div class="eyebrow" style="margin-bottom:6px">Seasons</div>
+    <div class="rail" id="rail" role="group" aria-label="Season filter"></div>
+    <div class="note" id="scopeNote"></div>
+  </div>
+
+  <section class="tiles" id="tiles" aria-label="Summary"></section>
+
+  <div class="duo">
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Goal contributions</h2>
+        <div class="legend">
+          <span><i class="swatch sw-goals"></i>Goals</span>
+          <span><i class="swatch sw-assists"></i>Assists</span>
+        </div>
+      </div>
+      <div id="leader"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Trophy cabinet</h2>
+        <button class="btn ghost" id="btnTrophy2">+ Trophy</button>
+      </div>
+      <div id="cabinet"></div>
+    </section>
+  </div>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2 id="squadTitle">Squad</h2>
+      <div class="toolbar">
+        <span class="note" id="editHint"></span>
+        <button class="btn ghost" id="btnPlayer2">+ Player</button>
+      </div>
+    </div>
+    <div class="table-scroll"><table id="squad"></table></div>
+  </section>
+</div>
+
+<div id="tip" role="status"></div>
+<dialog id="modal" aria-labelledby="dlgTitle">
+  <form method="dialog" id="dlgForm">
+    <div class="dlg-head">
+      <h3 id="dlgTitle"></h3>
+      <button class="btn ghost" type="button" data-close aria-label="Close">Esc</button>
+    </div>
+    <div class="dlg-body" id="dlgBody"></div>
+    <div class="dlg-foot" id="dlgFoot"></div>
+  </form>
+</dialog>
+
+<script>
+"use strict";
+
+/* ------------------------------------------------------------------ *
+ * Career Mode Ledger — squad stats, season by season.
+ * ------------------------------------------------------------------ */
+
+const POSITIONS = ["GK","RB","CB","LB","RWB","LWB","CDM","CM","CAM","RM","LM","RW","LW","CF","ST"];
+const UNIT = {GK:"gk",RB:"def",CB:"def",LB:"def",RWB:"def",LWB:"def",CDM:"mid",CM:"mid",CAM:"mid",RM:"mid",LM:"mid",RW:"att",LW:"att",CF:"att",ST:"att"};
+const COMPETITIONS = ["Premier League","FA Cup","EFL Cup","Community Shield","UEFA Champions League","UEFA Europa League","UEFA Conference League","UEFA Super Cup","FIFA Club World Cup","LaLiga","Copa del Rey","Serie A","Coppa Italia","Bundesliga","DFB-Pokal","Ligue 1","Coupe de France","Eredivisie","Promotion"];
+const TROPHY_TYPES = ["League","Domestic cup","Continental","Other"];
+
+const $ = (s,r) => (r||document).querySelector(s);
+const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const uid = p => p + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+const num = v => { const n = Number(v); return Number.isFinite(n) && n > 0 ? n : 0; };
+const int = v => Math.max(0, Math.round(num(v)));
+const norm = s => String(s||"").toLowerCase().replace(/[^a-z]/g,"");
+
+/* ---------------- example career (never written to storage) --------- */
+const DEMO = {
+  meta: {club:"Ashfield United"},
+  seasons: {
+    d1:{id:"d1",label:"2024/25",club:"Ashfield United",order:1},
+    d2:{id:"d2",label:"2025/26",club:"Ashfield United",order:2}
+  },
+  players: {
+    p1:{id:"p1",name:"J. Okafor",position:"ST"},
+    p2:{id:"p2",name:"L. Bennett",position:"CAM"},
+    p3:{id:"p3",name:"M. Sørensen",position:"RW"},
+    p4:{id:"p4",name:"D. Castillo",position:"CM"},
+    p5:{id:"p5",name:"R. Whitmore",position:"CB"},
+    p6:{id:"p6",name:"T. Adeyemi",position:"GK"}
+  },
+  stats: {
+    "d1__p1":{seasonId:"d1",playerId:"p1",apps:36,goals:24,assists:6,rating:7.6},
+    "d1__p2":{seasonId:"d1",playerId:"p2",apps:33,goals:9,assists:17,rating:7.5},
+    "d1__p3":{seasonId:"d1",playerId:"p3",apps:31,goals:11,assists:9,rating:7.2},
+    "d1__p4":{seasonId:"d1",playerId:"p4",apps:38,goals:4,assists:8,rating:7.1},
+    "d1__p5":{seasonId:"d1",playerId:"p5",apps:37,goals:3,assists:1,rating:7.3},
+    "d1__p6":{seasonId:"d1",playerId:"p6",apps:38,goals:0,assists:0,rating:7.0},
+    "d2__p1":{seasonId:"d2",playerId:"p1",apps:41,goals:31,assists:8,rating:7.9},
+    "d2__p2":{seasonId:"d2",playerId:"p2",apps:39,goals:12,assists:21,rating:7.7},
+    "d2__p3":{seasonId:"d2",playerId:"p3",apps:36,goals:14,assists:12,rating:7.4},
+    "d2__p4":{seasonId:"d2",playerId:"p4",apps:40,goals:6,assists:9,rating:7.2},
+    "d2__p5":{seasonId:"d2",playerId:"p5",apps:42,goals:5,assists:2,rating:7.4},
+    "d2__p6":{seasonId:"d2",playerId:"p6",apps:42,goals:0,assists:1,rating:7.2}
+  },
+  trophies: {
+    t1:{id:"t1",seasonId:"d1",name:"Promotion",type:"Other"},
+    t2:{id:"t2",seasonId:"d2",name:"Premier League",type:"League"},
+    t3:{id:"t3",seasonId:"d2",name:"FA Cup",type:"Domestic cup"}
+  }
+};
+
+/* ---------------- storage: artifact db, else this browser ----------- */
+const LS_KEY = "career-mode-ledger/v1";
+const LS_DEMO = "career-mode-ledger/demo-dismissed";
+const EMPTY = () => ({meta:{club:""}, seasons:{}, players:{}, stats:{}, trophies:{}});
+
+const Store = {
+  mode: "",
+  db: null,
+  data: EMPTY(),
+  ready: false,
+
+  async init(onChange) {
+    this.onChange = onChange;
+    const pending = (window.claude && claude.use) ? claude.use("db").catch(() => null) : Promise.resolve(null);
+    const TIMEOUT = {};
+    let db = await Promise.race([pending, new Promise(r => setTimeout(() => r(TIMEOUT), 2500))]);
+    if (db === TIMEOUT) {
+      db = null;
+      pending.then(late => { if (late && !this.db && isEmpty(this.data)) { this.data = EMPTY(); this.bindCloud(late); } });
+    }
+    if (db) { this.bindCloud(db); }
+    else {
+      this.mode = "local";
+      try { const raw = localStorage.getItem(LS_KEY); if (raw) this.data = Object.assign(EMPTY(), JSON.parse(raw)); } catch (e) {}
+      this.ready = true;
+    }
+  },
+
+  bindCloud(db) {
+      this.db = db; this.mode = "cloud"; this.ready = false;
+      const bind = (coll, key) => db.collection(coll).onSnapshot(
+        snap => {
+          const next = {};
+          snap.docs.forEach(d => { next[d.id] = Object.assign({id:d.id}, d.data()); });
+          this.data[key] = next; this.ready = true; this.onChange();
+        },
+        err => notice("Cloud storage stopped syncing (" + err.code + "). Your last saved data is still shown.", "warn")
+      );
+      bind("seasons","seasons"); bind("players","players"); bind("stats","stats"); bind("trophies","trophies");
+      db.doc("meta/career").onSnapshot(d => {
+        this.data.meta = d.exists ? d.data() : {club:""}; this.ready = true; this.onChange();
+      }, () => {});
+      setTimeout(() => { if (!this.ready) { this.ready = true; this.onChange(); } }, 1800);
+      this.onChange();
+  },
+
+  saveLocal() { try { localStorage.setItem(LS_KEY, JSON.stringify(this.data)); } catch (e) {} },
+
+  async put(coll, id, body) {
+    const doc = Object.assign({}, body, {id: id});
+    this.data[coll][id] = doc;
+    if (this.db) {
+      try { await this.db.doc(coll + "/" + id).set(doc); }
+      catch (e) { notice(dbCopy(e), "warn"); }
+    } else { this.saveLocal(); }
+    this.onChange();
+  },
+
+  async remove(coll, id) {
+    delete this.data[coll][id];
+    if (this.db) { try { await this.db.doc(coll + "/" + id).delete(); } catch (e) { notice(dbCopy(e), "warn"); } }
+    else { this.saveLocal(); }
+    this.onChange();
+  },
+
+  async setMeta(patch) {
+    this.data.meta = Object.assign({}, this.data.meta, patch);
+    if (this.db) { try { await this.db.doc("meta/career").set(this.data.meta); } catch (e) { notice(dbCopy(e), "warn"); } }
+    else { this.saveLocal(); }
+  }
+};
+
+function dbCopy(e) {
+  const c = e && e.code;
+  if (c === "quota_exceeded") return "The career database is full. Delete an old season to make room.";
+  if (c === "resource_exhausted") return "Too many changes at once — wait a moment and try again.";
+  if (c === "revoked") return "Storage access ended for this view. Reload the page to keep saving.";
+  return "That change did not save (" + (c || "unknown") + "). Try again.";
+}
+
+/* ---------------- app state ---------------------------------------- */
+const state = {
+  scope: "all",
+  sort: {key:"contrib", dir:"desc"},
+  notice: null,
+  demoDismissed: (() => { try { return localStorage.getItem(LS_DEMO) === "1"; } catch (e) { return false; } })()
+};
+let sampleFn = null, imageLimits = null;
+
+const isEmpty = d => !Object.keys(d.seasons).length && !Object.keys(d.players).length && !Object.keys(d.trophies).length;
+const demoOn = () => !state.demoDismissed && (!Store.ready || isEmpty(Store.data));
+const view = () => demoOn() ? DEMO : Store.data;
+
+function exitDemo() {
+  if (!demoOn()) return;
+  state.demoDismissed = true;
+  try { localStorage.setItem(LS_DEMO, "1"); } catch (e) {}
+}
+function notice(text, kind) {
+  state.notice = {text: text, kind: kind || "info"};
+  render();
+  clearTimeout(notice.t);
+  notice.t = setTimeout(() => { state.notice = null; render(); }, 7000);
+}
+
+/* ---------------- derived data -------------------------------------- */
+const seasonList = () => Object.values(view().seasons).sort((a,b) => (a.order||0) - (b.order||0) || String(a.label).localeCompare(String(b.label)));
+const seasonById = id => view().seasons[id];
+const statKey = (s,p) => s + "__" + p;
+
+function rowsFor(scope) {
+  const d = view();
+  const stats = Object.values(d.stats);
+  return Object.values(d.players).map(p => {
+    let apps = 0, goals = 0, assists = 0, rw = 0, rn = 0;
+    for (const s of stats) {
+      if (s.playerId !== p.id) continue;
+      if (scope !== "all" && s.seasonId !== scope) continue;
+      apps += int(s.apps); goals += int(s.goals); assists += int(s.assists);
+      if (num(s.rating) > 0) { const w = int(s.apps) || 1; rw += num(s.rating) * w; rn += w; }
+    }
+    return {p:p, apps:apps, goals:goals, assists:assists, contrib:goals + assists, rating: rn ? rw / rn : 0};
+  });
+}
+function trophiesFor(scope) {
+  return Object.values(view().trophies).filter(t => scope === "all" || t.seasonId === scope);
+}
+function sortRows(rows) {
+  const k = state.sort.key, dir = state.sort.dir === "asc" ? 1 : -1;
+  return rows.slice().sort((a,b) => {
+    if (k === "name") return dir * String(a.p.name).localeCompare(String(b.p.name));
+    if (k === "pos") return dir * (POSITIONS.indexOf(a.p.position) - POSITIONS.indexOf(b.p.position));
+    return dir * ((a[k] - b[k]) || String(a.p.name).localeCompare(String(b.p.name)) * -dir);
+  });
+}
+const fmt = n => Number(n).toLocaleString("en-GB");
+const rate = n => n ? n.toFixed(2) : "—";
+
+/* ---------------- rendering ----------------------------------------- */
+function render() {
+  const d = view();
+  const scope = (state.scope !== "all" && !d.seasons[state.scope]) ? "all" : state.scope;
+  state.scope = scope;
+  const rows = rowsFor(scope);
+  const seasons = seasonList();
+
+  /* club identity */
+  const club = (d.meta && d.meta.club) || (demoOn() ? DEMO.meta.club : "");
+  const nameEl = $("#clubName");
+  if (document.activeElement !== nameEl) nameEl.value = club;
+  const initials = (club || "Career Mode").split(/\s+/).slice(0,2).map(w => w[0] || "").join("").toUpperCase() || "CM";
+  $("#crest").textContent = initials;
+
+  /* storage status */
+  $("#statusRow").innerHTML = Store.mode === "cloud"
+    ? '<span class="status"><i></i>Saved to this page</span>'
+    : Store.mode === "local"
+      ? '<span class="status local"><i></i>Saved in this browser</span>'
+      : '<span class="status local"><i></i>Checking storage…</span>';
+
+  /* banner */
+  const bits = [];
+  if (state.notice) bits.push('<div class="banner"><span>' + esc(state.notice.text) + '</span></div>');
+  if (demoOn()) bits.push(
+    '<div class="banner"><span><b>Example career.</b> These are sample numbers so you can see the layout — ' +
+    'add a season, a player or a screenshot and the ledger starts empty for your own save.</span>' +
+    '<button class="btn" id="btnClearDemo" type="button">Start my career</button></div>');
+  $("#banner").innerHTML = bits.join("");
+
+  /* season rail */
+  const railBits = [chip("all", "All seasons", seasons.length + (seasons.length === 1 ? " season" : " seasons"), scope === "all")];
+  seasons.forEach(s => {
+    const played = rowsFor(s.id).reduce((m,r) => Math.max(m, r.apps), 0);
+    railBits.push(chip(s.id, s.label, s.club ? esc(s.club) : (played ? played + " apps" : "no stats yet"), scope === s.id));
+  });
+  railBits.push('<button class="season-chip add" id="btnSeason" type="button"><span class="sc-label">+ Season</span></button>');
+  $("#rail").innerHTML = railBits.join("");
+
+  const cur = scope === "all" ? null : seasonById(scope);
+  $("#scopeNote").innerHTML = cur
+    ? "Showing <b>" + esc(cur.label) + "</b> only — type in the squad table to record this season."
+      + ' <button class="btn danger" id="btnDelSeason" type="button" style="padding:2px 8px;font-size:12px">Delete season</button>'
+    : "All-time totals across every season you have recorded.";
+
+  /* summary tiles */
+  const tot = rows.reduce((a,r) => ({apps:a.apps + r.apps, goals:a.goals + r.goals, assists:a.assists + r.assists}), {apps:0,goals:0,assists:0});
+  const trophies = trophiesFor(scope);
+  const best = rows.slice().sort((a,b) => b.contrib - a.contrib)[0];
+  $("#tiles").innerHTML = [
+    tile("Appearances", tot.apps, rows.length + (rows.length === 1 ? " player" : " players") + " tracked"),
+    tile("Goals", tot.goals, tot.apps ? (tot.goals / tot.apps).toFixed(2) + " per appearance" : "—"),
+    tile("Assists", tot.assists, tot.apps ? (tot.assists / tot.apps).toFixed(2) + " per appearance" : "—"),
+    tile("Goal contributions", tot.goals + tot.assists, best && best.contrib ? "Most: " + esc(best.p.name) + " (" + best.contrib + ")" : "—", "is-contrib"),
+    tile("Trophies", trophies.length, trophies.length ? "Latest: " + esc(latestTrophy(trophies).name) : "none yet", "is-trophies")
+  ].join("");
+
+  renderLeaderboard(rows);
+  renderCabinet(scope);
+  renderSquad(rows, cur);
+}
+
+function latestTrophy(list) {
+  const rank = {};
+  seasonList().forEach((s,i) => { rank[s.id] = i; });
+  return list.slice().sort((a,b) => (rank[b.seasonId] || 0) - (rank[a.seasonId] || 0))[0];
+}
+function chip(id, label, meta, on) {
+  return '<button class="season-chip" type="button" data-season="' + esc(id) + '" aria-pressed="' + (on ? "true" : "false") + '">' +
+    '<span class="sc-label">' + esc(label) + '</span><span class="sc-meta">' + meta + '</span></button>';
+}
+function tile(label, value, sub, cls) {
+  return '<div class="tile ' + (cls || "") + '"><span class="eyebrow">' + esc(label) + '</span>' +
+    '<span class="t-val">' + fmt(value) + '</span><span class="t-sub">' + sub + '</span></div>';
+}
+function posChip(pos) {
+  const p = POSITIONS.indexOf(pos) >= 0 ? pos : "—";
+  return '<span class="pos ' + (UNIT[p] || "") + '">' + esc(p) + '</span>';
+}
+
+function renderLeaderboard(rows) {
+  const top = rows.filter(r => r.contrib > 0).sort((a,b) => b.contrib - a.contrib || b.goals - a.goals).slice(0,5);
+  if (!top.length) {
+    $("#leader").innerHTML = '<div class="empty"><b>No goals or assists yet</b>Record a season and the leaderboard fills in.</div>';
+    return;
+  }
+  const max = top[0].contrib;
+  $("#leader").innerHTML = '<div class="lb">' + top.map((r,i) => {
+    const gw = (r.goals / max) * 100, aw = (r.assists / max) * 100;
+    const segs = [];
+    if (r.goals) segs.push('<span class="seg g' + (r.assists ? "" : " only") + '" style="width:' + gw + '%" data-tip="Goals ' + r.goals + '"></span>');
+    if (r.assists) segs.push('<span class="seg a' + (r.goals ? "" : " only") + '" style="width:' + aw + '%" data-tip="Assists ' + r.assists + '"></span>');
+    return '<div class="lb-row' + (i === 0 ? " top" : "") + '">' +
+      '<div class="lb-id"><span class="lb-name"><span class="lb-rank">' + (i + 1) + '</span>' +
+        '<b>' + esc(r.p.name) + '</b>' + posChip(r.p.position) + '</span>' +
+        '<span class="lb-meta">' + r.goals + ' G · ' + r.assists + ' A' + (r.apps ? ' · ' + (r.contrib / r.apps).toFixed(2) + ' per app' : '') + '</span></div>' +
+      '<div class="lb-track"><span class="bar">' + segs.join("") + '</span>' +
+        '<span class="lb-total">' + r.contrib + '</span></div></div>';
+  }).join("") + '</div>';
+}
+
+function renderCabinet(scope) {
+  const list = trophiesFor(scope);
+  if (!list.length) {
+    $("#cabinet").innerHTML = '<div class="empty"><b>Cabinet is empty</b>Add every trophy the team wins — league titles, cups, promotions.</div>';
+    return;
+  }
+  const bySeason = {};
+  list.forEach(t => { (bySeason[t.seasonId] = bySeason[t.seasonId] || []).push(t); });
+  const order = seasonList().slice().reverse().filter(s => bySeason[s.id]);
+  const orphan = list.filter(t => !view().seasons[t.seasonId]);
+  const blocks = order.map(s =>
+    '<div class="cab-season"><div class="cs-head"><span class="yr">' + esc(s.label) + '</span><span class="rule"></span>' +
+      '<span class="yr">' + bySeason[s.id].length + '</span></div>' +
+      bySeason[s.id].map(trophyRow).join("") + '</div>');
+  if (orphan.length) blocks.push('<div class="cab-season"><div class="cs-head"><span class="yr">Unassigned</span><span class="rule"></span></div>' + orphan.map(trophyRow).join("") + '</div>');
+  $("#cabinet").innerHTML = '<div class="cab">' + blocks.join("") + '</div>';
+}
+function trophyRow(t) {
+  return '<div class="trophy"><span class="tr-ico" aria-hidden="true">' +
+    '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' +
+    '<path d="M7 4h10v5a5 5 0 0 1-10 0V4Z"/><path d="M17 5h3v2a3 3 0 0 1-3 3"/><path d="M7 5H4v2a3 3 0 0 0 3 3"/>' +
+    '<path d="M12 14v4"/><path d="M9 20h6"/></svg></span>' +
+    '<span class="tr-name">' + esc(t.name) + '</span>' +
+    '<span class="tr-type">' + esc(t.type || "") + '</span>' +
+    '<button class="row-x" type="button" data-deltrophy="' + esc(t.id) + '" aria-label="Remove ' + esc(t.name) + '">&times;</button></div>';
+}
+
+function renderSquad(rows, cur) {
+  const editing = !!cur;
+  const showRating = rows.some(r => r.rating > 0) || editing;
+  $("#squadTitle").textContent = editing ? "Squad · " + cur.label : "Squad · all-time";
+  $("#editHint").textContent = editing
+    ? "Changes save as you leave a box"
+    : (rows.length ? "Pick a season above to edit numbers" : "");
+
+  if (!rows.length) {
+    $("#squad").innerHTML = '<tbody><tr><td><div class="empty"><b>No players yet</b>Add a player, or import a squad screenshot and every name comes in at once.</div></td></tr></tbody>';
+    return;
+  }
+  const sorted = sortRows(rows);
+  const th = (key, label, cls) => {
+    const on = state.sort.key === key;
+    const caret = on ? (state.sort.dir === "asc" ? " ▲" : " ▼") : "";
+    return '<th' + (cls ? ' class="' + cls + '"' : "") + (on ? ' aria-sort="' + (state.sort.dir === "asc" ? "ascending" : "descending") + '"' : "") +
+      '><button type="button" data-sort="' + key + '">' + label + '<span class="caret">' + caret + '</span></button></th>';
+  };
+  const cell = (r, field, value) => editing
+    ? '<input class="cell" type="number" min="0" ' + (field === "rating" ? 'step="0.1" max="10" ' : 'step="1" ') +
+      'data-p="' + esc(r.p.id) + '" data-f="' + field + '" data-focuskey="' + esc(r.p.id) + ':' + field + '" value="' + (value || "") + '" aria-label="' + field + ' for ' + esc(r.p.name) + '">'
+    : (field === "rating" ? (value ? Number(value).toFixed(2) : "—") : fmt(value));
+
+  const tot = sorted.reduce((a,r) => ({apps:a.apps + r.apps, goals:a.goals + r.goals, assists:a.assists + r.assists}), {apps:0,goals:0,assists:0});
+
+  $("#squad").innerHTML =
+    '<thead><tr>' + th("name","Player","l") + th("pos","Pos","l") + th("apps","Apps") + th("goals","Goals") +
+      th("assists","Assists") + th("contrib","G+A") + (showRating ? th("rating","Rating") : "") + '<th aria-label="Remove"></th></tr></thead>' +
+    '<tbody>' + sorted.map(r =>
+      '<tr><td class="l p-name">' + esc(r.p.name) + '</td>' +
+      '<td class="l">' + posChip(r.p.position) + '</td>' +
+      '<td class="stat">' + cell(r, "apps", r.apps) + '</td>' +
+      '<td class="stat">' + cell(r, "goals", r.goals) + '</td>' +
+      '<td class="stat">' + cell(r, "assists", r.assists) + '</td>' +
+      '<td class="stat contrib">' + fmt(r.contrib) + '</td>' +
+      (showRating ? '<td class="stat">' + cell(r, "rating", r.rating ? Number(r.rating.toFixed(2)) : "") + '</td>' : "") +
+      '<td><button class="row-x" type="button" data-delplayer="' + esc(r.p.id) + '" aria-label="Remove ' + esc(r.p.name) + '">&times;</button></td></tr>').join("") +
+    '</tbody>' +
+    '<tfoot><tr><td class="l">' + (cur ? esc(cur.label) : "All seasons") + '</td><td></td>' +
+      '<td>' + fmt(tot.apps) + '</td><td>' + fmt(tot.goals) + '</td><td>' + fmt(tot.assists) + '</td>' +
+      '<td>' + fmt(tot.goals + tot.assists) + '</td>' + (showRating ? '<td></td>' : "") + '<td></td></tr></tfoot>';
+}
+
+/* focus survives a re-render while typing in the table */
+const origRender = render;
+render = function () {
+  const a = document.activeElement;
+  const key = a && a.dataset ? a.dataset.focuskey : null;
+  origRender();
+  if (key) {
+    const el = document.querySelector('[data-focuskey="' + key + '"]');
+    if (el && el !== document.activeElement) { el.focus(); if (el.select) el.select(); }
+  }
+};
+
+/* ---------------- dialog plumbing ------------------------------------ */
+const modal = $("#modal"), dlgBody = $("#dlgBody"), dlgFoot = $("#dlgFoot"), dlgTitle = $("#dlgTitle");
+let onClose = null;
+
+function sigOf(el) {
+  if (!el || !el.dataset || !dlgBody.contains(el)) return null;
+  if (el.id) return "#" + el.id;
+  const keys = ["i","f","name","pos","pid","inc","trophy"];
+  const parts = keys.filter(k => el.dataset[k] !== undefined).map(k => '[data-' + k + '="' + el.dataset[k] + '"]');
+  return parts.length ? el.tagName.toLowerCase() + parts.join("") : null;
+}
+function openDialog(title, body, foot, after) {
+  const sig = sigOf(document.activeElement);
+  dlgTitle.textContent = title;
+  dlgBody.innerHTML = body;
+  dlgFoot.innerHTML = foot;
+  if (!modal.open) modal.showModal();
+  if (after) after();
+  let back = sig ? dlgBody.querySelector(sig) : null;
+  if (!back) back = dlgBody.querySelector("input,select,button,textarea");
+  if (back) back.focus();
+}
+function askConfirm(title, message, label) {
+  return new Promise(resolve => {
+    let done = false;
+    onClose = () => { if (!done) { done = true; resolve(false); } };
+    openDialog(title, '<p style="margin:0">' + esc(message) + "</p>",
+      '<button class="btn" type="button" data-close>Cancel</button>' +
+      '<button class="btn primary" type="button" id="okConfirm">' + esc(label) + "</button>",
+      () => { $("#okConfirm").onclick = () => { done = true; onClose = null; modal.close(); resolve(true); }; });
+  });
+}
+/* Enter in any field runs the dialog's main action instead of closing it */
+$("#dlgForm").addEventListener("submit", e => {
+  e.preventDefault();
+  const primary = dlgFoot.querySelector(".btn.primary");
+  if (primary && !primary.disabled) primary.click();
+});
+modal.addEventListener("close", () => { if (onClose) { const f = onClose; onClose = null; f(); } });
+
+const field = (label, inner) => '<div class="field"><label>' + label + "</label>" + inner + "</div>";
+const seasonOptions = (sel, extra) =>
+  seasonList().slice().reverse().map(s => '<option value="' + esc(s.id) + '"' + (s.id === sel ? " selected" : "") + ">" + esc(s.label) + "</option>").join("") +
+  (extra ? '<option value="__new"' + (sel === "__new" ? " selected" : "") + ">+ New season…</option>" : "");
+const positionOptions = sel => '<option value="">—</option>' + POSITIONS.map(p => '<option' + (p === sel ? " selected" : "") + ">" + p + "</option>").join("");
+
+function nextSeasonLabel() {
+  const last = seasonList().slice(-1)[0];
+  if (!last) { const y = new Date().getFullYear(); return y + "/" + String(y + 1).slice(2); }
+  const m = String(last.label).match(/(\d{4})\s*\/\s*(\d{2,4})/);
+  if (m) { const y = +m[1] + 1; return y + "/" + String(y + 1).slice(2); }
+  const y = String(last.label).match(/(\d{4})/);
+  return y ? String(+y[1] + 1) : "";
+}
+
+/* ---------------- add / edit actions --------------------------------- */
+function guard() {  /* first real action clears the example career */
+  if (!demoOn()) return true;
+  exitDemo();
+  render();
+  return true;
+}
+
+function openSeason() {
+  guard();
+  openDialog("Add a season",
+    '<div class="grid2">' +
+      field("Season", '<input id="fLabel" value="' + esc(nextSeasonLabel()) + '" placeholder="2026/27" maxlength="16">') +
+      field("Club (optional)", '<input id="fClub" value="' + esc(Store.data.meta.club || "") + '" placeholder="Ashfield United" maxlength="40">') +
+    "</div>" +
+    '<p class="note">Seasons are how the ledger splits your career. Pick one in the rail to record its numbers; the default view adds them all up.</p>',
+    '<button class="btn" type="button" data-close>Cancel</button><button class="btn primary" type="button" id="okSeason">Add season</button>',
+    () => { $("#okSeason").onclick = async () => {
+      const label = $("#fLabel").value.trim(); if (!label) return $("#fLabel").focus();
+      const id = uid("s"), club = $("#fClub").value.trim();
+      const order = (seasonList().slice(-1)[0] || {order:0}).order + 1;
+      await Store.put("seasons", id, {label:label, club:club, order:order});
+      if (club && !Store.data.meta.club) await Store.setMeta({club:club});
+      state.scope = id; modal.close(); render();
+    }; });
+}
+
+function openPlayer() {
+  guard();
+  const cur = state.scope === "all" ? null : seasonById(state.scope);
+  openDialog("Add a player",
+    '<div class="grid2">' +
+      field("Name", '<input id="fName" placeholder="J. Okafor" maxlength="40">') +
+      field("Position", '<select id="fPos">' + positionOptions("") + "</select>") +
+    "</div>" +
+    (cur ? '<div class="grid4">' +
+      field("Apps", '<input id="fApps" type="number" min="0" step="1" placeholder="0">') +
+      field("Goals", '<input id="fGoals" type="number" min="0" step="1" placeholder="0">') +
+      field("Assists", '<input id="fAssists" type="number" min="0" step="1" placeholder="0">') +
+      field("Rating", '<input id="fRating" type="number" min="0" max="10" step="0.1" placeholder="7.4">') +
+      "</div><p class=\"note\">These go straight into <b>" + esc(cur.label) + "</b>. Leave them blank to add the player only.</p>"
+      : '<p class="note">Add a season first if you want to record numbers — this adds the player to the squad.</p>'),
+    '<button class="btn" type="button" data-close>Cancel</button><button class="btn primary" type="button" id="okPlayer">Add player</button>',
+    () => { $("#okPlayer").onclick = async () => {
+      const name = $("#fName").value.trim(); if (!name) return $("#fName").focus();
+      const id = uid("p");
+      await Store.put("players", id, {name:name, position:$("#fPos").value});
+      if (cur) {
+        const apps = int($("#fApps").value), goals = int($("#fGoals").value), assists = int($("#fAssists").value), rating = num($("#fRating").value);
+        if (apps || goals || assists || rating)
+          await Store.put("stats", statKey(cur.id, id), {seasonId:cur.id, playerId:id, apps:apps, goals:goals, assists:assists, rating:rating});
+      }
+      modal.close(); render();
+    }; });
+}
+
+function openTrophy() {
+  guard();
+  const seasons = seasonList();
+  const sel = state.scope !== "all" ? state.scope : (seasons.slice(-1)[0] || {}).id;
+  openDialog("Add a trophy",
+    (seasons.length ? "" : '<p class="note">Add a season first — every trophy is filed under the season it was won.</p>') +
+    field("Competition", '<input id="fTName" list="comps" placeholder="Premier League" maxlength="48" autocomplete="off">' +
+      '<datalist id="comps">' + COMPETITIONS.map(c => "<option>" + esc(c) + "</option>").join("") + "</datalist>") +
+    '<div class="grid2">' +
+      field("Season won", '<select id="fTSeason">' + seasonOptions(sel, false) + "</select>") +
+      field("Type", '<select id="fTType">' + TROPHY_TYPES.map(t => "<option>" + t + "</option>").join("") + "</select>") +
+    "</div>",
+    '<button class="btn" type="button" data-close>Cancel</button><button class="btn primary" type="button" id="okTrophy"' + (seasons.length ? "" : " disabled") + ">Add trophy</button>",
+    () => { const b = $("#okTrophy"); if (b) b.onclick = async () => {
+      const name = $("#fTName").value.trim(); if (!name) return $("#fTName").focus();
+      await Store.put("trophies", uid("t"), {name:name, seasonId:$("#fTSeason").value, type:$("#fTType").value});
+      modal.close(); render();
+    }; });
+}
+
+/* ---------------- events --------------------------------------------- */
+document.addEventListener("click", async e => {
+  const t = e.target.closest("button");
+  if (!t) return;
+  if (t.hasAttribute("data-close")) { modal.close(); return; }
+  if (t.id === "btnClearDemo") { exitDemo(); render(); notice("Example cleared. Add a season to start your own career.", "info"); return; }
+  if (t.id === "btnSeason") return openSeason();
+  if (t.id === "btnPlayer" || t.id === "btnPlayer2") return openPlayer();
+  if (t.id === "btnTrophy" || t.id === "btnTrophy2") return openTrophy();
+  if (t.id === "btnImport") return openImport();
+
+  if (t.dataset.season) { state.scope = t.dataset.season; render(); return; }
+  if (t.dataset.sort) {
+    const k = t.dataset.sort;
+    state.sort = state.sort.key === k
+      ? {key:k, dir:state.sort.dir === "asc" ? "desc" : "asc"}
+      : {key:k, dir:(k === "name" || k === "pos") ? "asc" : "desc"};
+    render(); return;
+  }
+  if (t.id === "btnDelSeason") {
+    if (demoOn()) { exitDemo(); render(); return; }
+    const s = seasonById(state.scope); if (!s) return;
+    if (!await askConfirm("Delete " + s.label + "?", "Its stats and trophies go with it. Players stay in the squad.", "Delete season")) return;
+    for (const k of Object.keys(Store.data.stats)) if (Store.data.stats[k].seasonId === s.id) await Store.remove("stats", k);
+    for (const k of Object.keys(Store.data.trophies)) if (Store.data.trophies[k].seasonId === s.id) await Store.remove("trophies", k);
+    await Store.remove("seasons", s.id);
+    state.scope = "all"; render(); return;
+  }
+  if (t.dataset.delplayer) {
+    if (demoOn()) { exitDemo(); render(); return; }
+    const p = Store.data.players[t.dataset.delplayer]; if (!p) return;
+    if (!await askConfirm("Remove " + p.name + "?", "Every season recorded for this player goes too.", "Remove player")) return;
+    for (const k of Object.keys(Store.data.stats)) if (Store.data.stats[k].playerId === p.id) await Store.remove("stats", k);
+    await Store.remove("players", p.id); render(); return;
+  }
+  if (t.dataset.deltrophy) {
+    if (demoOn()) { exitDemo(); render(); return; }
+    await Store.remove("trophies", t.dataset.deltrophy); render(); return;
+  }
+});
+
+document.addEventListener("change", async e => {
+  const el = e.target;
+  if (!el.classList || !el.classList.contains("cell")) return;
+  if (demoOn()) { exitDemo(); render(); notice("Example cleared — add your own season and squad.", "info"); return; }
+  const sid = state.scope; if (sid === "all") return;
+  const pid = el.dataset.p, f = el.dataset.f, key = statKey(sid, pid);
+  const cur = Store.data.stats[key] || {seasonId:sid, playerId:pid, apps:0, goals:0, assists:0, rating:0};
+  const body = {seasonId:sid, playerId:pid, apps:int(cur.apps), goals:int(cur.goals), assists:int(cur.assists), rating:num(cur.rating)};
+  body[f] = f === "rating" ? Math.min(10, num(el.value)) : int(el.value);
+  await Store.put("stats", key, body);
+  render();
+});
+
+$("#clubName").addEventListener("change", async e => {
+  if (demoOn()) { exitDemo(); }
+  await Store.setMeta({club:e.target.value.trim()});
+  render();
+});
+
+/* leaderboard tooltips */
+const tip = $("#tip");
+document.addEventListener("mousemove", e => {
+  const seg = e.target.closest ? e.target.closest(".seg") : null;
+  if (seg && seg.dataset.tip) {
+    tip.textContent = seg.dataset.tip;
+    tip.style.left = e.clientX + "px";
+    tip.style.top = e.clientY + "px";
+    tip.style.opacity = "1";
+  } else tip.style.opacity = "0";
+});
+
+/* ---------------- import from screenshots ---------------------------- */
+const IMPORT_PROMPT =
+"These images are screenshots from an EA SPORTS FC / FIFA Career Mode screen showing player statistics " +
+"(a squad hub, a season stats table, a player profile, or an end-of-season summary).\n\n" +
+"Read every player row you can see and return their totals for the season shown.\n\n" +
+'Reply with ONLY a JSON object of this shape:\n' +
+'{"season":"2025/26","club":"Ashfield United","players":[{"name":"J. Okafor","position":"ST","appearances":36,"goals":24,"assists":6,"rating":7.6}],"trophies":["Premier League"]}\n\n' +
+"Rules:\n" +
+"- One entry per player row. Keep the name exactly as it appears on screen.\n" +
+"- position must be one of GK RB CB LB RWB LWB CDM CM CAM RM LM RW LW CF ST, or null if none is shown.\n" +
+"- appearances, goals and assists are whole numbers; use 0 when the column is missing or blank.\n" +
+"- rating is the average match rating out of 10, or null if not shown.\n" +
+"- season is the season label if visible (e.g. \"2025/26\"), otherwise null. club is the team name if visible, otherwise null.\n" +
+"- trophies: only competitions the screenshot clearly shows as won; otherwise an empty array.\n" +
+"- Never invent a player, a number or a competition. If a value is unreadable, use null.";
+
+const SAMPLE_COPY = {
+  not_granted: "You declined Claude access for this page, so screenshots can't be read here. Type the numbers in instead.",
+  sampling_disabled: "Claude isn't available on this account, so screenshots can't be read. Type the numbers in instead.",
+  not_declared: "Screenshot reading isn't enabled for this page.",
+  images_unavailable: "This view can't send images to Claude. Type the numbers in instead.",
+  image_rejected: "One of those files couldn't be read — use a PNG or JPEG screenshot under 20 MB.",
+  rate_limited: "Too many requests just now. Wait a minute and try again.",
+  session_expired: "Your Claude session expired. Reload the page and sign in again.",
+  invalid_json: "The stats didn't come back in a readable shape. Try a tighter crop of the stats table.",
+  empty_completion: "Nothing came back from that image. Try a clearer or closer screenshot.",
+  refused: "Claude wouldn't read that image. Try a different screenshot.",
+  prompt_too_large: "That's too much at once — import fewer screenshots per go.",
+  cancelled: "Stopped."
+};
+
+const imp = {step:"pick", files:[], rows:[], trophies:[], mode:"add", seasonId:null, newLabel:"", busy:false, ctl:null, error:"", found:null};
+
+function openImport() {
+  guard();
+  imp.files.forEach(f => URL.revokeObjectURL(f.url));
+  imp.step = "pick"; imp.files = []; imp.rows = []; imp.trophies = []; imp.mode = "add";
+  imp.busy = false; imp.error = ""; imp.found = null; imp.newLabel = nextSeasonLabel();
+  imp.seasonId = state.scope !== "all" ? state.scope : ((seasonList().slice(-1)[0] || {}).id || "__new");
+  onClose = () => { imp.files.forEach(f => URL.revokeObjectURL(f.url)); imp.files = []; };
+  renderImport();
+}
+
+function renderImport() {
+  if (imp.step === "review") return renderImportReview();
+  const accept = imageLimits ? imageLimits.mediaTypes.join(",") : "image/*";
+  const maxN = imageLimits ? imageLimits.maxCount : 4;
+  const body =
+    (sampleFn && imageLimits ? "" :
+      '<div class="banner"><span>' + (sampleFn
+        ? "This view can't send images to Claude, so screenshots can't be read here."
+        : "Reading screenshots needs Claude, which isn't available in this view.") +
+      " Everything can still be typed in by hand.</span></div>") +
+    '<div class="grid2">' +
+      field("Season to fill", '<select id="impSeason">' + seasonOptions(imp.seasonId, true) + "</select>") +
+      (imp.seasonId === "__new" ? field("New season label", '<input id="impLabel" value="' + esc(imp.newLabel) + '" maxlength="16">') : "<div></div>") +
+    "</div>" +
+    '<div class="drop" id="drop" tabindex="0" role="button" aria-label="Choose screenshots">' +
+      '<div class="d-t">Drop screenshots here, or click to choose</div>' +
+      '<div class="note">Squad stats tables, player profiles, end-of-season summaries — up to ' + maxN + ' at a time. ' +
+      'Claude reads the names and numbers; you check them before anything is saved.</div>' +
+      '<input type="file" id="impFiles" accept="' + accept + '" multiple hidden>' +
+    "</div>" +
+    (imp.files.length ? '<div class="thumbs">' + imp.files.map((f,i) =>
+      '<figure><img src="' + f.url + '" alt=""><button type="button" data-rmfile="' + i + '" aria-label="Remove">&times;</button>' +
+      '<figcaption>' + esc(f.file.name) + "</figcaption></figure>").join("") + "</div>" : "") +
+    (imp.error ? '<p class="err">' + esc(imp.error) + "</p>" : "") +
+    (imp.busy ? '<div class="toolbar"><span class="spinner"></span><span class="note">Reading the screenshots… this usually takes 10–40 seconds.</span></div>' : "");
+
+  const foot = imp.busy
+    ? '<button class="btn" type="button" id="impStop">Stop</button>'
+    : '<button class="btn" type="button" data-close>Cancel</button>' +
+      '<button class="btn primary" type="button" id="impGo"' + (imp.files.length && sampleFn && imageLimits ? "" : " disabled") + ">Read screenshots</button>";
+
+  openDialog("Import from screenshots", body, foot, () => {
+    const sel = $("#impSeason");
+    if (sel) sel.onchange = () => { imp.seasonId = sel.value; renderImport(); };
+    const lab = $("#impLabel");
+    if (lab) lab.oninput = () => { imp.newLabel = lab.value; };
+    const drop = $("#drop"), input = $("#impFiles");
+    if (drop) {
+      drop.onclick = () => input.click();
+      drop.onkeydown = ev => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); input.click(); } };
+      drop.ondragover = ev => { ev.preventDefault(); drop.classList.add("over"); };
+      drop.ondragleave = () => drop.classList.remove("over");
+      drop.ondrop = ev => { ev.preventDefault(); drop.classList.remove("over"); addFiles(ev.dataTransfer.files); };
+      input.onchange = () => addFiles(input.files);
+    }
+    dlgBody.querySelectorAll("[data-rmfile]").forEach(b => b.onclick = () => {
+      const i = +b.dataset.rmfile; URL.revokeObjectURL(imp.files[i].url); imp.files.splice(i,1); renderImport();
+    });
+    const go = $("#impGo"); if (go) go.onclick = readShots;
+    const stop = $("#impStop"); if (stop) stop.onclick = () => { if (imp.ctl) imp.ctl.abort(); };
+  });
+}
+
+function addFiles(list) {
+  const maxN = imageLimits ? imageLimits.maxCount : 4;
+  const maxB = imageLimits ? imageLimits.maxInputBytes : 20 * 1024 * 1024;
+  const types = imageLimits ? imageLimits.mediaTypes : ["image/png","image/jpeg","image/webp","image/gif"];
+  imp.error = "";
+  for (const f of Array.from(list || [])) {
+    if (imp.files.length >= maxN) { imp.error = "Up to " + maxN + " screenshots per import."; break; }
+    if (types.indexOf(f.type) < 0) { imp.error = f.name + " isn't a supported image (" + types.map(t => t.split("/")[1]).join(", ") + ")."; continue; }
+    if (f.size > maxB) { imp.error = f.name + " is too large — keep screenshots under " + Math.floor(maxB / 1048576) + " MB."; continue; }
+    imp.files.push({file:f, url:URL.createObjectURL(f)});
+  }
+  renderImport();
+}
+
+async function readShots() {
+  if (!sampleFn || !imp.files.length) return;
+  imp.busy = true; imp.error = ""; imp.ctl = new AbortController();
+  renderImport();
+  try {
+    const out = await sampleFn.json(IMPORT_PROMPT, {
+      images: imp.files.map(f => f.file),
+      modelTier: "default",
+      signal: imp.ctl.signal
+    });
+    const players = (out && Array.isArray(out.players)) ? out.players : [];
+    if (!players.length) { imp.busy = false; imp.error = "No player rows were found in that image. Try a screenshot of the stats table itself."; return renderImport(); }
+    imp.found = {season: out.season || null, club: out.club || null, shots: imp.files.length};
+    imp.trophies = (Array.isArray(out.trophies) ? out.trophies : []).filter(Boolean).map(n => ({name:String(n).slice(0,48), on:true}));
+    imp.rows = players.slice(0, 60).map(r => {
+      const name = String(r && r.name != null ? r.name : "").trim().slice(0,40);
+      const match = Object.values(Store.data.players).find(p => norm(p.name) === norm(name));
+      const pos = POSITIONS.indexOf(String(r && r.position || "").toUpperCase()) >= 0 ? String(r.position).toUpperCase() : (match ? match.position : "");
+      return {
+        name: name, position: pos, playerId: match ? match.id : "__new", include: !!name,
+        apps: int(r && r.appearances), goals: int(r && r.goals), assists: int(r && r.assists),
+        rating: Math.min(10, num(r && r.rating))
+      };
+    }).filter(r => r.name);
+    imp.busy = false; imp.step = "review"; renderImport();
+  } catch (e) {
+    imp.busy = false;
+    imp.error = SAMPLE_COPY[e && e.code] || "The screenshots couldn't be read (" + ((e && e.code) || "error") + "). Try again, or type the numbers in.";
+    renderImport();
+  }
+}
+
+function targetSeasonLabel() {
+  if (imp.seasonId === "__new") return imp.newLabel || nextSeasonLabel();
+  const s = seasonById(imp.seasonId); return s ? s.label : "—";
+}
+
+function renderImportReview() {
+  const sid = imp.seasonId;
+  const curVal = (pid, f) => {
+    if (sid === "__new" || pid === "__new") return 0;
+    const st = Store.data.stats[statKey(sid, pid)]; return st ? int(st[f]) : 0;
+  };
+  const players = Object.values(Store.data.players);
+  const rowHtml = (r,i) => {
+    const nextOf = f => imp.mode === "add" ? curVal(r.playerId, f) + r[f] : r[f];
+    const before = curVal(r.playerId, "apps") + curVal(r.playerId, "goals") + curVal(r.playerId, "assists");
+    return '<tr class="' + (r.include ? "" : "off") + '">' +
+      '<td><input type="checkbox" data-inc="' + i + '"' + (r.include ? " checked" : "") + ' aria-label="Include ' + esc(r.name) + '"></td>' +
+      '<td class="l"><input type="text" data-name="' + i + '" value="' + esc(r.name) + '"></td>' +
+      '<td><select data-pos="' + i + '">' + positionOptions(r.position) + "</select></td>" +
+      '<td><select data-pid="' + i + '"><option value="__new"' + (r.playerId === "__new" ? " selected" : "") + ">+ New player</option>" +
+        players.map(p => '<option value="' + esc(p.id) + '"' + (r.playerId === p.id ? " selected" : "") + ">" + esc(p.name) + "</option>").join("") + "</select></td>" +
+      '<td><input class="n" type="number" min="0" data-f="apps" data-i="' + i + '" value="' + r.apps + '"></td>' +
+      '<td><input class="n" type="number" min="0" data-f="goals" data-i="' + i + '" value="' + r.goals + '"></td>' +
+      '<td><input class="n" type="number" min="0" data-f="assists" data-i="' + i + '" value="' + r.assists + '"></td>' +
+      '<td class="delta">' + (before || imp.mode === "replace"
+        ? curVal(r.playerId,"goals") + "+" + curVal(r.playerId,"assists") + " → " + (nextOf("goals") + nextOf("assists"))
+        : "new · " + (r.goals + r.assists) + " G+A") + "</td></tr>";
+  };
+  const found = imp.found || {shots:0};
+  const mismatch = found.season && targetSeasonLabel() && norm(found.season) !== norm(targetSeasonLabel());
+
+  const body =
+    '<p class="note">Read <b>' + imp.rows.length + "</b> player" + (imp.rows.length === 1 ? "" : "s") + " from " + found.shots +
+      " screenshot" + (found.shots === 1 ? "" : "s") + " into <b>" + esc(targetSeasonLabel()) + "</b>" +
+      (found.club ? " · " + esc(found.club) : "") + ". Check the numbers before they are saved." + "</p>" +
+    (mismatch ? '<div class="banner"><span>The screenshot looks like <b>' + esc(found.season) + '</b> but you are filling <b>' + esc(targetSeasonLabel()) + "</b>. Change the season on the previous step if that's wrong.</span></div>" : "") +
+    '<div class="radio-row">' +
+      '<label class="radio-card"><input type="radio" name="impmode" value="add"' + (imp.mode === "add" ? " checked" : "") + '>' +
+        '<span><span class="rc-t">Add on top</span><span class="rc-d">Adds these numbers to what the season already holds.</span></span></label>' +
+      '<label class="radio-card"><input type="radio" name="impmode" value="replace"' + (imp.mode === "replace" ? " checked" : "") + '>' +
+        '<span><span class="rc-t">Replace the season</span><span class="rc-d">Overwrites the season with exactly these totals.</span></span></label>' +
+    "</div>" +
+    '<div class="table-scroll"><table class="review-table"><thead><tr><th></th><th class="l">Name</th><th>Pos</th><th class="l">Goes to</th>' +
+      "<th>Apps</th><th>Goals</th><th>Assists</th><th>G+A after</th></tr></thead><tbody>" +
+      imp.rows.map(rowHtml).join("") + "</tbody></table></div>" +
+    (imp.trophies.length ? '<div class="field"><label>Trophies spotted</label><div class="radio-row">' +
+      imp.trophies.map((t,i) => '<label class="radio-card"><input type="checkbox" data-trophy="' + i + '"' + (t.on ? " checked" : "") + '>' +
+        '<span><span class="rc-t">' + esc(t.name) + '</span><span class="rc-d">Files under ' + esc(targetSeasonLabel()) + "</span></span></label>").join("") + "</div></div>" : "") +
+    (imp.error ? '<p class="err">' + esc(imp.error) + "</p>" : "");
+
+  const n = imp.rows.filter(r => r.include).length;
+  const foot = '<button class="btn" type="button" id="impBack">Back</button>' +
+    '<button class="btn primary" type="button" id="impApply"' + (n ? "" : " disabled") + ">Save " + n + " player" + (n === 1 ? "" : "s") + " to " + esc(targetSeasonLabel()) + "</button>";
+
+  openDialog("Check the numbers", body, foot, () => {
+    dlgBody.querySelectorAll("[data-inc]").forEach(c => c.onchange = () => { imp.rows[+c.dataset.inc].include = c.checked; renderImportReview(); });
+    dlgBody.querySelectorAll("[data-name]").forEach(c => c.onchange = () => { imp.rows[+c.dataset.name].name = c.value.trim(); });
+    dlgBody.querySelectorAll("[data-pos]").forEach(c => c.onchange = () => { imp.rows[+c.dataset.pos].position = c.value; });
+    dlgBody.querySelectorAll("[data-pid]").forEach(c => c.onchange = () => { imp.rows[+c.dataset.pid].playerId = c.value; renderImportReview(); });
+    dlgBody.querySelectorAll("input.n").forEach(c => c.onchange = () => { imp.rows[+c.dataset.i][c.dataset.f] = int(c.value); renderImportReview(); });
+    dlgBody.querySelectorAll("[data-trophy]").forEach(c => c.onchange = () => { imp.trophies[+c.dataset.trophy].on = c.checked; });
+    dlgBody.querySelectorAll('input[name="impmode"]').forEach(c => c.onchange = () => { imp.mode = c.value; renderImportReview(); });
+    $("#impBack").onclick = () => { imp.step = "pick"; renderImport(); };
+    $("#impApply").onclick = applyImport;
+  });
+}
+
+async function applyImport() {
+  const btn = $("#impApply"); if (btn) { btn.disabled = true; btn.textContent = "Saving…"; }
+  let sid = imp.seasonId;
+  if (sid === "__new") {
+    sid = uid("s");
+    const order = (seasonList().slice(-1)[0] || {order:0}).order + 1;
+    await Store.put("seasons", sid, {label: imp.newLabel || nextSeasonLabel(), club: Store.data.meta.club || "", order: order});
+  }
+  let added = 0;
+  for (const r of imp.rows) {
+    if (!r.include || !r.name) continue;
+    let pid = r.playerId;
+    if (pid === "__new" || !Store.data.players[pid]) {
+      pid = uid("p");
+      await Store.put("players", pid, {name:r.name, position:r.position});
+    } else {
+      const p = Store.data.players[pid];
+      if (r.position && p.position !== r.position) await Store.put("players", pid, Object.assign({}, p, {position:r.position}));
+    }
+    const key = statKey(sid, pid);
+    const cur = Store.data.stats[key] || {apps:0, goals:0, assists:0, rating:0};
+    const body = imp.mode === "add"
+      ? {seasonId:sid, playerId:pid, apps:int(cur.apps) + r.apps, goals:int(cur.goals) + r.goals, assists:int(cur.assists) + r.assists, rating: r.rating || num(cur.rating)}
+      : {seasonId:sid, playerId:pid, apps:r.apps, goals:r.goals, assists:r.assists, rating:r.rating};
+    await Store.put("stats", key, body);
+    added++;
+  }
+  for (const t of imp.trophies) {
+    if (!t.on) continue;
+    const dupe = Object.values(Store.data.trophies).some(x => x.seasonId === sid && norm(x.name) === norm(t.name));
+    if (!dupe) await Store.put("trophies", uid("t"), {name:t.name, seasonId:sid, type: /league|liga|serie|bundes|ligue|eredivisie/i.test(t.name) ? "League" : /champions|europa|conference|super|world/i.test(t.name) ? "Continental" : /cup|pokal|coupe|copa/i.test(t.name) ? "Domestic cup" : "Other"});
+  }
+  state.scope = sid;
+  modal.close();
+  render();
+  notice("Saved " + added + " player" + (added === 1 ? "" : "s") + " to " + (seasonById(sid) || {label:""}).label + ".", "info");
+}
+
+/* ---------------- boot ------------------------------------------------ */
+(async function boot() {
+  render();
+  await Store.init(render);
+  render();
+  try {
+    sampleFn = window.claude && claude.use ? await claude.use("sample") : null;
+    if (sampleFn) {
+      const caps = await sampleFn.limits().catch(() => null);
+      imageLimits = caps && caps.images ? caps.images : null;
+    }
+  } catch (e) { sampleFn = null; }
+  const btn = $("#btnImport");
+  btn.title = sampleFn && imageLimits ? "Read a squad screenshot with Claude" : "Screenshot reading is unavailable in this view";
+})();
+</script>
