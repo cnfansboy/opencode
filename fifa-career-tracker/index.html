@@ -896,6 +896,11 @@ function nowYear() {
   return new Date().getFullYear();
 }
 const yearsLeft = p => int(p.expiry) ? int(p.expiry) - nowYear() : null;
+async function advanceAges() {
+  for (const p of Object.values(Store.data.players)) {
+    if (int(p.age) > 0) await Store.put("players", p.id, Object.assign({}, p, {age: int(p.age) + 1}));
+  }
+}
 const dealTotal = p => (p.deals || []).reduce((a,d) => a + num(d.annual), 0);
 function finRows() {
   return Object.values(view().players).map(p => {
@@ -1317,6 +1322,7 @@ function openSeason() {
       const id = uid("s"), club = $("#fClub").value.trim(), league = $("#fLeague").value;
       const order = (seasonList().slice(-1)[0] || {order:0}).order + 1;
       await Store.put("seasons", id, {label:label, club:club, league:league, order:order});
+      await advanceAges();
       if (club && !Store.data.meta.club) await Store.setMeta({club:club});
       state.scope = id; modal.close(); render();
     }; });
@@ -1876,6 +1882,7 @@ async function applyImport() {
     sid = uid("s");
     const order = (seasonList().slice(-1)[0] || {order:0}).order + 1;
     await Store.put("seasons", sid, {label: imp.newLabel || nextSeasonLabel(), club: Store.data.meta.club || "", order: order});
+    await advanceAges();
   }
   let added = 0;
   for (const r of imp.rows) {
