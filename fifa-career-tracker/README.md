@@ -25,6 +25,14 @@ to open that player.
   defender's profile always; the squad total shows the best individual tally
   rather than a sum, since a shut-out belongs to the whole back line.
 - **All-time** — every season added up; this is what loads first.
+- **League** — each season picks a league from the top five and the professional
+  tier directly below it (Premier League/Championship, LaLiga/LaLiga 2,
+  Bundesliga/2. Bundesliga, Serie A/Serie B, Ligue 1/Ligue 2), shown as a flag
+  and name on the season chip, on the squad page, and next to that season in a
+  player's history. A new season defaults to the same league as the last one —
+  change it the season you go up or down. Adding a season is the only way in;
+  "Edit season" next to Delete season fixes the league (or the label or club)
+  on one already recorded, without touching its stats.
 - **Goal contributions** — G+A per player, with a top-five leaderboard and per-appearance rate.
 - **Trophies** — competition, type and the season it was won, grouped in the cabinet.
 

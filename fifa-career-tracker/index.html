@@ -346,6 +346,14 @@ tr.gone td.l .plink{color:var(--ink-2)}
 .flag-fallback{opacity:.45; font-size:13px}
 .sq-flag{margin-right:2px; font-size:13px; flex:none}
 td.stat.age{font-family:"IBM Plex Mono",monospace}
+.league-tag{
+  display:inline-flex; align-items:center; gap:5px; padding:2px 9px; border-radius:999px;
+  border:1px solid var(--line-strong); color:var(--ink-2); font-family:"IBM Plex Mono",monospace;
+  font-size:11px; white-space:nowrap;
+}
+.league-tag .flag{font-size:12px; flex:none}
+.league-tag.tier1{border-color:var(--gold-line); color:var(--gold); background:var(--gold-soft)}
+.sc-league{margin-top:1px}
 .side-foot{padding:11px 14px; border-top:1px solid var(--line)}
 .main{min-width:0; padding:18px 22px 90px}
 .topbar{display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:16px}
@@ -599,12 +607,38 @@ function nationTag(p, compact) {
     : '<span class="nation">' + flagSpan + '<span class="nation-name">' + esc(nat) + '</span></span>';
 }
 
+/* ---------------- leagues ---------------------------------------------
+ * The top five and the professional tier directly below each. */
+const LEAGUE_GROUPS = [
+  {country:"England", tiers:["Premier League","EFL Championship"]},
+  {country:"Spain", tiers:["LaLiga","LaLiga 2"]},
+  {country:"Germany", tiers:["Bundesliga","2. Bundesliga"]},
+  {country:"Italy", tiers:["Serie A","Serie B"]},
+  {country:"France", tiers:["Ligue 1","Ligue 2"]}
+];
+const LEAGUE_INFO = {};
+LEAGUE_GROUPS.forEach(g => g.tiers.forEach((name, i) => { LEAGUE_INFO[name] = {country:g.country, tier:i + 1}; }));
+function leagueOptions(sel) {
+  return '<option value=""' + (sel ? "" : " selected") + '>Not set</option>' +
+    LEAGUE_GROUPS.map(g => '<optgroup label="' + esc(g.country) + '">' +
+      g.tiers.map(name => '<option value="' + esc(name) + '"' + (name === sel ? " selected" : "") + '>' + esc(name) + '</option>').join("") +
+      "</optgroup>").join("");
+}
+function leagueTag(name) {
+  if (!name) return "";
+  const info = LEAGUE_INFO[name];
+  const flag = info ? flagFor(info.country) : "";
+  return '<span class="league-tag' + (info && info.tier === 1 ? " tier1" : "") + '">' +
+    (flag ? '<span class="flag" role="img" aria-label="' + esc(info.country) + '">' + flag + '</span>' : "") +
+    '<span>' + esc(name) + '</span></span>';
+}
+
 /* ---------------- example career (never written to storage) --------- */
 const DEMO = {
   meta: {club:"Ashfield United", currency:"£"},
   seasons: {
-    d1:{id:"d1",label:"2024/25",club:"Ashfield United",order:1},
-    d2:{id:"d2",label:"2025/26",club:"Ashfield United",order:2}
+    d1:{id:"d1",label:"2024/25",club:"Ashfield United",league:"EFL Championship",order:1},
+    d2:{id:"d2",label:"2025/26",club:"Ashfield United",league:"Premier League",order:2}
   },
   players: {
     p1:{id:"p1",name:"J. Okafor",position:"ST",number:9,age:24,nationality:"Nigeria",joined:"2023",from:"Vitesse",
@@ -919,14 +953,19 @@ function renderOverview(scope) {
   const railBits = [chip("all", "All seasons", seasons.length + (seasons.length === 1 ? " season" : " seasons"), scope === "all")];
   seasons.forEach(s => {
     const played = rowsFor(s.id).reduce((m,r) => Math.max(m, r.apps), 0);
-    railBits.push(chip(s.id, s.label, s.club ? esc(s.club) : (played ? played + " apps" : "no stats yet"), scope === s.id));
+    const info = s.league ? LEAGUE_INFO[s.league] : null;
+    const meta = s.league ? (info ? flagFor(info.country) + " " : "") + esc(s.league)
+      : s.club ? esc(s.club) : (played ? played + " apps" : "no stats yet");
+    railBits.push(chip(s.id, s.label, meta, scope === s.id));
   });
   railBits.push('<button class="season-chip add" id="btnSeason" type="button"><span class="sc-label">+ Season</span></button>');
   $("#rail").innerHTML = railBits.join("");
 
   $("#scopeNote").innerHTML = cur
-    ? "Showing <b>" + esc(cur.label) + "</b> only — type in the squad table to record this season."
-      + ' <button class="btn danger" id="btnDelSeason" type="button" style="padding:2px 8px;font-size:12px">Delete season</button>'
+    ? "Showing <b>" + esc(cur.label) + "</b> only — type in the squad table to record this season." +
+      (cur.league ? " " + leagueTag(cur.league) : "") +
+      ' <button class="btn ghost" type="button" data-editseason="' + esc(cur.id) + '" style="padding:2px 8px;font-size:12px">Edit season</button>' +
+      ' <button class="btn danger" type="button" id="btnDelSeason" style="padding:2px 8px;font-size:12px">Delete season</button>'
     : "All-time totals across every season you have recorded.";
 
   const tot = rows.reduce((a,r) => ({apps:a.apps + r.apps, goals:a.goals + r.goals, assists:a.assists + r.assists}), {apps:0,goals:0,assists:0});
@@ -1147,20 +1186,40 @@ function guard() {  /* first real action clears the example career */
 
 function openSeason() {
   guard();
+  const prev = seasonList().slice(-1)[0];
   openDialog("Add a season",
     '<div class="grid2">' +
       field("Season", '<input id="fLabel" value="' + esc(nextSeasonLabel()) + '" placeholder="2026/27" maxlength="16">') +
       field("Club (optional)", '<input id="fClub" value="' + esc(Store.data.meta.club || "") + '" placeholder="Ashfield United" maxlength="40">') +
     "</div>" +
-    '<p class="note">Seasons are how the ledger splits your career. Pick one in the rail to record its numbers; the default view adds them all up.</p>',
+    field("League", '<select id="fLeague">' + leagueOptions(prev ? prev.league : "") + "</select>") +
+    '<p class="note">Seasons are how the ledger splits your career. Pick one in the rail to record its numbers; the default view adds them all up. ' +
+    (prev ? "League carries over from " + esc(prev.label) + " — change it if you were promoted or relegated." : "") + "</p>",
     '<button class="btn" type="button" data-close>Cancel</button><button class="btn primary" type="button" id="okSeason">Add season</button>',
     () => { $("#okSeason").onclick = async () => {
       const label = $("#fLabel").value.trim(); if (!label) return $("#fLabel").focus();
-      const id = uid("s"), club = $("#fClub").value.trim();
+      const id = uid("s"), club = $("#fClub").value.trim(), league = $("#fLeague").value;
       const order = (seasonList().slice(-1)[0] || {order:0}).order + 1;
-      await Store.put("seasons", id, {label:label, club:club, order:order});
+      await Store.put("seasons", id, {label:label, club:club, league:league, order:order});
       if (club && !Store.data.meta.club) await Store.setMeta({club:club});
       state.scope = id; modal.close(); render();
+    }; });
+}
+
+function openEditSeason(id) {
+  const s = seasonById(id); if (!s) return;
+  if (demoOn()) { exitDemo(); render(); notice("Example cleared — add your own season first.", "info"); return; }
+  openDialog("Edit " + s.label,
+    '<div class="grid2">' +
+      field("Season", '<input id="fLabel" value="' + esc(s.label) + '" maxlength="16">') +
+      field("Club", '<input id="fClub" value="' + esc(s.club || "") + '" maxlength="40" placeholder="Ashfield United">') +
+    "</div>" +
+    field("League", '<select id="fLeague">' + leagueOptions(s.league || "") + "</select>"),
+    '<button class="btn" type="button" data-close>Cancel</button><button class="btn primary" type="button" id="okEditSeason">Save</button>',
+    () => { $("#okEditSeason").onclick = async () => {
+      const label = $("#fLabel").value.trim(); if (!label) return $("#fLabel").focus();
+      await Store.put("seasons", s.id, Object.assign({}, s, {label:label, club:$("#fClub").value.trim(), league:$("#fLeague").value}));
+      modal.close(); render();
     }; });
 }
 
@@ -1232,6 +1291,7 @@ document.addEventListener("click", async e => {
   if (t.id === "btnMenu") { $("#side").classList.add("open"); $("#scrim").hidden = false; return; }
   if (t.id === "scrim") { closeDrawer(); return; }
   if (t.dataset.editplayer) return openEditPlayer(t.dataset.editplayer);
+  if (t.dataset.editseason) return openEditSeason(t.dataset.editseason);
   if (t.dataset.contract) return openContract(t.dataset.contract);
   if (t.dataset.deals) return openDeals(t.dataset.deals);
   if (t.dataset.fsort) {
@@ -1855,7 +1915,8 @@ function renderPlayerPage(id) {
         "<th>Apps</th><th>Goals</th><th>Assists</th><th>G+A</th>" + (showCS ? "<th>Clean sheets</th>" : "") +
         "<th>Rating</th></tr></thead><tbody>" +
         per.map(x =>
-          '<tr><td class="l p-name">' + esc(x.s.label) + '</td><td class="l note">' + esc(x.s.club || "") + "</td>" +
+          '<tr><td class="l p-name">' + esc(x.s.label) + '</td><td class="l note">' + esc(x.s.club || "") +
+          (x.s.league ? '<div style="margin-top:3px">' + leagueTag(x.s.league) + '</div>' : "") + "</td>" +
           '<td class="stat">' + cell(x.s.id, "apps", x.apps) + '</td>' +
           '<td class="stat">' + cell(x.s.id, "goals", x.goals) + '</td>' +
           '<td class="stat">' + cell(x.s.id, "assists", x.assists) + '</td>' +
