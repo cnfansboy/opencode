@@ -48,7 +48,7 @@ full history including everyone who's ever left.
   are showing (all-time, or the season picked in the rail).
 - **League** — each season picks a league from the top five and the professional
   tier directly below it (Premier League/Championship, LaLiga/LaLiga 2,
-  Bundesliga/2. Bundesliga, Serie A/Serie B, Ligue 1/Ligue 2), shown as a flag
+  Bundesliga/2. Bundesliga/3. Liga, Serie A/Serie B, Ligue 1/Ligue 2), shown as a flag
   and name on the season chip, on the squad page, and next to that season in a
   player's history. A new season defaults to the same league as the last one —
   change it the season you go up or down. Adding a season is the only way in;
