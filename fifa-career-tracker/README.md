@@ -32,6 +32,14 @@ editor. Above it: the wage bill, endorsement income, and which contracts are
 running down. Years left counts from the end of your newest recorded season, so
 a deal ending that year reads "final year", not "expired".
 
+**Leaving the club** — the × on a squad row (or "Remove from squad" on a profile)
+takes a player off the squad list and the wage bill while keeping everything they
+did. Record the year and where they went; they move to **Moved on** in the
+sidebar, stay in the all-time table and the contribution leaderboard with a
+"left" marker, and still appear in the seasons they actually played when a season
+is selected. One click brings them back. Deleting a player outright — stats and
+all — is still available, in the Edit player dialog.
+
 **Player profile** — one page per player: joined year and previous club, career
 totals, a season-by-season table you can type into, the full contract, brand
 deals with the club share, and the honours won in seasons they played.

@@ -72,7 +72,7 @@ button{font:inherit; color:inherit}
 }
 #clubName{
   font-family:"Anton",Impact,"Arial Narrow",sans-serif; font-weight:400;
-  font-size:18px; line-height:1.1; letter-spacing:.005em;
+  font-size:17px; line-height:1.1; letter-spacing:.005em;
   text-transform:uppercase; background:none; border:0; padding:2px 4px; margin-left:-4px;
   color:var(--ink); width:100%; border-radius:4px;
 }
@@ -335,6 +335,10 @@ dialog::backdrop{background:rgba(8,14,10,.55)}
 .sq-name{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:500}
 .sq-n{font-family:"IBM Plex Mono",monospace; font-size:11.5px; color:var(--ink-3)}
 .side-empty{padding:8px; font-size:12px; color:var(--ink-3)}
+.side-sub{display:flex; justify-content:space-between; padding:13px 6px 6px; margin-top:7px; border-top:1px solid var(--line)}
+.sq-item.gone .sq-name{color:var(--ink-3); font-weight:400}
+.left-tag{margin-left:7px; vertical-align:1px}
+tr.gone td.l .plink{color:var(--ink-2)}
 .side-foot{padding:11px 14px; border-top:1px solid var(--line)}
 .main{min-width:0; padding:18px 22px 90px}
 .topbar{display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:16px}
@@ -548,7 +552,10 @@ const DEMO = {
         wage:36000,expiry:2026,imageRights:100,value:9500000,signingBonus:0,releaseClause:0,deals:[]},
     p6:{id:"p6",name:"T. Adeyemi",position:"GK",number:1,nationality:"Nigeria",joined:"2023",from:"Sparta Rotterdam",
         wage:29000,expiry:2030,imageRights:40,value:14000000,signingBonus:400000,releaseClause:0,
-        deals:[{brand:"Gloveworks",annual:150000}]}
+        deals:[{brand:"Gloveworks",annual:150000}]},
+    p7:{id:"p7",name:"S. Varga",position:"CM",number:8,nationality:"Hungary",joined:"2019",from:"Ferencváros",
+        departed:true,leftYear:2025,leftTo:"Sporting CP",
+        wage:38000,expiry:2025,imageRights:50,value:0,signingBonus:0,releaseClause:0,deals:[]}
   },
   stats: {
     "d1__p1":{seasonId:"d1",playerId:"p1",apps:36,goals:24,assists:6,rating:7.6},
@@ -557,6 +564,7 @@ const DEMO = {
     "d1__p4":{seasonId:"d1",playerId:"p4",apps:38,goals:4,assists:8,rating:7.1},
     "d1__p5":{seasonId:"d1",playerId:"p5",apps:37,goals:3,assists:1,cleanSheets:15,rating:7.3},
     "d1__p6":{seasonId:"d1",playerId:"p6",apps:38,goals:0,assists:0,cleanSheets:16,rating:7.0},
+    "d1__p7":{seasonId:"d1",playerId:"p7",apps:29,goals:5,assists:11,cleanSheets:0,rating:7.2},
     "d2__p1":{seasonId:"d2",playerId:"p1",apps:41,goals:31,assists:8,rating:7.9},
     "d2__p2":{seasonId:"d2",playerId:"p2",apps:39,goals:12,assists:21,rating:7.7},
     "d2__p3":{seasonId:"d2",playerId:"p3",apps:36,goals:14,assists:12,rating:7.4},
@@ -697,6 +705,15 @@ function rowsFor(scope) {
     return {p:p, apps:apps, goals:goals, assists:assists, cs:cs, contrib:goals + assists, rating: rn ? rw / rn : 0};
   });
 }
+function squadRows(scope) {
+  const rows = rowsFor(scope);
+  if (scope === "all") return rows;
+  const d = view();
+  return rows.filter(r => !r.p.departed || d.stats[statKey(scope, r.p.id)]);
+}
+const leftTag = p => p.departed
+  ? '<span class="chip muted left-tag">left' + (int(p.leftYear) ? " " + int(p.leftYear) : "") + "</span>"
+  : "";
 function trophiesFor(scope) {
   return Object.values(view().trophies).filter(t => scope === "all" || t.seasonId === scope);
 }
@@ -799,27 +816,29 @@ function renderSidebar() {
   const players = Object.values(d.players).sort((x,y) =>
     (POSITIONS.indexOf(x.position) - POSITIONS.indexOf(y.position)) || String(x.name).localeCompare(String(y.name)));
   const v = state.route.view;
-  const weekly = finRows().reduce((a,r) => a + r.weekly, 0);
+  const weekly = finRows().filter(r => !r.p.departed).reduce((a,r) => a + r.weekly, 0);
   const nav = (href, icon, label, on, meta) =>
     '<a class="nav-item" href="' + href + '"' + (on ? ' aria-current="page"' : "") + '>' + icon +
     '<span>' + label + '</span>' + (meta ? '<span class="nv">' + meta + '</span>' : "") + '</a>';
   $("#sideNav").innerHTML =
     nav("#/", ICON.pitch, "Squad &amp; seasons", v === "overview", seasonList().length ? seasonList().length + " szn" : "") +
     nav("#/finances", ICON.coin, "Wages &amp; finances", v === "finances", weekly ? money(weekly, "compact") + "/wk" : "");
-  $("#squadCount").textContent = players.length || "";
-  $("#sideList").innerHTML = players.length
-    ? players.map(p => {
-        return '<a class="sq-item" href="#/player/' + encodeURIComponent(p.id) + '"' +
-          (v === "player" && state.route.id === p.id ? ' aria-current="page"' : "") + '>' +
-          posChip(p.position) + '<span class="sq-name">' + esc(p.name) + '</span>' +
-          '<span class="sq-n">' + (p.number ? "#" + esc(p.number) : "") + '</span></a>';
-      }).join("")
-    : '<div class="side-empty">No players yet. Add one, or import a squad screenshot.</div>';
+  const item = (p, gone) => '<a class="sq-item' + (gone ? " gone" : "") + '" href="#/player/' + encodeURIComponent(p.id) + '"' +
+    (v === "player" && state.route.id === p.id ? ' aria-current="page"' : "") + '>' +
+    posChip(p.position) + '<span class="sq-name">' + esc(p.name) + '</span>' +
+    '<span class="sq-n">' + (gone ? (int(p.leftYear) || "") : (p.number ? "#" + esc(p.number) : "")) + '</span></a>';
+  const active = players.filter(p => !p.departed), gone = players.filter(p => p.departed);
+  $("#squadCount").textContent = active.length || "";
+  $("#sideList").innerHTML =
+    (active.length ? active.map(p => item(p, false)).join("")
+      : '<div class="side-empty">No players yet. Add one, or import a squad screenshot.</div>') +
+    (gone.length ? '<div class="eyebrow side-sub"><span>Moved on</span><span>' + gone.length + "</span></div>" +
+      gone.map(p => item(p, true)).join("") : "");
 }
 
 /* ---------------- view: squad &amp; seasons -------------------------- */
 function renderOverview(scope) {
-  const rows = rowsFor(scope);
+  const rows = squadRows(scope);
   const seasons = seasonList();
   const cur = scope === "all" ? null : seasonById(scope);
   $("#pageTitle").textContent = cur ? "Squad · " + cur.label : "All-time squad";
@@ -888,7 +907,8 @@ function renderLeaderboard(rows) {
     return '<div class="lb-row' + (i === 0 ? " top" : "") + '">' +
       '<div class="lb-id"><span class="lb-name"><span class="lb-rank">' + (i + 1) + '</span>' +
         '<b><a class="plink" href="#/player/' + encodeURIComponent(r.p.id) + '">' + esc(r.p.name) + '</a></b>' + posChip(r.p.position) + '</span>' +
-        '<span class="lb-meta">' + r.goals + ' G · ' + r.assists + ' A' + (r.apps ? ' · ' + (r.contrib / r.apps).toFixed(2) + ' per app' : '') + '</span></div>' +
+        '<span class="lb-meta">' + r.goals + ' G · ' + r.assists + ' A' + (r.apps ? ' · ' + (r.contrib / r.apps).toFixed(2) + ' per app' : '') +
+          (r.p.departed ? " · left" : "") + '</span></div>' +
       '<div class="lb-track"><span class="bar">' + segs.join("") + '</span>' +
         '<span class="lb-total">' + r.contrib + '</span></div></div>';
   }).join("") + '</div>';
@@ -953,7 +973,8 @@ function renderSquad(rows, cur) {
       th("assists","Assists") + th("contrib","G+A") + (showCS ? th("cs","Clean sheets") : "") +
       (showRating ? th("rating","Rating") : "") + '<th aria-label="Remove"></th></tr></thead>' +
     '<tbody>' + sorted.map(r =>
-      '<tr><td class="l p-name"><a class="plink" href="#/player/' + encodeURIComponent(r.p.id) + '">' + esc(r.p.name) + '</a></td>' +
+      '<tr' + (r.p.departed ? ' class="gone"' : "") + '><td class="l p-name">' +
+      '<a class="plink" href="#/player/' + encodeURIComponent(r.p.id) + '">' + esc(r.p.name) + '</a>' + leftTag(r.p) + '</td>' +
       '<td class="l">' + posChip(r.p.position) + '</td>' +
       '<td class="stat">' + cell(r, "apps", r.apps) + '</td>' +
       '<td class="stat">' + cell(r, "goals", r.goals) + '</td>' +
@@ -961,7 +982,10 @@ function renderSquad(rows, cur) {
       '<td class="stat contrib">' + fmt(r.contrib) + '</td>' +
       (showCS ? '<td class="stat">' + cell(r, "cleanSheets", r.cs) + '</td>' : "") +
       (showRating ? '<td class="stat">' + cell(r, "rating", r.rating ? Number(r.rating.toFixed(2)) : "") + '</td>' : "") +
-      '<td><button class="row-x" type="button" data-delplayer="' + esc(r.p.id) + '" aria-label="Remove ' + esc(r.p.name) + '">&times;</button></td></tr>').join("") +
+      '<td>' + (r.p.departed
+        ? '<button class="row-x" type="button" data-return="' + esc(r.p.id) + '" aria-label="Bring ' + esc(r.p.name) + ' back">&#8630;</button>'
+        : '<button class="row-x" type="button" data-leave="' + esc(r.p.id) + '" aria-label="Remove ' + esc(r.p.name) + ' from the squad">&times;</button>') +
+      "</td></tr>").join("") +
     '</tbody>' +
     '<tfoot><tr><td class="l">' + (cur ? esc(cur.label) : "All seasons") + '</td><td></td>' +
       '<td>' + fmt(tot.apps) + '</td><td>' + fmt(tot.goals) + '</td><td>' + fmt(tot.assists) + '</td>' +
@@ -1155,12 +1179,15 @@ document.addEventListener("click", async e => {
     await Store.remove("seasons", s.id);
     state.scope = "all"; render(); return;
   }
-  if (t.dataset.delplayer) {
+  if (t.dataset.leave) {
     if (demoOn()) { exitDemo(); render(); return; }
-    const p = Store.data.players[t.dataset.delplayer]; if (!p) return;
-    if (!await askConfirm("Remove " + p.name + "?", "Every season recorded for this player goes too.", "Remove player")) return;
-    for (const k of Object.keys(Store.data.stats)) if (Store.data.stats[k].playerId === p.id) await Store.remove("stats", k);
-    await Store.remove("players", p.id); render(); return;
+    return openLeave(t.dataset.leave);
+  }
+  if (t.dataset.return) {
+    if (demoOn()) { exitDemo(); render(); return; }
+    const p = Store.data.players[t.dataset.return]; if (!p) return;
+    await Store.put("players", p.id, Object.assign({}, p, {departed:false, leftYear:"", leftTo:""}));
+    render(); notice(esc(p.name) + " is back in the squad.", "info"); return;
   }
   if (t.dataset.deltrophy) {
     if (demoOn()) { exitDemo(); render(); return; }
@@ -1621,7 +1648,9 @@ function sortFin(rows) {
 
 function renderFinances() {
   $("#pageTitle").textContent = "Wages & finances";
-  const rows = finRows();
+  const everyone = finRows();
+  const rows = everyone.filter(r => !r.p.departed);
+  const goneCount = everyone.length - rows.length;
   const T = rows.reduce((a,r) => ({w:a.w + r.weekly, an:a.an + r.annual, d:a.d + r.deals, s:a.s + r.share, n:a.n + r.net}), {w:0,an:0,d:0,s:0,n:0});
   const expiring = rows.filter(r => r.left !== null && r.left <= 1);
   const priced = rows.filter(r => r.weekly > 0).length;
@@ -1689,7 +1718,8 @@ function renderFinances() {
         '<span class="note">from ' + nowYear() + "</span></div><div class=\"dl\">" + expiringList + "</div></section>" +
     "</div>" +
     '<section class="panel"><div class="panel-head"><h2>Contracts</h2><div class="toolbar">' +
-      '<span class="note">Current terms, not filtered by season · net wage = annual wage less your image-rights share. Type straight into a cell.</span>' +
+      '<span class="note">Current terms, not filtered by season · net wage = annual wage less your image-rights share. Type straight into a cell.' +
+        (goneCount ? " " + goneCount + " player" + (goneCount === 1 ? " who has" : "s who have") + " left the club are off the books." : "") + "</span>" +
       '<select class="cur-select" id="curSelect" aria-label="Currency">' +
         CURRENCIES.map(c => '<option' + (c === cur() ? " selected" : "") + ">" + c + "</option>").join("") + "</select>" +
     "</div></div>" + table + "</section>";
@@ -1747,6 +1777,7 @@ function renderPlayerPage(id) {
     '<section class="panel"><div class="panel-head"><h2>Contract</h2>' +
       '<button class="btn ghost" type="button" data-contract="' + esc(p.id) + '">Edit</button></div>' +
     '<div class="dl">' +
+      (p.departed ? dl("Status", '<span class="chip muted">left the club — last recorded terms</span>') : "") +
       dl("Weekly wage", fin.weekly ? money(fin.weekly) : "—") +
       dl("Annual", fin.annual ? money(fin.annual, "compact") : "—") +
       dl("Expires", int(p.expiry) ? "end of " + int(p.expiry) : "—") +
@@ -1780,6 +1811,8 @@ function renderPlayerPage(id) {
   if (p.from) joined.push("from <b>" + esc(p.from) + "</b>");
   if (p.nationality) joined.push(esc(p.nationality));
   joined.push(played.length ? "<b>" + played.length + "</b> season" + (played.length === 1 ? "" : "s") + " played" : "no minutes yet");
+  if (p.departed) joined.push("left" + (int(p.leftYear) ? " <b>" + int(p.leftYear) + "</b>" : "") +
+    (p.leftTo ? " for <b>" + esc(p.leftTo) + "</b>" : ""));
 
   $("#viewPlayer").innerHTML =
     '<div class="pp-head"><div style="flex:1;min-width:0">' +
@@ -1787,9 +1820,13 @@ function renderPlayerPage(id) {
       '<div class="pp-id">' + (p.number ? '<span class="pp-num">' + esc(p.number) + "</span>" : "") +
         "<h2>" + esc(p.name) + "</h2>" + posChip(p.position) + "</div>" +
       '<div class="pp-sub">' + joined.join(" · ") + "</div></div>" +
-      '<button class="btn" type="button" data-editplayer="' + esc(p.id) + '">Edit player</button></div>' +
+      '<div class="toolbar">' +
+        (p.departed
+          ? '<button class="btn" type="button" data-return="' + esc(p.id) + '">Bring back to squad</button>'
+          : '<button class="btn ghost" type="button" data-leave="' + esc(p.id) + '">Remove from squad</button>') +
+        '<button class="btn" type="button" data-editplayer="' + esc(p.id) + '">Edit player</button></div></div>' +
     '<section class="tiles">' + [
-      tile("Appearances", all.apps, seasons.length + " season" + (seasons.length === 1 ? "" : "s") + " on record"),
+      tile("Appearances", all.apps, played.length + " of " + seasons.length + " season" + (seasons.length === 1 ? "" : "s") + " played"),
       tile("Goals", all.goals, all.apps ? (all.goals / all.apps).toFixed(2) + " per appearance" : "—"),
       tile("Assists", all.assists, all.apps ? (all.assists / all.apps).toFixed(2) + " per appearance" : "—"),
       tile("Goal contributions", all.contrib, all.apps ? (all.contrib / all.apps).toFixed(2) + " per appearance" : "—", "is-contrib"),
@@ -1816,7 +1853,7 @@ function openEditPlayer(id) {
       field("Joined", '<input id="eJoined" value="' + esc(p.joined || "") + '" maxlength="9" placeholder="2024">') +
       field("Signed from", '<input id="eFrom" value="' + esc(p.from || "") + '" maxlength="40" placeholder="Academy">') +
     "</div>",
-    '<button class="btn danger" type="button" id="eDelete" style="margin-right:auto">Remove from squad</button>' +
+    '<button class="btn danger" type="button" id="eDelete" style="margin-right:auto">Delete player &amp; stats</button>' +
     '<button class="btn" type="button" data-close>Cancel</button><button class="btn primary" type="button" id="eSave">Save</button>',
     () => {
       $("#eSave").onclick = async () => {
@@ -1829,13 +1866,35 @@ function openEditPlayer(id) {
       };
       $("#eDelete").onclick = async () => {
         modal.close();
-        if (!await askConfirm("Remove " + p.name + "?", "Every season recorded for this player goes too.", "Remove player")) return;
+        if (!await askConfirm("Delete " + p.name + " for good?",
+          "Every season recorded for them is deleted with them. To keep the record instead, close this and use Remove from squad.", "Delete player")) return;
         for (const k of Object.keys(Store.data.stats)) if (Store.data.stats[k].playerId === p.id) await Store.remove("stats", k);
         await Store.remove("players", p.id);
         location.hash = "#/";
         render();
       };
     });
+}
+
+function openLeave(id) {
+  const p = view().players[id]; if (!p) return;
+  if (demoOn()) { exitDemo(); render(); notice("Example cleared — add your own squad first.", "info"); return; }
+  openDialog("Remove " + p.name + " from the squad",
+    '<p style="margin:0">Everything they did stays on the record — appearances, goals, assists, clean sheets and the seasons they won things in. ' +
+    'They come off the squad list and the wage bill, and move to <b>Moved on</b> in the sidebar. You can bring them back whenever you like.</p>' +
+    '<div class="grid2">' +
+      field("Left in (year)", '<input id="lYear" type="number" min="1990" max="2100" value="' + (int(p.leftYear) || nowYear()) + '">') +
+      field("Moved to (optional)", '<input id="lTo" value="' + esc(p.leftTo || "") + '" maxlength="40" placeholder="Marseille">') +
+    "</div>",
+    '<button class="btn" type="button" data-close>Cancel</button>' +
+    '<button class="btn primary" type="button" id="okLeave">Remove from squad</button>',
+    () => { $("#okLeave").onclick = async () => {
+      await Store.put("players", p.id, Object.assign({}, view().players[p.id] || p, {
+        departed:true, leftYear:int($("#lYear").value) || "", leftTo:$("#lTo").value.trim()
+      }));
+      modal.close(); render();
+      notice(p.name + " left the squad — their record stays in the all-time totals.", "info");
+    }; });
 }
 
 function openContract(id) {
