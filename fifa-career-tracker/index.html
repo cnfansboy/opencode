@@ -521,6 +521,7 @@ input.cell.wide{width:88px}
 
     <section id="viewFinances" hidden></section>
     <section id="viewPlayer" hidden></section>
+    <section id="viewRoster" hidden></section>
   </div>
 </div>
 
@@ -780,6 +781,7 @@ const state = {
   route: {view:"overview", id:null},
   sort: {key:"contrib", dir:"desc"},
   fsort: {key:"weekly", dir:"desc"},
+  asort: {key:"contrib", dir:"desc"},
   notice: null,
   demoDismissed: (() => { try { return localStorage.getItem(LS_DEMO) === "1"; } catch (e) { return false; } })()
 };
@@ -821,10 +823,7 @@ function rowsFor(scope) {
   });
 }
 function squadRows(scope) {
-  const rows = rowsFor(scope);
-  if (scope === "all") return rows;
-  const d = view();
-  return rows.filter(r => !r.p.departed || d.stats[statKey(scope, r.p.id)]);
+  return rowsFor(scope).filter(r => !r.p.departed);
 }
 const leftTag = p => p.departed
   ? '<span class="chip muted left-tag">left' + (int(p.leftYear) ? " " + int(p.leftYear) : "") + "</span>"
@@ -832,13 +831,15 @@ const leftTag = p => p.departed
 function trophiesFor(scope) {
   return Object.values(view().trophies).filter(t => scope === "all" || t.seasonId === scope);
 }
-function sortRows(rows) {
-  const k = state.sort.key, dir = state.sort.dir === "asc" ? 1 : -1;
+function sortRows(rows, sort) {
+  sort = sort || state.sort;
+  const k = sort.key, dir = sort.dir === "asc" ? 1 : -1;
   return rows.slice().sort((a,b) => {
     if (k === "name") return dir * String(a.p.name).localeCompare(String(b.p.name));
     if (k === "pos") return dir * (POSITIONS.indexOf(a.p.position) - POSITIONS.indexOf(b.p.position));
     if (k === "nation") return dir * String(a.p.nationality || "￿").localeCompare(String(b.p.nationality || "￿"));
     if (k === "age") return dir * ((int(a.p.age) || 999) - (int(b.p.age) || 999));
+    if (k === "status") return dir * ((a.p.departed ? 1 : 0) - (b.p.departed ? 1 : 0));
     return dir * ((a[k] - b[k]) || String(a.p.name).localeCompare(String(b.p.name)) * -dir);
   });
 }
@@ -918,14 +919,17 @@ function render() {
   $("#viewOverview").hidden = v !== "overview";
   $("#viewFinances").hidden = v !== "finances";
   $("#viewPlayer").hidden = v !== "player";
+  $("#viewRoster").hidden = v !== "roster";
   if (v === "finances") renderFinances();
   else if (v === "player") renderPlayerPage(state.route.id);
+  else if (v === "roster") renderRoster();
   else renderOverview(scope);
 }
 
 const ICON = {
   pitch: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M12 4v16M3 9h3v6H3M21 9h-3v6h3"/><circle cx="12" cy="12" r="2.4"/></svg>',
-  coin: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><path d="M14.5 9.2A3 3 0 0 0 9.6 10c0 2.6 5 1.4 5 4a3 3 0 0 1-5.1 1M12 7v10"/></svg>'
+  coin: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><path d="M14.5 9.2A3 3 0 0 0 9.6 10c0 2.6 5 1.4 5 4a3 3 0 0 1-5.1 1M12 7v10"/></svg>',
+  roster: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><path d="M16.5 5.5A3 3 0 0 1 17 11.4M20 19a5 5 0 0 0-3.8-6.4"/></svg>'
 };
 
 function renderSidebar() {
@@ -939,19 +943,17 @@ function renderSidebar() {
     '<span>' + label + '</span>' + (meta ? '<span class="nv">' + meta + '</span>' : "") + '</a>';
   $("#sideNav").innerHTML =
     nav("#/", ICON.pitch, "Squad &amp; seasons", v === "overview", seasonList().length ? seasonList().length + " szn" : "") +
-    nav("#/finances", ICON.coin, "Wages &amp; finances", v === "finances", weekly ? money(weekly, "compact") + "/wk" : "");
-  const item = (p, gone) => '<a class="sq-item' + (gone ? " gone" : "") + '" href="#/player/' + encodeURIComponent(p.id) + '"' +
+    nav("#/finances", ICON.coin, "Wages &amp; finances", v === "finances", weekly ? money(weekly, "compact") + "/wk" : "") +
+    nav("#/roster", ICON.roster, "All-time players", v === "roster", players.length || "");
+  const item = p => '<a class="sq-item" href="#/player/' + encodeURIComponent(p.id) + '"' +
     (v === "player" && state.route.id === p.id ? ' aria-current="page"' : "") + '>' +
     posChip(p.position) + (flagFor(p.nationality) ? '<span class="sq-flag" role="img" aria-label="' + esc(p.nationality) + '">' + flagFor(p.nationality) + '</span>' : "") +
     '<span class="sq-name">' + esc(p.name) + '</span>' +
-    '<span class="sq-n">' + (gone ? (int(p.leftYear) || "") : (p.number ? "#" + esc(p.number) : "")) + '</span></a>';
-  const active = players.filter(p => !p.departed), gone = players.filter(p => p.departed);
+    '<span class="sq-n">' + (p.number ? "#" + esc(p.number) : "") + '</span></a>';
+  const active = players.filter(p => !p.departed);
   $("#squadCount").textContent = active.length || "";
-  $("#sideList").innerHTML =
-    (active.length ? active.map(p => item(p, false)).join("")
-      : '<div class="side-empty">No players yet. Add one, or import a squad screenshot.</div>') +
-    (gone.length ? '<div class="eyebrow side-sub"><span>Moved on</span><span>' + gone.length + "</span></div>" +
-      gone.map(p => item(p, true)).join("") : "");
+  $("#sideList").innerHTML = active.length ? active.map(item).join("")
+    : '<div class="side-empty">No current players. Add one, or import a squad screenshot.</div>';
 }
 
 /* ---------------- view: squad &amp; seasons -------------------------- */
@@ -1101,8 +1103,8 @@ function renderSquad(rows, cur) {
       th("assists","Assists") + th("contrib","G+A") + (showCS ? th("cs","Clean sheets") : "") +
       (showRating ? th("rating","Rating") : "") + '<th aria-label="Remove"></th></tr></thead>' +
     '<tbody>' + sorted.map(r =>
-      '<tr' + (r.p.departed ? ' class="gone"' : "") + '><td class="l p-name">' +
-      '<a class="plink" href="#/player/' + encodeURIComponent(r.p.id) + '">' + esc(r.p.name) + '</a>' + leftTag(r.p) + '</td>' +
+      '<tr><td class="l p-name">' +
+      '<a class="plink" href="#/player/' + encodeURIComponent(r.p.id) + '">' + esc(r.p.name) + '</a></td>' +
       '<td class="l">' + posChip(r.p.position) + '</td>' +
       '<td class="l">' + nationTag(r.p) + '</td>' +
       '<td class="stat age">' + (int(r.p.age) || "—") + '</td>' +
@@ -1112,16 +1114,84 @@ function renderSquad(rows, cur) {
       '<td class="stat contrib">' + fmt(r.contrib) + '</td>' +
       (showCS ? '<td class="stat">' + cell(r, "cleanSheets", r.cs) + '</td>' : "") +
       (showRating ? '<td class="stat">' + cell(r, "rating", r.rating ? Number(r.rating.toFixed(2)) : "") + '</td>' : "") +
-      '<td>' + (r.p.departed
-        ? '<button class="row-x" type="button" data-return="' + esc(r.p.id) + '" aria-label="Bring ' + esc(r.p.name) + ' back">&#8630;</button>'
-        : '<button class="row-x" type="button" data-leave="' + esc(r.p.id) + '" aria-label="Remove ' + esc(r.p.name) + ' from the squad">&times;</button>') +
-      "</td></tr>").join("") +
+      '<td><button class="row-x" type="button" data-leave="' + esc(r.p.id) + '" aria-label="Remove ' + esc(r.p.name) + ' from the squad">&times;</button></td></tr>').join("") +
     '</tbody>' +
     '<tfoot><tr><td class="l">' + (cur ? esc(cur.label) : "All seasons") + '</td><td></td><td></td><td></td>' +
       '<td>' + fmt(tot.apps) + '</td><td>' + fmt(tot.goals) + '</td><td>' + fmt(tot.assists) + '</td>' +
       '<td>' + fmt(tot.goals + tot.assists) + '</td>' +
       (showCS ? '<td class="note" style="font-size:11px">best ' + (bestSheets(sorted) || {cs:0}).cs + "</td>" : "") +
       (showRating ? '<td></td>' : "") + '<td></td></tr></tfoot>';
+}
+
+/* ---------------- view: all-time players ------------------------------ */
+function renderRoster() {
+  $("#pageTitle").textContent = "All-time players";
+  const rows = rowsFor("all");
+  const activeCount = rows.filter(r => !r.p.departed).length;
+  const goneCount = rows.length - activeCount;
+
+  if (!rows.length) {
+    $("#viewRoster").innerHTML =
+      '<div class="empty"><b>No players recorded yet</b>Add a player, or import a squad screenshot, and they land here for good — ' +
+      'even after they leave the club.</div>';
+    return;
+  }
+
+  const leader = key => rows.slice().sort((a,b) => b[key] - a[key])[0];
+  const topApps = leader("apps"), topGoals = leader("goals"), topAssists = leader("assists"), topContrib = leader("contrib");
+  const sheets = bestSheets(rows);
+  const leadSub = (top, val) => top && val ? "Most: " + esc(top.p.name) : "none recorded";
+  const tilesHtml = [
+    tile("Appearances", topApps ? topApps.apps : 0, leadSub(topApps, topApps && topApps.apps), "", "apps"),
+    tile("Goals", topGoals ? topGoals.goals : 0, leadSub(topGoals, topGoals && topGoals.goals), "", "goals"),
+    tile("Assists", topAssists ? topAssists.assists : 0, leadSub(topAssists, topAssists && topAssists.assists), "", "assists"),
+    tile("Goal contributions", topContrib ? topContrib.contrib : 0, leadSub(topContrib, topContrib && topContrib.contrib), "is-contrib", "contrib"),
+    tile("Clean sheets", sheets && sheets.cs ? sheets.cs : 0, sheets && sheets.cs ? "kept by " + esc(sheets.p.name) : "none recorded", "", "cs")
+  ].join("");
+
+  const showRating = rows.some(r => r.rating > 0);
+  const showCS = rows.some(r => r.cs > 0);
+  const sorted = sortRows(rows, state.asort);
+  const th = (key, label, cls) => {
+    const on = state.asort.key === key;
+    const caret = on ? (state.asort.dir === "asc" ? " ▲" : " ▼") : "";
+    return '<th' + (cls ? ' class="' + cls + '"' : "") + (on ? ' aria-sort="' + (state.asort.dir === "asc" ? "ascending" : "descending") + '"' : "") +
+      '><button type="button" data-asort="' + key + '">' + label + '<span class="caret">' + caret + '</span></button></th>';
+  };
+
+  const table = '<div class="table-scroll"><table style="min-width:820px"><thead><tr>' +
+      th("name","Player","l") + th("pos","Pos","l") + th("nation","Nation","l") + th("age","Age") +
+      th("status","Status","l") + th("apps","Apps") + th("goals","Goals") + th("assists","Assists") + th("contrib","G+A") +
+      (showCS ? th("cs","Clean sheets") : "") + (showRating ? th("rating","Rating") : "") +
+      '<th aria-label="Actions"></th></tr></thead><tbody>' +
+    sorted.map(r =>
+      '<tr' + (r.p.departed ? ' class="gone"' : "") + '><td class="l p-name">' +
+      '<a class="plink" href="#/player/' + encodeURIComponent(r.p.id) + '">' + esc(r.p.name) + '</a></td>' +
+      '<td class="l">' + posChip(r.p.position) + '</td>' +
+      '<td class="l">' + nationTag(r.p) + '</td>' +
+      '<td class="stat age">' + (int(r.p.age) || "—") + '</td>' +
+      '<td class="l">' + (r.p.departed ? leftTag(r.p) : '<span class="chip">current</span>') + '</td>' +
+      '<td class="stat">' + fmt(r.apps) + '</td>' +
+      '<td class="stat">' + fmt(r.goals) + '</td>' +
+      '<td class="stat">' + fmt(r.assists) + '</td>' +
+      '<td class="stat contrib">' + fmt(r.contrib) + '</td>' +
+      (showCS ? '<td class="stat">' + fmt(r.cs) + '</td>' : "") +
+      (showRating ? '<td class="stat">' + (r.rating ? r.rating.toFixed(2) : "—") + '</td>' : "") +
+      '<td>' + (r.p.departed
+        ? '<button class="row-x" type="button" data-return="' + esc(r.p.id) + '" aria-label="Bring ' + esc(r.p.name) + ' back">&#8630;</button>'
+        : '<button class="row-x" type="button" data-leave="' + esc(r.p.id) + '" aria-label="Remove ' + esc(r.p.name) + ' from the squad">&times;</button>') +
+      "</td></tr>").join("") +
+    "</tbody></table></div>";
+
+  $("#viewRoster").innerHTML =
+    '<p class="note" style="margin-bottom:14px">Every player who has been part of the club, past and present — ' +
+    activeCount + " current" + (goneCount ? ", " + goneCount + " moved on" : "") +
+    '. The <a class="plink" href="#/">squad dashboard</a> only shows who\'s at the club now; club records here cover everyone who ever played.</p>' +
+    '<section class="tiles">' + tilesHtml + "</section>" +
+    '<section class="panel"><div class="panel-head"><h2>Player roster</h2><div class="toolbar">' +
+      '<span class="note">Career totals — not tied to one season</span>' +
+      '<button class="btn ghost" type="button" id="btnPlayer3">+ Player</button>' +
+    "</div></div>" + table + "</section>";
 }
 
 /* focus survives a re-render while typing in the table */
@@ -1295,9 +1365,10 @@ function openTrophy() {
 
 const STAT_LABELS = {apps:"Appearances", goals:"Goals", assists:"Assists", contrib:"Goal contributions", cs:"Clean sheets"};
 function openStatLeaders(key) {
-  const scope = state.scope;
-  const scopeLabel = scope === "all" ? "All-time" : ((seasonById(scope) || {}).label || "");
-  const rows = rowsFor(scope).filter(r => r[key] > 0).sort((a,b) => b[key] - a[key] || String(a.p.name).localeCompare(String(b.p.name))).slice(0, 10);
+  const allTime = state.route.view === "roster";
+  const scopeLabel = allTime ? "Club record" : (state.scope === "all" ? "All-time" : ((seasonById(state.scope) || {}).label || ""));
+  const source = allTime ? rowsFor("all") : squadRows(state.scope);
+  const rows = source.filter(r => r[key] > 0).sort((a,b) => b[key] - a[key] || String(a.p.name).localeCompare(String(b.p.name))).slice(0, 10);
   const max = rows.length ? rows[0][key] : 1;
   const body = rows.length
     ? '<div class="lb">' + rows.map((r,i) => {
@@ -1322,7 +1393,7 @@ document.addEventListener("click", async e => {
   if (t.hasAttribute("data-close")) { modal.close(); return; }
   if (t.id === "btnClearDemo") { exitDemo(); render(); notice("Example cleared. Add a season to start your own career.", "info"); return; }
   if (t.id === "btnSeason") return openSeason();
-  if (t.id === "btnPlayer" || t.id === "btnPlayer2") return openPlayer();
+  if (t.id === "btnPlayer" || t.id === "btnPlayer2" || t.id === "btnPlayer3") return openPlayer();
   if (t.id === "btnTrophy" || t.id === "btnTrophy2") return openTrophy();
   if (t.id === "btnImport") return openImport();
   if (t.dataset.stattile) return openStatLeaders(t.dataset.stattile);
@@ -1337,6 +1408,13 @@ document.addEventListener("click", async e => {
     state.fsort = state.fsort.key === k
       ? {key:k, dir:state.fsort.dir === "asc" ? "desc" : "asc"}
       : {key:k, dir:k === "name" ? "asc" : "desc"};
+    render(); return;
+  }
+  if (t.dataset.asort) {
+    const k = t.dataset.asort;
+    state.asort = state.asort.key === k
+      ? {key:k, dir:state.asort.dir === "asc" ? "desc" : "asc"}
+      : {key:k, dir:(k === "name" || k === "pos" || k === "nation" || k === "status") ? "asc" : "desc"};
     render(); return;
   }
 
@@ -1808,6 +1886,7 @@ function parseHash() {
   const h = String(location.hash || "").replace(/^#\/?/, "");
   const parts = h.split("/");
   if (parts[0] === "finances") return {view:"finances", id:null};
+  if (parts[0] === "roster") return {view:"roster", id:null};
   if (parts[0] === "player" && parts[1]) return {view:"player", id:decodeURIComponent(parts[1])};
   return {view:"overview", id:null};
 }
