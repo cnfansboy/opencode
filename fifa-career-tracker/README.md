@@ -10,10 +10,15 @@ falls back to `localStorage` and hides the screenshot import.
 
 ## Mobile
 
-The page already renders as an Artifact, which scales to any screen. Under
-900px wide the sidebar becomes a slide-out drawer (the ☰ button top-left;
-tap outside it or navigate to close), wide tables scroll horizontally inside
-their own panel, and dialogs stack to one column.
+The page renders as an Artifact, which scales to any screen. Under 900px wide
+the sidebar becomes a slide-out drawer (the ☰ button top-left; tap outside it
+or navigate to close), and dialogs stack to one column. Wide, genuinely
+data-dense tables (Contracts, the All-time players roster) scroll
+horizontally inside their own panel. The player profile's season-by-season
+table is different: under 600px it drops the grid entirely and becomes a
+stack of cards, one per season, each stat as its own label/value row — still
+fully editable, just no longer squeezed into fixed columns that don't fit a
+phone screen.
 
 ## The three views
 

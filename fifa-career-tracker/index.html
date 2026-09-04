@@ -185,6 +185,31 @@ button.tile.clickable{
 
 /* ---------- squad table ---------- */
 .table-scroll{overflow-x:auto; margin:0 -16px; padding:0 16px}
+.stack-table{min-width:560px}
+@media (max-width:600px){
+  .stack-table{min-width:0; width:100%}
+  .stack-table thead{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap}
+  .stack-table, .stack-table tbody, .stack-table tfoot, .stack-table tr, .stack-table td{display:block; width:auto}
+  .stack-table tbody tr{
+    border:1px solid var(--line); border-radius:9px; padding:10px 13px 3px; margin-bottom:9px; background:var(--surface-2);
+  }
+  .stack-table tfoot tr{border-top:2px solid var(--ink); padding:12px 2px 4px; margin-top:2px}
+  .stack-table td{
+    display:flex; justify-content:space-between; align-items:center; gap:14px;
+    padding:7px 0; border-bottom:1px dashed var(--line); text-align:right;
+  }
+  .stack-table tr > td:last-child{border-bottom:0}
+  .stack-table td:empty{display:none}
+  .stack-table td[data-label]::before{
+    content:attr(data-label); font-family:"IBM Plex Mono",monospace; font-size:10.5px; letter-spacing:.08em;
+    text-transform:uppercase; color:var(--ink-3); text-align:left; flex:none;
+  }
+  .stack-table td.stat-head{
+    font-family:"Anton",Impact,sans-serif; font-weight:400; font-size:19px; text-transform:uppercase;
+    border-bottom:1px solid var(--line); padding:2px 0 9px; margin-bottom:2px; text-align:left; letter-spacing:.01em;
+  }
+  .stack-table input.cell{width:96px}
+}
 table{border-collapse:collapse; width:100%; min-width:640px}
 th{
   text-align:right; font-family:"IBM Plex Mono",monospace; font-weight:500; font-size:10.5px;
@@ -2028,22 +2053,24 @@ function renderPlayerPage(id) {
     ' value="' + (value || "") + '" aria-label="' + field + '">';
 
   const seasonTable = seasons.length
-    ? '<div class="table-scroll"><table style="min-width:560px"><thead><tr><th class="l">Season</th><th class="l">Club</th>' +
+    ? '<div class="table-scroll"><table class="stack-table"><thead><tr><th class="l">Season</th><th class="l">Club</th>' +
         "<th>Apps</th><th>Goals</th><th>Assists</th><th>G+A</th>" + (showCS ? "<th>Clean sheets</th>" : "") +
         "<th>Rating</th></tr></thead><tbody>" +
         per.map(x =>
-          '<tr><td class="l p-name">' + esc(x.s.label) + '</td><td class="l note">' + esc(x.s.club || "") +
+          '<tr><td class="l p-name stat-head">' + esc(x.s.label) + '</td>' +
+          '<td class="l note" data-label="Club">' + esc(x.s.club || "—") +
           (x.s.league ? '<div style="margin-top:3px">' + leagueTag(x.s.league) + '</div>' : "") + "</td>" +
-          '<td class="stat">' + cell(x.s.id, "apps", x.apps) + '</td>' +
-          '<td class="stat">' + cell(x.s.id, "goals", x.goals) + '</td>' +
-          '<td class="stat">' + cell(x.s.id, "assists", x.assists) + '</td>' +
-          '<td class="stat contrib">' + (x.goals + x.assists) + "</td>" +
-          (showCS ? '<td class="stat">' + cell(x.s.id, "cleanSheets", x.cs) + "</td>" : "") +
-          '<td class="stat">' + cell(x.s.id, "rating", x.rating ? Number(x.rating.toFixed(2)) : "") + "</td></tr>").join("") +
-        '</tbody><tfoot><tr><td class="l">Career</td><td></td><td>' + fmt(all.apps) + '</td><td>' + fmt(all.goals) +
-        '</td><td>' + fmt(all.assists) + '</td><td>' + fmt(all.contrib) + '</td>' +
-        (showCS ? '<td>' + fmt(all.cs) + "</td>" : "") +
-        '<td>' + (all.rating ? all.rating.toFixed(2) : "—") + "</td></tr></tfoot></table></div>"
+          '<td class="stat" data-label="Apps">' + cell(x.s.id, "apps", x.apps) + '</td>' +
+          '<td class="stat" data-label="Goals">' + cell(x.s.id, "goals", x.goals) + '</td>' +
+          '<td class="stat" data-label="Assists">' + cell(x.s.id, "assists", x.assists) + '</td>' +
+          '<td class="stat contrib" data-label="G+A">' + (x.goals + x.assists) + "</td>" +
+          (showCS ? '<td class="stat" data-label="Clean sheets">' + cell(x.s.id, "cleanSheets", x.cs) + "</td>" : "") +
+          '<td class="stat" data-label="Rating">' + cell(x.s.id, "rating", x.rating ? Number(x.rating.toFixed(2)) : "") + "</td></tr>").join("") +
+        '</tbody><tfoot><tr><td class="l stat-head">Career</td>' +
+        '<td></td><td data-label="Apps">' + fmt(all.apps) + '</td><td data-label="Goals">' + fmt(all.goals) +
+        '</td><td data-label="Assists">' + fmt(all.assists) + '</td><td data-label="G+A">' + fmt(all.contrib) + '</td>' +
+        (showCS ? '<td data-label="Clean sheets">' + fmt(all.cs) + "</td>" : "") +
+        '<td data-label="Rating">' + (all.rating ? all.rating.toFixed(2) : "—") + "</td></tr></tfoot></table></div>"
     : '<div class="empty"><b>No seasons yet</b>Add a season on the squad page and it appears here, ready to fill in.</div>';
 
   const dl = (label, value) => '<div class="dl-row"><dt>' + label + "</dt><dd>" + value + "</dd></div>";
