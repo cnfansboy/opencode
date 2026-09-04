@@ -270,7 +270,7 @@ dialog::backdrop{background:rgba(8,14,10,.55)}
 }
 .field input:focus,.field select:focus{background:var(--surface); border-color:var(--accent); outline:none}
 .grid2{display:grid; grid-template-columns:1fr 1fr; gap:12px}
-.grid4{display:grid; grid-template-columns:repeat(4,1fr); gap:10px}
+.grid4{display:grid; grid-template-columns:repeat(auto-fit,minmax(104px,1fr)); gap:10px}
 @media (max-width:560px){ .grid4{grid-template-columns:repeat(2,1fr)} .grid2{grid-template-columns:1fr} }
 .radio-row{display:flex; gap:9px; flex-wrap:wrap}
 .radio-card{
@@ -555,14 +555,14 @@ const DEMO = {
     "d1__p2":{seasonId:"d1",playerId:"p2",apps:33,goals:9,assists:17,rating:7.5},
     "d1__p3":{seasonId:"d1",playerId:"p3",apps:31,goals:11,assists:9,rating:7.2},
     "d1__p4":{seasonId:"d1",playerId:"p4",apps:38,goals:4,assists:8,rating:7.1},
-    "d1__p5":{seasonId:"d1",playerId:"p5",apps:37,goals:3,assists:1,rating:7.3},
-    "d1__p6":{seasonId:"d1",playerId:"p6",apps:38,goals:0,assists:0,rating:7.0},
+    "d1__p5":{seasonId:"d1",playerId:"p5",apps:37,goals:3,assists:1,cleanSheets:15,rating:7.3},
+    "d1__p6":{seasonId:"d1",playerId:"p6",apps:38,goals:0,assists:0,cleanSheets:16,rating:7.0},
     "d2__p1":{seasonId:"d2",playerId:"p1",apps:41,goals:31,assists:8,rating:7.9},
     "d2__p2":{seasonId:"d2",playerId:"p2",apps:39,goals:12,assists:21,rating:7.7},
     "d2__p3":{seasonId:"d2",playerId:"p3",apps:36,goals:14,assists:12,rating:7.4},
     "d2__p4":{seasonId:"d2",playerId:"p4",apps:40,goals:6,assists:9,rating:7.2},
-    "d2__p5":{seasonId:"d2",playerId:"p5",apps:42,goals:5,assists:2,rating:7.4},
-    "d2__p6":{seasonId:"d2",playerId:"p6",apps:42,goals:0,assists:1,rating:7.2}
+    "d2__p5":{seasonId:"d2",playerId:"p5",apps:42,goals:5,assists:2,cleanSheets:18,rating:7.4},
+    "d2__p6":{seasonId:"d2",playerId:"p6",apps:42,goals:0,assists:1,cleanSheets:19,rating:7.2}
   },
   trophies: {
     t1:{id:"t1",seasonId:"d1",name:"Promotion",type:"Other"},
@@ -687,14 +687,14 @@ function rowsFor(scope) {
   const d = view();
   const stats = Object.values(d.stats);
   return Object.values(d.players).map(p => {
-    let apps = 0, goals = 0, assists = 0, rw = 0, rn = 0;
+    let apps = 0, goals = 0, assists = 0, cs = 0, rw = 0, rn = 0;
     for (const s of stats) {
       if (s.playerId !== p.id) continue;
       if (scope !== "all" && s.seasonId !== scope) continue;
-      apps += int(s.apps); goals += int(s.goals); assists += int(s.assists);
+      apps += int(s.apps); goals += int(s.goals); assists += int(s.assists); cs += int(s.cleanSheets);
       if (num(s.rating) > 0) { const w = int(s.apps) || 1; rw += num(s.rating) * w; rn += w; }
     }
-    return {p:p, apps:apps, goals:goals, assists:assists, contrib:goals + assists, rating: rn ? rw / rn : 0};
+    return {p:p, apps:apps, goals:goals, assists:assists, cs:cs, contrib:goals + assists, rating: rn ? rw / rn : 0};
   });
 }
 function trophiesFor(scope) {
@@ -709,6 +709,8 @@ function sortRows(rows) {
   });
 }
 const fmt = n => Number(n).toLocaleString("en-GB");
+const keepsSheets = p => UNIT[p.position] === "gk" || UNIT[p.position] === "def";
+const bestSheets = rows => rows.slice().sort((a,b) => b.cs - a.cs)[0];
 const CURRENCIES = ["£","€","$"];
 const cur = () => (view().meta && view().meta.currency) || "£";
 function money(n, style) {
@@ -838,11 +840,13 @@ function renderOverview(scope) {
   const tot = rows.reduce((a,r) => ({apps:a.apps + r.apps, goals:a.goals + r.goals, assists:a.assists + r.assists}), {apps:0,goals:0,assists:0});
   const trophies = trophiesFor(scope);
   const best = rows.slice().sort((a,b) => b.contrib - a.contrib)[0];
+  const sheets = bestSheets(rows);
   $("#tiles").innerHTML = [
     tile("Appearances", tot.apps, rows.length + (rows.length === 1 ? " player" : " players") + " tracked"),
     tile("Goals", tot.goals, tot.apps ? (tot.goals / tot.apps).toFixed(2) + " per appearance" : "—"),
     tile("Assists", tot.assists, tot.apps ? (tot.assists / tot.apps).toFixed(2) + " per appearance" : "—"),
     tile("Goal contributions", tot.goals + tot.assists, best && best.contrib ? "Most: " + esc(best.p.name) + " (" + best.contrib + ")" : "—", "is-contrib"),
+    tile("Clean sheets", sheets && sheets.cs ? sheets.cs : 0, sheets && sheets.cs ? "kept by " + esc(sheets.p.name) : "none recorded"),
     tile("Trophies", trophies.length, trophies.length ? "Latest: " + esc(latestTrophy(trophies).name) : "none yet", "is-trophies")
   ].join("");
 
@@ -920,6 +924,7 @@ function trophyRow(t) {
 function renderSquad(rows, cur) {
   const editing = !!cur;
   const showRating = rows.some(r => r.rating > 0) || editing;
+  const showCS = rows.some(r => r.cs > 0) || editing;
   $("#squadTitle").textContent = editing ? "Squad · " + cur.label : "Squad · all-time";
   $("#editHint").textContent = editing
     ? "Changes save as you leave a box"
@@ -945,7 +950,8 @@ function renderSquad(rows, cur) {
 
   $("#squad").innerHTML =
     '<thead><tr>' + th("name","Player","l") + th("pos","Pos","l") + th("apps","Apps") + th("goals","Goals") +
-      th("assists","Assists") + th("contrib","G+A") + (showRating ? th("rating","Rating") : "") + '<th aria-label="Remove"></th></tr></thead>' +
+      th("assists","Assists") + th("contrib","G+A") + (showCS ? th("cs","Clean sheets") : "") +
+      (showRating ? th("rating","Rating") : "") + '<th aria-label="Remove"></th></tr></thead>' +
     '<tbody>' + sorted.map(r =>
       '<tr><td class="l p-name"><a class="plink" href="#/player/' + encodeURIComponent(r.p.id) + '">' + esc(r.p.name) + '</a></td>' +
       '<td class="l">' + posChip(r.p.position) + '</td>' +
@@ -953,12 +959,15 @@ function renderSquad(rows, cur) {
       '<td class="stat">' + cell(r, "goals", r.goals) + '</td>' +
       '<td class="stat">' + cell(r, "assists", r.assists) + '</td>' +
       '<td class="stat contrib">' + fmt(r.contrib) + '</td>' +
+      (showCS ? '<td class="stat">' + cell(r, "cleanSheets", r.cs) + '</td>' : "") +
       (showRating ? '<td class="stat">' + cell(r, "rating", r.rating ? Number(r.rating.toFixed(2)) : "") + '</td>' : "") +
       '<td><button class="row-x" type="button" data-delplayer="' + esc(r.p.id) + '" aria-label="Remove ' + esc(r.p.name) + '">&times;</button></td></tr>').join("") +
     '</tbody>' +
     '<tfoot><tr><td class="l">' + (cur ? esc(cur.label) : "All seasons") + '</td><td></td>' +
       '<td>' + fmt(tot.apps) + '</td><td>' + fmt(tot.goals) + '</td><td>' + fmt(tot.assists) + '</td>' +
-      '<td>' + fmt(tot.goals + tot.assists) + '</td>' + (showRating ? '<td></td>' : "") + '<td></td></tr></tfoot>';
+      '<td>' + fmt(tot.goals + tot.assists) + '</td>' +
+      (showCS ? '<td class="note" style="font-size:11px">best ' + (bestSheets(sorted) || {cs:0}).cs + "</td>" : "") +
+      (showRating ? '<td></td>' : "") + '<td></td></tr></tfoot>';
 }
 
 /* focus survives a re-render while typing in the table */
@@ -1067,6 +1076,7 @@ function openPlayer() {
       field("Apps", '<input id="fApps" type="number" min="0" step="1" placeholder="0">') +
       field("Goals", '<input id="fGoals" type="number" min="0" step="1" placeholder="0">') +
       field("Assists", '<input id="fAssists" type="number" min="0" step="1" placeholder="0">') +
+      field("Clean sheets", '<input id="fCS" type="number" min="0" step="1" placeholder="0">') +
       field("Rating", '<input id="fRating" type="number" min="0" max="10" step="0.1" placeholder="7.4">') +
       "</div><p class=\"note\">These go straight into <b>" + esc(cur.label) + "</b>. Leave them blank to add the player only.</p>"
       : '<p class="note">Add a season first if you want to record numbers — this adds the player to the squad.</p>'),
@@ -1076,9 +1086,10 @@ function openPlayer() {
       const id = uid("p");
       await Store.put("players", id, {name:name, position:$("#fPos").value});
       if (cur) {
-        const apps = int($("#fApps").value), goals = int($("#fGoals").value), assists = int($("#fAssists").value), rating = num($("#fRating").value);
-        if (apps || goals || assists || rating)
-          await Store.put("stats", statKey(cur.id, id), {seasonId:cur.id, playerId:id, apps:apps, goals:goals, assists:assists, rating:rating});
+        const apps = int($("#fApps").value), goals = int($("#fGoals").value), assists = int($("#fAssists").value);
+        const cleanSheets = int($("#fCS").value), rating = num($("#fRating").value);
+        if (apps || goals || assists || cleanSheets || rating)
+          await Store.put("stats", statKey(cur.id, id), {seasonId:cur.id, playerId:id, apps:apps, goals:goals, assists:assists, cleanSheets:cleanSheets, rating:rating});
       }
       modal.close(); render();
     }; });
@@ -1170,8 +1181,9 @@ document.addEventListener("change", async e => {
   }
   const sid = el.dataset.s || state.scope; if (sid === "all") return;
   const pid = el.dataset.p, f = el.dataset.f, key = statKey(sid, pid);
-  const cur = Store.data.stats[key] || {seasonId:sid, playerId:pid, apps:0, goals:0, assists:0, rating:0};
-  const body = {seasonId:sid, playerId:pid, apps:int(cur.apps), goals:int(cur.goals), assists:int(cur.assists), rating:num(cur.rating)};
+  const cur = Store.data.stats[key] || {seasonId:sid, playerId:pid, apps:0, goals:0, assists:0, cleanSheets:0, rating:0};
+  const body = {seasonId:sid, playerId:pid, apps:int(cur.apps), goals:int(cur.goals), assists:int(cur.assists),
+    cleanSheets:int(cur.cleanSheets), rating:num(cur.rating)};
   body[f] = f === "rating" ? Math.min(10, num(el.value)) : int(el.value);
   await Store.put("stats", key, body);
   render();
@@ -1201,15 +1213,33 @@ const IMPORT_PROMPT =
 "(a squad hub, a season stats table, a player profile, or an end-of-season summary).\n\n" +
 "Read every player row you can see and return their totals for the season shown.\n\n" +
 'Reply with ONLY a JSON object of this shape:\n' +
-'{"season":"2025/26","club":"Ashfield United","players":[{"name":"J. Okafor","position":"ST","appearances":36,"goals":24,"assists":6,"rating":7.6}],"trophies":["Premier League"]}\n\n' +
+'{"season":"2025/26","club":"Ashfield United","players":[{"name":"J. Okafor","position":"ST","appearances":36,"goals":24,"assists":6,"cleanSheets":0,"rating":7.6}],"trophies":["Premier League"]}\n\n' +
 "Rules:\n" +
 "- One entry per player row. Keep the name exactly as it appears on screen.\n" +
 "- position must be one of GK RB CB LB RWB LWB CDM CM CAM RM LM RW LW CF ST, or null if none is shown.\n" +
 "- appearances, goals and assists are whole numbers; use 0 when the column is missing or blank.\n" +
+"- cleanSheets is the clean-sheet count if the screen shows one (usually goalkeepers and defenders); use 0 otherwise.\n" +
 "- rating is the average match rating out of 10, or null if not shown.\n" +
 "- season is the season label if visible (e.g. \"2025/26\"), otherwise null. club is the team name if visible, otherwise null.\n" +
 "- trophies: only competitions the screenshot clearly shows as won; otherwise an empty array.\n" +
 "- Never invent a player, a number or a competition. If a value is unreadable, use null.";
+
+const WAGE_PROMPT =
+"These images are screenshots from an EA SPORTS FC / FIFA Career Mode screen showing player CONTRACTS — " +
+"a squad hub with a wage column, a contract negotiation screen, a transfer list or a player's contract tab.\n\n" +
+"Read every player row you can see and return their contract terms.\n\n" +
+'Reply with ONLY a JSON object of this shape:\n' +
+'{"currency":"£","club":"Ashfield United","players":[{"name":"J. Okafor","position":"ST","weeklyWage":78000,"contractUntil":2029,"value":52000000}]}\n\n' +
+"Rules:\n" +
+"- One entry per player row. Keep the name exactly as it appears on screen.\n" +
+"- weeklyWage is the wage PER WEEK as a plain number of currency units: \"£78K\" is 78000, \"€1.2M\" is 1200000. " +
+"If only a yearly salary is shown, divide it by 52 and round. Use null when no wage is shown.\n" +
+"- contractUntil is the year the contract runs to: \"2029\" or \"30 Jun 2029\" is 2029. " +
+"A length like \"3 years\" is not a year — use null for it.\n" +
+"- value is the market or transfer value as a plain number, or null.\n" +
+"- currency is the symbol on screen (£, € or $), or null.\n" +
+"- position must be one of GK RB CB LB RWB LWB CDM CM CAM RM LM RW LW CF ST, or null if none is shown.\n" +
+"- Never invent a player or a number. If a value is unreadable, use null.";
 
 const SAMPLE_COPY = {
   not_granted: "You declined Claude access for this page, so screenshots can't be read here. Type the numbers in instead.",
@@ -1226,13 +1256,16 @@ const SAMPLE_COPY = {
   cancelled: "Stopped."
 };
 
-const imp = {step:"pick", files:[], rows:[], trophies:[], mode:"add", seasonId:null, newLabel:"", busy:false, ctl:null, error:"", found:null};
+const imp = {step:"pick", kind:"stats", files:[], rows:[], trophies:[], mode:"add", seasonId:null, newLabel:"",
+  busy:false, ctl:null, error:"", found:null, currency:null, setCurrency:true};
 
 function openImport() {
   guard();
   imp.files.forEach(f => URL.revokeObjectURL(f.url));
   imp.step = "pick"; imp.files = []; imp.rows = []; imp.trophies = []; imp.mode = "add";
   imp.busy = false; imp.error = ""; imp.found = null; imp.newLabel = nextSeasonLabel();
+  imp.kind = state.route.view === "finances" ? "wages" : "stats";
+  imp.currency = null; imp.setCurrency = true;
   imp.seasonId = state.scope !== "all" ? state.scope : ((seasonList().slice(-1)[0] || {}).id || "__new");
   onClose = () => { imp.files.forEach(f => URL.revokeObjectURL(f.url)); imp.files = []; };
   renderImport();
@@ -1248,13 +1281,23 @@ function renderImport() {
         ? "This view can't send images to Claude, so screenshots can't be read here."
         : "Reading screenshots needs Claude, which isn't available in this view.") +
       " Everything can still be typed in by hand.</span></div>") +
-    '<div class="grid2">' +
-      field("Season to fill", '<select id="impSeason">' + seasonOptions(imp.seasonId, true) + "</select>") +
-      (imp.seasonId === "__new" ? field("New season label", '<input id="impLabel" value="' + esc(imp.newLabel) + '" maxlength="16">') : "<div></div>") +
+    '<div class="radio-row">' +
+      '<label class="radio-card"><input type="radio" name="impkind" value="stats"' + (imp.kind === "stats" ? " checked" : "") + '>' +
+        '<span><span class="rc-t">Season stats</span><span class="rc-d">Apps, goals, assists, clean sheets, rating — filed under one season.</span></span></label>' +
+      '<label class="radio-card"><input type="radio" name="impkind" value="wages"' + (imp.kind === "wages" ? " checked" : "") + '>' +
+        '<span><span class="rc-t">Wages &amp; contracts</span><span class="rc-d">Weekly wage, contract expiry, market value — the player\'s current terms.</span></span></label>' +
     "</div>" +
+    (imp.kind === "stats"
+      ? '<div class="grid2">' +
+          field("Season to fill", '<select id="impSeason">' + seasonOptions(imp.seasonId, true) + "</select>") +
+          (imp.seasonId === "__new" ? field("New season label", '<input id="impLabel" value="' + esc(imp.newLabel) + '" maxlength="16">') : "<div></div>") +
+        "</div>"
+      : '<p class="note">Contracts are current terms, so they are not filed under a season. Anything the shot does not show is left as it is.</p>') +
     '<div class="drop" id="drop" tabindex="0" role="button" aria-label="Choose screenshots">' +
       '<div class="d-t">Drop screenshots here, or click to choose</div>' +
-      '<div class="note">Squad stats tables, player profiles, end-of-season summaries — up to ' + maxN + ' at a time. ' +
+      '<div class="note">' + (imp.kind === "wages"
+        ? "Squad hub with a wage column, contract screens, transfer lists"
+        : "Squad stats tables, player profiles, end-of-season summaries") + ' — up to ' + maxN + ' at a time. ' +
       'Claude reads the names and numbers; you check them before anything is saved.</div>' +
       '<input type="file" id="impFiles" accept="' + accept + '" multiple hidden>' +
     "</div>" +
@@ -1270,6 +1313,7 @@ function renderImport() {
       '<button class="btn primary" type="button" id="impGo"' + (imp.files.length && sampleFn && imageLimits ? "" : " disabled") + ">Read screenshots</button>";
 
   openDialog("Import from screenshots", body, foot, () => {
+    dlgBody.querySelectorAll('input[name="impkind"]').forEach(c => c.onchange = () => { imp.kind = c.value; imp.error = ""; renderImport(); });
     const sel = $("#impSeason");
     if (sel) sel.onchange = () => { imp.seasonId = sel.value; renderImport(); };
     const lab = $("#impLabel");
@@ -1310,25 +1354,45 @@ async function readShots() {
   imp.busy = true; imp.error = ""; imp.ctl = new AbortController();
   renderImport();
   try {
-    const out = await sampleFn.json(IMPORT_PROMPT, {
+    const out = await sampleFn.json(imp.kind === "wages" ? WAGE_PROMPT : IMPORT_PROMPT, {
       images: imp.files.map(f => f.file),
       modelTier: "default",
       signal: imp.ctl.signal
     });
     const players = (out && Array.isArray(out.players)) ? out.players : [];
-    if (!players.length) { imp.busy = false; imp.error = "No player rows were found in that image. Try a screenshot of the stats table itself."; return renderImport(); }
+    if (!players.length) {
+      imp.busy = false;
+      imp.error = imp.kind === "wages"
+        ? "No contract rows were found in that image. Try a shot that shows the wage column."
+        : "No player rows were found in that image. Try a screenshot of the stats table itself.";
+      return renderImport();
+    }
     imp.found = {season: out.season || null, club: out.club || null, shots: imp.files.length};
-    imp.trophies = (Array.isArray(out.trophies) ? out.trophies : []).filter(Boolean).map(n => ({name:String(n).slice(0,48), on:true}));
-    imp.rows = players.slice(0, 60).map(r => {
+    const base = r => {
       const name = String(r && r.name != null ? r.name : "").trim().slice(0,40);
       const match = Object.values(Store.data.players).find(p => norm(p.name) === norm(name));
       const pos = POSITIONS.indexOf(String(r && r.position || "").toUpperCase()) >= 0 ? String(r.position).toUpperCase() : (match ? match.position : "");
-      return {
-        name: name, position: pos, playerId: match ? match.id : "__new", include: !!name,
+      return {name:name, position:pos, playerId: match ? match.id : "__new", include: !!name};
+    };
+    if (imp.kind === "wages") {
+      imp.currency = CURRENCIES.indexOf(out && out.currency) >= 0 ? out.currency : null;
+      imp.setCurrency = !!imp.currency && imp.currency !== cur();
+      imp.trophies = [];
+      imp.rows = players.slice(0, 60).map(r => {
+        const yr = int(r && r.contractUntil);
+        return Object.assign(base(r), {
+          wage: r && r.weeklyWage != null ? Math.round(num(r.weeklyWage)) : null,
+          expiry: yr >= 1990 && yr <= 2100 ? yr : null,
+          value: r && r.value != null ? Math.round(num(r.value)) : null
+        });
+      }).filter(r => r.name);
+    } else {
+      imp.trophies = (Array.isArray(out.trophies) ? out.trophies : []).filter(Boolean).map(n => ({name:String(n).slice(0,48), on:true}));
+      imp.rows = players.slice(0, 60).map(r => Object.assign(base(r), {
         apps: int(r && r.appearances), goals: int(r && r.goals), assists: int(r && r.assists),
-        rating: Math.min(10, num(r && r.rating))
-      };
-    }).filter(r => r.name);
+        cs: int(r && r.cleanSheets), rating: Math.min(10, num(r && r.rating))
+      })).filter(r => r.name);
+    }
     imp.busy = false; imp.step = "review"; renderImport();
   } catch (e) {
     imp.busy = false;
@@ -1343,6 +1407,7 @@ function targetSeasonLabel() {
 }
 
 function renderImportReview() {
+  if (imp.kind === "wages") return renderWagesReview();
   const sid = imp.seasonId;
   const curVal = (pid, f) => {
     if (sid === "__new" || pid === "__new") return 0;
@@ -1361,6 +1426,7 @@ function renderImportReview() {
       '<td><input class="n" type="number" min="0" data-f="apps" data-i="' + i + '" value="' + r.apps + '"></td>' +
       '<td><input class="n" type="number" min="0" data-f="goals" data-i="' + i + '" value="' + r.goals + '"></td>' +
       '<td><input class="n" type="number" min="0" data-f="assists" data-i="' + i + '" value="' + r.assists + '"></td>' +
+      '<td><input class="n" type="number" min="0" data-f="cs" data-i="' + i + '" value="' + r.cs + '"></td>' +
       '<td class="delta">' + (before || imp.mode === "replace"
         ? curVal(r.playerId,"goals") + "+" + curVal(r.playerId,"assists") + " → " + (nextOf("goals") + nextOf("assists"))
         : "new · " + (r.goals + r.assists) + " G+A") + "</td></tr>";
@@ -1380,7 +1446,7 @@ function renderImportReview() {
         '<span><span class="rc-t">Replace the season</span><span class="rc-d">Overwrites the season with exactly these totals.</span></span></label>' +
     "</div>" +
     '<div class="table-scroll"><table class="review-table"><thead><tr><th></th><th class="l">Name</th><th>Pos</th><th class="l">Goes to</th>' +
-      "<th>Apps</th><th>Goals</th><th>Assists</th><th>G+A after</th></tr></thead><tbody>" +
+      "<th>Apps</th><th>Goals</th><th>Assists</th><th>CS</th><th>G+A after</th></tr></thead><tbody>" +
       imp.rows.map(rowHtml).join("") + "</tbody></table></div>" +
     (imp.trophies.length ? '<div class="field"><label>Trophies spotted</label><div class="radio-row">' +
       imp.trophies.map((t,i) => '<label class="radio-card"><input type="checkbox" data-trophy="' + i + '"' + (t.on ? " checked" : "") + '>' +
@@ -1404,7 +1470,84 @@ function renderImportReview() {
   });
 }
 
+function renderWagesReview() {
+  const players = Object.values(Store.data.players);
+  const found = imp.found || {shots:0};
+  const rowHtml = (r,i) => {
+    const yrs = r.expiry ? r.expiry - nowYear() : null;
+    const p = r.playerId === "__new" ? null : Store.data.players[r.playerId];
+    return '<tr class="' + (r.include ? "" : "off") + '">' +
+      '<td><input type="checkbox" data-inc="' + i + '"' + (r.include ? " checked" : "") + ' aria-label="Include ' + esc(r.name) + '"></td>' +
+      '<td class="l"><input type="text" data-name="' + i + '" value="' + esc(r.name) + '"></td>' +
+      '<td><select data-pos="' + i + '">' + positionOptions(r.position) + "</select></td>" +
+      '<td><select data-pid="' + i + '"><option value="__new"' + (r.playerId === "__new" ? " selected" : "") + ">+ New player</option>" +
+        players.map(x => '<option value="' + esc(x.id) + '"' + (r.playerId === x.id ? " selected" : "") + ">" + esc(x.name) + "</option>").join("") + "</select></td>" +
+      '<td><input class="n" style="width:96px" type="number" min="0" step="500" data-w="' + i + '" value="' + (r.wage == null ? "" : r.wage) + '" placeholder="' + (p && num(p.wage) ? p.wage : "—") + '"></td>' +
+      '<td><input class="n" style="width:70px" type="number" min="1990" max="2100" data-e="' + i + '" value="' + (r.expiry == null ? "" : r.expiry) + '" placeholder="' + (p && int(p.expiry) ? p.expiry : "—") + '"></td>' +
+      '<td><input class="n" style="width:110px" type="number" min="0" step="100000" data-v="' + i + '" value="' + (r.value == null ? "" : r.value) + '" placeholder="' + (p && num(p.value) ? p.value : "—") + '"></td>' +
+      '<td>' + (yrs === null ? '<span class="delta">unchanged</span>' : leftChip(yrs)) + "</td></tr>";
+  };
+  const n = imp.rows.filter(r => r.include).length;
+
+  const body =
+    '<p class="note">Read <b>' + imp.rows.length + "</b> contract" + (imp.rows.length === 1 ? "" : "s") + " from " + found.shots +
+      " screenshot" + (found.shots === 1 ? "" : "s") + ". Wages are per week" +
+      (imp.currency ? " in <b>" + esc(imp.currency) + "</b>" : "") + "; a box left blank keeps the value the player already has.</p>" +
+    (imp.currency && imp.currency !== cur()
+      ? '<label class="radio-card" style="max-width:none"><input type="checkbox" id="impCur"' + (imp.setCurrency ? " checked" : "") + ">" +
+        '<span><span class="rc-t">Switch the club currency to ' + esc(imp.currency) + '</span>' +
+        '<span class="rc-d">Your ledger is in ' + esc(cur()) + " at the moment.</span></span></label>"
+      : "") +
+    '<div class="table-scroll"><table class="review-table" style="min-width:720px"><thead><tr><th></th><th class="l">Name</th><th>Pos</th>' +
+      '<th class="l">Goes to</th><th>Weekly (' + esc(imp.currency || cur()) + ')</th><th>Expires</th><th>Value</th><th>Contract</th>' +
+      "</tr></thead><tbody>" + imp.rows.map(rowHtml).join("") + "</tbody></table></div>" +
+    (imp.error ? '<p class="err">' + esc(imp.error) + "</p>" : "");
+
+  const foot = '<button class="btn" type="button" id="impBack">Back</button>' +
+    '<button class="btn primary" type="button" id="impApply"' + (n ? "" : " disabled") + ">Save " + n + " contract" + (n === 1 ? "" : "s") + "</button>";
+
+  openDialog("Check the contracts", body, foot, () => {
+    dlgBody.querySelectorAll("[data-inc]").forEach(c => c.onchange = () => { imp.rows[+c.dataset.inc].include = c.checked; renderWagesReview(); });
+    dlgBody.querySelectorAll("[data-name]").forEach(c => c.onchange = () => { imp.rows[+c.dataset.name].name = c.value.trim(); });
+    dlgBody.querySelectorAll("[data-pos]").forEach(c => c.onchange = () => { imp.rows[+c.dataset.pos].position = c.value; });
+    dlgBody.querySelectorAll("[data-pid]").forEach(c => c.onchange = () => { imp.rows[+c.dataset.pid].playerId = c.value; renderWagesReview(); });
+    dlgBody.querySelectorAll("[data-w]").forEach(c => c.onchange = () => { imp.rows[+c.dataset.w].wage = c.value === "" ? null : Math.round(num(c.value)); });
+    dlgBody.querySelectorAll("[data-e]").forEach(c => c.onchange = () => { imp.rows[+c.dataset.e].expiry = c.value === "" ? null : int(c.value); renderWagesReview(); });
+    dlgBody.querySelectorAll("[data-v]").forEach(c => c.onchange = () => { imp.rows[+c.dataset.v].value = c.value === "" ? null : Math.round(num(c.value)); });
+    const cc = $("#impCur"); if (cc) cc.onchange = () => { imp.setCurrency = cc.checked; };
+    $("#impBack").onclick = () => { imp.step = "pick"; renderImport(); };
+    $("#impApply").onclick = applyWages;
+  });
+}
+
+async function applyWages() {
+  const btn = $("#impApply"); if (btn) { btn.disabled = true; btn.textContent = "Saving…"; }
+  if (imp.setCurrency && imp.currency && imp.currency !== cur()) await Store.setMeta({currency: imp.currency});
+  let saved = 0;
+  for (const r of imp.rows) {
+    if (!r.include || !r.name) continue;
+    let pid = r.playerId;
+    if (pid === "__new" || !Store.data.players[pid]) {
+      pid = uid("p");
+      await Store.put("players", pid, {name:r.name, position:r.position});
+    }
+    const p = Store.data.players[pid];
+    const patch = Object.assign({}, p);
+    if (r.position && !p.position) patch.position = r.position;
+    if (r.wage != null) patch.wage = r.wage;
+    if (r.expiry != null) patch.expiry = r.expiry;
+    if (r.value != null) patch.value = r.value;
+    await Store.put("players", pid, patch);
+    saved++;
+  }
+  modal.close();
+  if (state.route.view !== "finances") location.hash = "#/finances";
+  else render();
+  notice("Saved " + saved + " contract" + (saved === 1 ? "" : "s") + ".", "info");
+}
+
 async function applyImport() {
+  if (imp.kind === "wages") return applyWages();
   const btn = $("#impApply"); if (btn) { btn.disabled = true; btn.textContent = "Saving…"; }
   let sid = imp.seasonId;
   if (sid === "__new") {
@@ -1424,10 +1567,11 @@ async function applyImport() {
       if (r.position && p.position !== r.position) await Store.put("players", pid, Object.assign({}, p, {position:r.position}));
     }
     const key = statKey(sid, pid);
-    const cur = Store.data.stats[key] || {apps:0, goals:0, assists:0, rating:0};
+    const prev = Store.data.stats[key] || {apps:0, goals:0, assists:0, cleanSheets:0, rating:0};
     const body = imp.mode === "add"
-      ? {seasonId:sid, playerId:pid, apps:int(cur.apps) + r.apps, goals:int(cur.goals) + r.goals, assists:int(cur.assists) + r.assists, rating: r.rating || num(cur.rating)}
-      : {seasonId:sid, playerId:pid, apps:r.apps, goals:r.goals, assists:r.assists, rating:r.rating};
+      ? {seasonId:sid, playerId:pid, apps:int(prev.apps) + r.apps, goals:int(prev.goals) + r.goals,
+         assists:int(prev.assists) + r.assists, cleanSheets:int(prev.cleanSheets) + r.cs, rating: r.rating || num(prev.rating)}
+      : {seasonId:sid, playerId:pid, apps:r.apps, goals:r.goals, assists:r.assists, cleanSheets:r.cs, rating:r.rating};
     await Store.put("stats", key, body);
     added++;
   }
@@ -1565,12 +1709,13 @@ function renderPlayerPage(id) {
   }
   $("#pageTitle").textContent = "Player profile";
   const seasons = seasonList();
-  const all = rowsFor("all").find(r => r.p.id === id) || {apps:0, goals:0, assists:0, contrib:0, rating:0};
+  const all = rowsFor("all").find(r => r.p.id === id) || {apps:0, goals:0, assists:0, cs:0, contrib:0, rating:0};
   const fin = finRows().find(r => r.p.id === id);
   const per = seasons.map(s => {
     const st = d.stats[statKey(s.id, p.id)] || {};
-    return {s:s, apps:int(st.apps), goals:int(st.goals), assists:int(st.assists), rating:num(st.rating)};
+    return {s:s, apps:int(st.apps), goals:int(st.goals), assists:int(st.assists), cs:int(st.cleanSheets), rating:num(st.rating)};
   });
+  const showCS = keepsSheets(p) || all.cs > 0;
   const played = per.filter(x => x.apps > 0);
   const honours = played.reduce((acc,x) => acc.concat(Object.values(d.trophies).filter(t => t.seasonId === x.s.id)), []);
 
@@ -1581,17 +1726,20 @@ function renderPlayerPage(id) {
 
   const seasonTable = seasons.length
     ? '<div class="table-scroll"><table style="min-width:560px"><thead><tr><th class="l">Season</th><th class="l">Club</th>' +
-        "<th>Apps</th><th>Goals</th><th>Assists</th><th>G+A</th><th>Rating</th></tr></thead><tbody>" +
+        "<th>Apps</th><th>Goals</th><th>Assists</th><th>G+A</th>" + (showCS ? "<th>Clean sheets</th>" : "") +
+        "<th>Rating</th></tr></thead><tbody>" +
         per.map(x =>
           '<tr><td class="l p-name">' + esc(x.s.label) + '</td><td class="l note">' + esc(x.s.club || "") + "</td>" +
           '<td class="stat">' + cell(x.s.id, "apps", x.apps) + '</td>' +
           '<td class="stat">' + cell(x.s.id, "goals", x.goals) + '</td>' +
           '<td class="stat">' + cell(x.s.id, "assists", x.assists) + '</td>' +
           '<td class="stat contrib">' + (x.goals + x.assists) + "</td>" +
+          (showCS ? '<td class="stat">' + cell(x.s.id, "cleanSheets", x.cs) + "</td>" : "") +
           '<td class="stat">' + cell(x.s.id, "rating", x.rating ? Number(x.rating.toFixed(2)) : "") + "</td></tr>").join("") +
         '</tbody><tfoot><tr><td class="l">Career</td><td></td><td>' + fmt(all.apps) + '</td><td>' + fmt(all.goals) +
-        '</td><td>' + fmt(all.assists) + '</td><td>' + fmt(all.contrib) + '</td><td>' + (all.rating ? all.rating.toFixed(2) : "—") +
-        "</td></tr></tfoot></table></div>"
+        '</td><td>' + fmt(all.assists) + '</td><td>' + fmt(all.contrib) + '</td>' +
+        (showCS ? '<td>' + fmt(all.cs) + "</td>" : "") +
+        '<td>' + (all.rating ? all.rating.toFixed(2) : "—") + "</td></tr></tfoot></table></div>"
     : '<div class="empty"><b>No seasons yet</b>Add a season on the squad page and it appears here, ready to fill in.</div>';
 
   const dl = (label, value) => '<div class="dl-row"><dt>' + label + "</dt><dd>" + value + "</dd></div>";
@@ -1645,6 +1793,7 @@ function renderPlayerPage(id) {
       tile("Goals", all.goals, all.apps ? (all.goals / all.apps).toFixed(2) + " per appearance" : "—"),
       tile("Assists", all.assists, all.apps ? (all.assists / all.apps).toFixed(2) + " per appearance" : "—"),
       tile("Goal contributions", all.contrib, all.apps ? (all.contrib / all.apps).toFixed(2) + " per appearance" : "—", "is-contrib"),
+      (showCS ? tile("Clean sheets", all.cs, all.apps ? Math.round(all.cs / all.apps * 100) + "% of appearances" : "—") : ""),
       tileText("Avg rating", all.rating ? all.rating.toFixed(2) : "—", "weighted by appearances")
     ].join("") + "</section>" +
     '<div class="duo"><section class="panel"><div class="panel-head"><h2>Season by season</h2>' +

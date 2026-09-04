@@ -16,7 +16,10 @@ to open that player.
 **Squad & seasons** (the default)
 
 - **Players** — name, position (GK / DEF / MID / ATT, colour-coded), shirt number.
-- **Per season** — appearances, goals, assists and average match rating.
+- **Per season** — appearances, goals, assists, clean sheets and average match rating.
+  The clean-sheet column appears once anyone has one, and on a keeper's or
+  defender's profile always; the squad total shows the best individual tally
+  rather than a sum, since a shut-out belongs to the whole back line.
 - **All-time** — every season added up; this is what loads first.
 - **Goal contributions** — G+A per player, with a top-five leaderboard and per-appearance rate.
 - **Trophies** — competition, type and the season it was won, grouped in the cabinet.
@@ -38,11 +41,22 @@ deals with the club share, and the honours won in seasons they played.
 1. **Type them in.** Pick a season in the rail and edit the squad table directly;
    each box saves when you leave it. "Add player" can take a player's numbers at
    the same time.
-2. **Import a screenshot.** "Import screenshot" sends squad or player-stats
-   screenshots to Claude, which reads the rows. Every row is shown for checking
-   before anything saves — you can rename, re-point a row at an existing player,
-   fix a number, or drop it. Choose **Add on top** to add the numbers to what the
-   season already holds, or **Replace the season** to overwrite it.
+2. **Import a screenshot.** "Import screenshot" sends screenshots to Claude,
+   which reads the rows. Two kinds, picked in the dialog (it defaults to whichever
+   suits the page you came from):
+
+   - **Season stats** — apps, goals, assists, clean sheets and rating, filed under
+     one season. Choose **Add on top** to add to what the season already holds, or
+     **Replace the season** to overwrite it. Competitions the shot shows as won can
+     come in as trophies at the same time.
+   - **Wages & contracts** — weekly wage, contract expiry year and market value.
+     Wages written as "£78K" or "€1.2M" come back as plain numbers, a yearly salary
+     is converted to weekly, and a currency it spots can be adopted as the club's.
+     Only what the shot actually shows is written; blank fields keep their current
+     value.
+
+   Either way every row is shown for checking before anything saves — rename it,
+   re-point it at an existing player, fix a number, or drop it.
 
 ## Data
 
