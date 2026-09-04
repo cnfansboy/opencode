@@ -15,7 +15,11 @@ to open that player.
 
 **Squad & seasons** (the default)
 
-- **Players** — name, position (GK / DEF / MID / ATT, colour-coded), shirt number.
+- **Players** — name, position (GK / DEF / MID / ATT, colour-coded), shirt number, age
+  and nationality. Nationality is typed with autocomplete over ~165 countries (plus
+  the four UK nations) and shows as a flag everywhere a player is listed — the
+  squad table, the sidebar, the contracts table and their profile. A country
+  outside that list is still saved and shown as plain text, just without a flag.
 - **Per season** — appearances, goals, assists, clean sheets and average match rating.
   The clean-sheet column appears once anyone has one, and on a keeper's or
   defender's profile always; the squad total shows the best individual tally

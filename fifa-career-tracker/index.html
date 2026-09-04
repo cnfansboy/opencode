@@ -191,7 +191,7 @@ td{padding:9px 8px; border-bottom:1px solid var(--line); text-align:right; verti
 td:first-child,td.l{text-align:left}
 tbody tr:hover{background:var(--surface-2)}
 tbody tr:last-child td{border-bottom:0}
-.p-name{font-weight:600; font-size:14px}
+.p-name{font-weight:600; font-size:14px; white-space:nowrap}
 .pos{
   display:inline-block; min-width:34px; text-align:center; padding:2px 6px; border-radius:4px;
   font-family:"IBM Plex Mono",monospace; font-size:10.5px; font-weight:600; letter-spacing:.06em;
@@ -339,6 +339,13 @@ dialog::backdrop{background:rgba(8,14,10,.55)}
 .sq-item.gone .sq-name{color:var(--ink-3); font-weight:400}
 .left-tag{margin-left:7px; vertical-align:1px}
 tr.gone td.l .plink{color:var(--ink-2)}
+.nation{display:inline-flex; align-items:center; gap:6px; max-width:132px}
+.nation.muted{color:var(--ink-3)}
+.nation-name{overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:13px}
+.flag,.flag-fallback{font-size:15px; line-height:1; flex:none}
+.flag-fallback{opacity:.45; font-size:13px}
+.sq-flag{margin-right:2px; font-size:13px; flex:none}
+td.stat.age{font-family:"IBM Plex Mono",monospace}
 .side-foot{padding:11px 14px; border-top:1px solid var(--line)}
 .main{min-width:0; padding:18px 22px 90px}
 .topbar{display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:16px}
@@ -529,6 +536,69 @@ const num = v => { const n = Number(v); return Number.isFinite(n) && n > 0 ? n :
 const int = v => Math.max(0, Math.round(num(v)));
 const norm = s => String(s||"").toLowerCase().replace(/[^a-z]/g,"");
 
+/* ---------------- nations -------------------------------------------- */
+const ISO = {
+  "Afghanistan":"AF","Albania":"AL","Algeria":"DZ","Andorra":"AD","Angola":"AO","Argentina":"AR","Armenia":"AM",
+  "Australia":"AU","Austria":"AT","Azerbaijan":"AZ","Bahrain":"BH","Bangladesh":"BD","Belarus":"BY","Belgium":"BE",
+  "Belize":"BZ","Benin":"BJ","Bermuda":"BM","Bhutan":"BT","Bolivia":"BO","Bosnia and Herzegovina":"BA","Botswana":"BW",
+  "Brazil":"BR","Bulgaria":"BG","Burkina Faso":"BF","Burundi":"BI","Cambodia":"KH","Cameroon":"CM","Canada":"CA",
+  "Cape Verde":"CV","Central African Republic":"CF","Chad":"TD","Chile":"CL","China":"CN","Colombia":"CO","Comoros":"KM",
+  "Congo":"CG","DR Congo":"CD","Costa Rica":"CR","Croatia":"HR","Cuba":"CU","Curacao":"CW","Cyprus":"CY","Czech Republic":"CZ",
+  "Denmark":"DK","Djibouti":"DJ","Dominican Republic":"DO","Ecuador":"EC","Egypt":"EG","El Salvador":"SV","England":"GB-ENG",
+  "Equatorial Guinea":"GQ","Eritrea":"ER","Estonia":"EE","Eswatini":"SZ","Ethiopia":"ET","Faroe Islands":"FO","Fiji":"FJ",
+  "Finland":"FI","France":"FR","Gabon":"GA","Gambia":"GM","Georgia":"GE","Germany":"DE","Ghana":"GH","Gibraltar":"GI",
+  "Greece":"GR","Greenland":"GL","Guatemala":"GT","Guinea":"GN","Guinea-Bissau":"GW","Guyana":"GY","Haiti":"HT",
+  "Honduras":"HN","Hong Kong":"HK","Hungary":"HU","Iceland":"IS","India":"IN","Indonesia":"ID","Iran":"IR","Iraq":"IQ",
+  "Ireland":"IE","Israel":"IL","Italy":"IT","Ivory Coast":"CI","Jamaica":"JM","Japan":"JP","Jordan":"JO","Kazakhstan":"KZ",
+  "Kenya":"KE","Kosovo":"XK","Kuwait":"KW","Kyrgyzstan":"KG","Laos":"LA","Latvia":"LV","Lebanon":"LB","Lesotho":"LS",
+  "Liberia":"LR","Libya":"LY","Liechtenstein":"LI","Lithuania":"LT","Luxembourg":"LU","Madagascar":"MG","Malawi":"MW",
+  "Malaysia":"MY","Mali":"ML","Malta":"MT","Mauritania":"MR","Mauritius":"MU","Mexico":"MX","Moldova":"MD","Monaco":"MC",
+  "Mongolia":"MN","Montenegro":"ME","Morocco":"MA","Mozambique":"MZ","Myanmar":"MM","Namibia":"NA","Nepal":"NP",
+  "Netherlands":"NL","New Zealand":"NZ","Nicaragua":"NI","Niger":"NE","Nigeria":"NG","North Korea":"KP",
+  "North Macedonia":"MK","Northern Ireland":"GB-NIR","Norway":"NO","Oman":"OM","Pakistan":"PK","Palestine":"PS",
+  "Panama":"PA","Papua New Guinea":"PG","Paraguay":"PY","Peru":"PE","Philippines":"PH","Poland":"PL","Portugal":"PT",
+  "Puerto Rico":"PR","Qatar":"QA","Romania":"RO","Russia":"RU","Rwanda":"RW","San Marino":"SM","Saudi Arabia":"SA",
+  "Scotland":"GB-SCT","Senegal":"SN","Serbia":"RS","Sierra Leone":"SL","Singapore":"SG","Slovakia":"SK","Slovenia":"SI",
+  "Somalia":"SO","South Africa":"ZA","South Korea":"KR","South Sudan":"SS","Spain":"ES","Sri Lanka":"LK","Sudan":"SD",
+  "Suriname":"SR","Sweden":"SE","Switzerland":"CH","Syria":"SY","Taiwan":"TW","Tajikistan":"TJ","Tanzania":"TZ",
+  "Thailand":"TH","Togo":"TG","Trinidad and Tobago":"TT","Tunisia":"TN","Turkey":"TR","Turkmenistan":"TM","Uganda":"UG",
+  "Ukraine":"UA","United Arab Emirates":"AE","United States":"US","Uruguay":"UY","Uzbekistan":"UZ","Vanuatu":"VU",
+  "Venezuela":"VE","Vietnam":"VN","Wales":"GB-WLS","Yemen":"YE","Zambia":"ZM","Zimbabwe":"ZW"
+};
+const NAT_ALIAS = {
+  "USA":"United States","America":"United States","United States of America":"United States",
+  "UK":"England","Britain":"England","Great Britain":"England","United Kingdom":"England",
+  "Korea Republic":"South Korea","Republic of Korea":"South Korea","DPR Korea":"North Korea",
+  "Cote d'Ivoire":"Ivory Coast","Côte d'Ivoire":"Ivory Coast",
+  "Democratic Republic of Congo":"DR Congo","Congo DR":"DR Congo","Zaire":"DR Congo",
+  "Republic of Congo":"Congo","Congo Brazzaville":"Congo",
+  "Czechia":"Czech Republic","Bosnia":"Bosnia and Herzegovina","UAE":"United Arab Emirates",
+  "Holland":"Netherlands","Burma":"Myanmar","Cape Verde Islands":"Cape Verde",
+  "Trinidad":"Trinidad and Tobago","State of Palestine":"Palestine"
+};
+function flagEmoji(code) {
+  if (code === "GB-ENG") return "🏴󠁧󠁢󠁥󠁮󠁧󠁿";
+  if (code === "GB-SCT") return "🏴󠁧󠁢󠁳󠁣󠁴󠁿";
+  if (code === "GB-WLS") return "🏴󠁧󠁢󠁷󠁬󠁳󠁿";
+  if (code === "GB-NIR") return "\u{1F1EC}\u{1F1E7}";
+  if (!code || code.length !== 2) return "";
+  return String.fromCodePoint(...[...code.toUpperCase()].map(c => 127397 + c.charCodeAt(0)));
+}
+const NAT_FLAG = {};
+Object.keys(ISO).forEach(name => { NAT_FLAG[norm(name)] = flagEmoji(ISO[name]); });
+Object.keys(NAT_ALIAS).forEach(k => { NAT_FLAG[norm(k)] = NAT_FLAG[norm(NAT_ALIAS[k])] || ""; });
+const NATION_NAMES = Object.keys(ISO).sort((a,b) => a.localeCompare(b));
+const flagFor = nat => NAT_FLAG[norm(nat)] || "";
+function nationTag(p, compact) {
+  const nat = p.nationality;
+  if (!nat) return compact ? "" : '<span class="nation muted">—</span>';
+  const flag = flagFor(nat);
+  const flagSpan = flag ? '<span class="flag" role="img" aria-label="' + esc(nat) + '">' + flag + '</span>' : "";
+  return compact
+    ? flagSpan || '<span class="flag-fallback" role="img" aria-label="' + esc(nat) + '">&#127760;</span>'
+    : '<span class="nation">' + flagSpan + '<span class="nation-name">' + esc(nat) + '</span></span>';
+}
+
 /* ---------------- example career (never written to storage) --------- */
 const DEMO = {
   meta: {club:"Ashfield United", currency:"£"},
@@ -537,23 +607,23 @@ const DEMO = {
     d2:{id:"d2",label:"2025/26",club:"Ashfield United",order:2}
   },
   players: {
-    p1:{id:"p1",name:"J. Okafor",position:"ST",number:9,nationality:"Nigeria",joined:"2023",from:"Vitesse",
+    p1:{id:"p1",name:"J. Okafor",position:"ST",number:9,age:24,nationality:"Nigeria",joined:"2023",from:"Vitesse",
         wage:78000,expiry:2029,imageRights:60,value:52000000,signingBonus:2000000,releaseClause:90000000,
         deals:[{brand:"Nitro Boots",annual:1200000},{brand:"Halden Energy",annual:400000}]},
-    p2:{id:"p2",name:"L. Bennett",position:"CAM",number:10,nationality:"England",joined:"2021",from:"Academy",
+    p2:{id:"p2",name:"L. Bennett",position:"CAM",number:10,age:23,nationality:"England",joined:"2021",from:"Academy",
         wage:64000,expiry:2028,imageRights:100,value:41000000,signingBonus:0,releaseClause:0,
         deals:[{brand:"Kessler Sport",annual:750000}]},
-    p3:{id:"p3",name:"M. Sørensen",position:"RW",number:7,nationality:"Denmark",joined:"2024",from:"Brøndby",
+    p3:{id:"p3",name:"M. Sørensen",position:"RW",number:7,age:22,nationality:"Denmark",joined:"2024",from:"Brøndby",
         wage:52000,expiry:2027,imageRights:50,value:28000000,signingBonus:800000,releaseClause:0,
         deals:[{brand:"Nordfelt Watches",annual:300000}]},
-    p4:{id:"p4",name:"D. Castillo",position:"CM",number:6,nationality:"Spain",joined:"2020",from:"Real Betis",
+    p4:{id:"p4",name:"D. Castillo",position:"CM",number:6,age:29,nationality:"Spain",joined:"2020",from:"Real Betis",
         wage:41000,expiry:2026,imageRights:75,value:12000000,signingBonus:0,releaseClause:0,deals:[]},
-    p5:{id:"p5",name:"R. Whitmore",position:"CB",number:4,nationality:"England",joined:"2019",from:"Academy",
+    p5:{id:"p5",name:"R. Whitmore",position:"CB",number:4,age:31,nationality:"England",joined:"2019",from:"Academy",
         wage:36000,expiry:2026,imageRights:100,value:9500000,signingBonus:0,releaseClause:0,deals:[]},
-    p6:{id:"p6",name:"T. Adeyemi",position:"GK",number:1,nationality:"Nigeria",joined:"2023",from:"Sparta Rotterdam",
+    p6:{id:"p6",name:"T. Adeyemi",position:"GK",number:1,age:26,nationality:"Nigeria",joined:"2023",from:"Sparta Rotterdam",
         wage:29000,expiry:2030,imageRights:40,value:14000000,signingBonus:400000,releaseClause:0,
         deals:[{brand:"Gloveworks",annual:150000}]},
-    p7:{id:"p7",name:"S. Varga",position:"CM",number:8,nationality:"Hungary",joined:"2019",from:"Ferencváros",
+    p7:{id:"p7",name:"S. Varga",position:"CM",number:8,age:30,nationality:"Hungary",joined:"2019",from:"Ferencváros",
         departed:true,leftYear:2025,leftTo:"Sporting CP",
         wage:38000,expiry:2025,imageRights:50,value:0,signingBonus:0,releaseClause:0,deals:[]}
   },
@@ -722,6 +792,8 @@ function sortRows(rows) {
   return rows.slice().sort((a,b) => {
     if (k === "name") return dir * String(a.p.name).localeCompare(String(b.p.name));
     if (k === "pos") return dir * (POSITIONS.indexOf(a.p.position) - POSITIONS.indexOf(b.p.position));
+    if (k === "nation") return dir * String(a.p.nationality || "￿").localeCompare(String(b.p.nationality || "￿"));
+    if (k === "age") return dir * ((int(a.p.age) || 999) - (int(b.p.age) || 999));
     return dir * ((a[k] - b[k]) || String(a.p.name).localeCompare(String(b.p.name)) * -dir);
   });
 }
@@ -825,7 +897,8 @@ function renderSidebar() {
     nav("#/finances", ICON.coin, "Wages &amp; finances", v === "finances", weekly ? money(weekly, "compact") + "/wk" : "");
   const item = (p, gone) => '<a class="sq-item' + (gone ? " gone" : "") + '" href="#/player/' + encodeURIComponent(p.id) + '"' +
     (v === "player" && state.route.id === p.id ? ' aria-current="page"' : "") + '>' +
-    posChip(p.position) + '<span class="sq-name">' + esc(p.name) + '</span>' +
+    posChip(p.position) + (flagFor(p.nationality) ? '<span class="sq-flag" role="img" aria-label="' + esc(p.nationality) + '">' + flagFor(p.nationality) + '</span>' : "") +
+    '<span class="sq-name">' + esc(p.name) + '</span>' +
     '<span class="sq-n">' + (gone ? (int(p.leftYear) || "") : (p.number ? "#" + esc(p.number) : "")) + '</span></a>';
   const active = players.filter(p => !p.departed), gone = players.filter(p => p.departed);
   $("#squadCount").textContent = active.length || "";
@@ -969,13 +1042,16 @@ function renderSquad(rows, cur) {
   const tot = sorted.reduce((a,r) => ({apps:a.apps + r.apps, goals:a.goals + r.goals, assists:a.assists + r.assists}), {apps:0,goals:0,assists:0});
 
   $("#squad").innerHTML =
-    '<thead><tr>' + th("name","Player","l") + th("pos","Pos","l") + th("apps","Apps") + th("goals","Goals") +
+    '<thead><tr>' + th("name","Player","l") + th("pos","Pos","l") + th("nation","Nation","l") + th("age","Age") +
+      th("apps","Apps") + th("goals","Goals") +
       th("assists","Assists") + th("contrib","G+A") + (showCS ? th("cs","Clean sheets") : "") +
       (showRating ? th("rating","Rating") : "") + '<th aria-label="Remove"></th></tr></thead>' +
     '<tbody>' + sorted.map(r =>
       '<tr' + (r.p.departed ? ' class="gone"' : "") + '><td class="l p-name">' +
       '<a class="plink" href="#/player/' + encodeURIComponent(r.p.id) + '">' + esc(r.p.name) + '</a>' + leftTag(r.p) + '</td>' +
       '<td class="l">' + posChip(r.p.position) + '</td>' +
+      '<td class="l">' + nationTag(r.p) + '</td>' +
+      '<td class="stat age">' + (int(r.p.age) || "—") + '</td>' +
       '<td class="stat">' + cell(r, "apps", r.apps) + '</td>' +
       '<td class="stat">' + cell(r, "goals", r.goals) + '</td>' +
       '<td class="stat">' + cell(r, "assists", r.assists) + '</td>' +
@@ -987,7 +1063,7 @@ function renderSquad(rows, cur) {
         : '<button class="row-x" type="button" data-leave="' + esc(r.p.id) + '" aria-label="Remove ' + esc(r.p.name) + ' from the squad">&times;</button>') +
       "</td></tr>").join("") +
     '</tbody>' +
-    '<tfoot><tr><td class="l">' + (cur ? esc(cur.label) : "All seasons") + '</td><td></td>' +
+    '<tfoot><tr><td class="l">' + (cur ? esc(cur.label) : "All seasons") + '</td><td></td><td></td><td></td>' +
       '<td>' + fmt(tot.apps) + '</td><td>' + fmt(tot.goals) + '</td><td>' + fmt(tot.assists) + '</td>' +
       '<td>' + fmt(tot.goals + tot.assists) + '</td>' +
       (showCS ? '<td class="note" style="font-size:11px">best ' + (bestSheets(sorted) || {cs:0}).cs + "</td>" : "") +
@@ -1095,6 +1171,10 @@ function openPlayer() {
     '<div class="grid2">' +
       field("Name", '<input id="fName" placeholder="J. Okafor" maxlength="40">') +
       field("Position", '<select id="fPos">' + positionOptions("") + "</select>") +
+    "</div><div class=\"grid2\">" +
+      field("Age", '<input id="fAge" type="number" min="14" max="50" placeholder="24">') +
+      field("Nationality", '<input id="fNat" list="nations" placeholder="Nigeria" maxlength="24" autocomplete="off">' +
+        '<datalist id="nations">' + NATION_NAMES.map(n => "<option>" + esc(n) + "</option>").join("") + "</datalist>") +
     "</div>" +
     (cur ? '<div class="grid4">' +
       field("Apps", '<input id="fApps" type="number" min="0" step="1" placeholder="0">') +
@@ -1108,7 +1188,7 @@ function openPlayer() {
     () => { $("#okPlayer").onclick = async () => {
       const name = $("#fName").value.trim(); if (!name) return $("#fName").focus();
       const id = uid("p");
-      await Store.put("players", id, {name:name, position:$("#fPos").value});
+      await Store.put("players", id, {name:name, position:$("#fPos").value, age:int($("#fAge").value) || "", nationality:$("#fNat").value.trim()});
       if (cur) {
         const apps = int($("#fApps").value), goals = int($("#fGoals").value), assists = int($("#fAssists").value);
         const cleanSheets = int($("#fCS").value), rating = num($("#fRating").value);
@@ -1240,10 +1320,12 @@ const IMPORT_PROMPT =
 "(a squad hub, a season stats table, a player profile, or an end-of-season summary).\n\n" +
 "Read every player row you can see and return their totals for the season shown.\n\n" +
 'Reply with ONLY a JSON object of this shape:\n' +
-'{"season":"2025/26","club":"Ashfield United","players":[{"name":"J. Okafor","position":"ST","appearances":36,"goals":24,"assists":6,"cleanSheets":0,"rating":7.6}],"trophies":["Premier League"]}\n\n' +
+'{"season":"2025/26","club":"Ashfield United","players":[{"name":"J. Okafor","position":"ST","age":24,"nationality":"Nigeria","appearances":36,"goals":24,"assists":6,"cleanSheets":0,"rating":7.6}],"trophies":["Premier League"]}\n\n' +
 "Rules:\n" +
 "- One entry per player row. Keep the name exactly as it appears on screen.\n" +
 "- position must be one of GK RB CB LB RWB LWB CDM CM CAM RM LM RW LW CF ST, or null if none is shown.\n" +
+"- age is the player's age in years as a whole number if shown, otherwise null.\n" +
+"- nationality is the country name written out in full (e.g. \"Nigeria\", not a flag or code), or null if not shown.\n" +
 "- appearances, goals and assists are whole numbers; use 0 when the column is missing or blank.\n" +
 "- cleanSheets is the clean-sheet count if the screen shows one (usually goalkeepers and defenders); use 0 otherwise.\n" +
 "- rating is the average match rating out of 10, or null if not shown.\n" +
@@ -1256,7 +1338,7 @@ const WAGE_PROMPT =
 "a squad hub with a wage column, a contract negotiation screen, a transfer list or a player's contract tab.\n\n" +
 "Read every player row you can see and return their contract terms.\n\n" +
 'Reply with ONLY a JSON object of this shape:\n' +
-'{"currency":"£","club":"Ashfield United","players":[{"name":"J. Okafor","position":"ST","weeklyWage":78000,"contractUntil":2029,"value":52000000}]}\n\n' +
+'{"currency":"£","club":"Ashfield United","players":[{"name":"J. Okafor","position":"ST","age":24,"nationality":"Nigeria","weeklyWage":78000,"contractUntil":2029,"value":52000000}]}\n\n' +
 "Rules:\n" +
 "- One entry per player row. Keep the name exactly as it appears on screen.\n" +
 "- weeklyWage is the wage PER WEEK as a plain number of currency units: \"£78K\" is 78000, \"€1.2M\" is 1200000. " +
@@ -1266,6 +1348,8 @@ const WAGE_PROMPT =
 "- value is the market or transfer value as a plain number, or null.\n" +
 "- currency is the symbol on screen (£, € or $), or null.\n" +
 "- position must be one of GK RB CB LB RWB LWB CDM CM CAM RM LM RW LW CF ST, or null if none is shown.\n" +
+"- age is the player's age in years as a whole number if shown, otherwise null.\n" +
+"- nationality is the country name written out in full (e.g. \"Nigeria\", not a flag or code), or null if not shown.\n" +
 "- Never invent a player or a number. If a value is unreadable, use null.";
 
 const SAMPLE_COPY = {
@@ -1399,7 +1483,9 @@ async function readShots() {
       const name = String(r && r.name != null ? r.name : "").trim().slice(0,40);
       const match = Object.values(Store.data.players).find(p => norm(p.name) === norm(name));
       const pos = POSITIONS.indexOf(String(r && r.position || "").toUpperCase()) >= 0 ? String(r.position).toUpperCase() : (match ? match.position : "");
-      return {name:name, position:pos, playerId: match ? match.id : "__new", include: !!name};
+      const age = int(r && r.age);
+      const nationality = String(r && r.nationality || "").trim().slice(0,24);
+      return {name:name, position:pos, age: age || null, nationality: nationality || null, playerId: match ? match.id : "__new", include: !!name};
     };
     if (imp.kind === "wages") {
       imp.currency = CURRENCIES.indexOf(out && out.currency) >= 0 ? out.currency : null;
@@ -1556,11 +1642,13 @@ async function applyWages() {
     let pid = r.playerId;
     if (pid === "__new" || !Store.data.players[pid]) {
       pid = uid("p");
-      await Store.put("players", pid, {name:r.name, position:r.position});
+      await Store.put("players", pid, {name:r.name, position:r.position, age:r.age || "", nationality:r.nationality || ""});
     }
     const p = Store.data.players[pid];
     const patch = Object.assign({}, p);
     if (r.position && !p.position) patch.position = r.position;
+    if (r.age && !p.age) patch.age = r.age;
+    if (r.nationality && !p.nationality) patch.nationality = r.nationality;
     if (r.wage != null) patch.wage = r.wage;
     if (r.expiry != null) patch.expiry = r.expiry;
     if (r.value != null) patch.value = r.value;
@@ -1588,10 +1676,14 @@ async function applyImport() {
     let pid = r.playerId;
     if (pid === "__new" || !Store.data.players[pid]) {
       pid = uid("p");
-      await Store.put("players", pid, {name:r.name, position:r.position});
+      await Store.put("players", pid, {name:r.name, position:r.position, age:r.age || "", nationality:r.nationality || ""});
     } else {
       const p = Store.data.players[pid];
-      if (r.position && p.position !== r.position) await Store.put("players", pid, Object.assign({}, p, {position:r.position}));
+      const patch = {};
+      if (r.position && p.position !== r.position) patch.position = r.position;
+      if (r.age && !p.age) patch.age = r.age;
+      if (r.nationality && !p.nationality) patch.nationality = r.nationality;
+      if (Object.keys(patch).length) await Store.put("players", pid, Object.assign({}, p, patch));
     }
     const key = statKey(sid, pid);
     const prev = Store.data.stats[key] || {apps:0, goals:0, assists:0, cleanSheets:0, rating:0};
@@ -1641,6 +1733,8 @@ function sortFin(rows) {
   const k = state.fsort.key, dir = state.fsort.dir === "asc" ? 1 : -1;
   return rows.slice().sort((a,b) => {
     if (k === "name") return dir * String(a.p.name).localeCompare(String(b.p.name));
+    if (k === "nation") return dir * String(a.p.nationality || "￿").localeCompare(String(b.p.nationality || "￿"));
+    if (k === "age") return dir * ((int(a.p.age) || 999) - (int(b.p.age) || 999));
     if (k === "left") { const av = a.left === null ? 999 : a.left, bv = b.left === null ? 999 : b.left; return dir * (av - bv); }
     return dir * ((a[k] - b[k]) || String(a.p.name).localeCompare(String(b.p.name)));
   });
@@ -1668,13 +1762,15 @@ function renderFinances() {
 
   const table = !rows.length
     ? '<div class="empty"><b>No players yet</b>Add a player and their contract lands here.</div>'
-    : '<div class="table-scroll"><table style="min-width:880px"><thead><tr>' +
-        fth("name","Player","l") + '<th class="l">Pos</th>' + fth("weekly","Weekly") +
+    : '<div class="table-scroll"><table style="min-width:980px"><thead><tr>' +
+        fth("name","Player","l") + '<th class="l">Pos</th>' + fth("nation","Nation","l") + fth("age","Age") + fth("weekly","Weekly") +
         '<th>Expires</th>' + fth("left","Contract") + fth("ir","Image rights") + fth("deals","Endorsements/yr") +
         fth("share","Club share/yr") + fth("net","Net wage/yr") + '</tr></thead><tbody>' +
         sortFin(rows).map(r =>
           '<tr><td class="l p-name">' + plink(r.p) + '</td>' +
           '<td class="l">' + posChip(r.p.position) + '</td>' +
+          '<td class="l">' + nationTag(r.p) + '</td>' +
+          '<td class="stat age">' + (int(r.p.age) || "—") + '</td>' +
           '<td class="money">' + cellFor(r, "wage", r.weekly, true) + '</td>' +
           '<td class="money">' + cellFor(r, "expiry", int(r.p.expiry)) + '</td>' +
           '<td>' + leftChip(r.left) + '</td>' +
@@ -1683,7 +1779,7 @@ function renderFinances() {
             (r.deals ? (r.p.deals.length + (r.p.deals.length === 1 ? " deal · " : " deals · ") + money(r.deals, "compact")) : "+ add") + "</button></td>" +
           '<td class="money">' + (r.share ? money(r.share, "compact") : "—") + '</td>' +
           '<td class="money"><b>' + (r.annual || r.share ? money(r.net, "compact") : "—") + "</b></td></tr>").join("") +
-        '</tbody><tfoot><tr><td class="l">' + rows.length + " players</td><td></td>" +
+        '</tbody><tfoot><tr><td class="l">' + rows.length + " players</td><td></td><td></td><td></td>" +
           '<td>' + money(T.w) + '</td><td></td><td></td><td></td>' +
           '<td>' + money(T.d, "compact") + '</td><td>' + money(T.s, "compact") + '</td><td>' + money(T.n, "compact") + "</td></tr></tfoot></table></div>";
 
@@ -1807,9 +1903,10 @@ function renderPlayerPage(id) {
     : "";
 
   const joined = [];
+  if (int(p.age)) joined.push("<b>" + int(p.age) + "</b> yrs");
+  if (p.nationality) joined.push(nationTag(p));
   if (p.joined) joined.push("Joined <b>" + esc(p.joined) + "</b>");
   if (p.from) joined.push("from <b>" + esc(p.from) + "</b>");
-  if (p.nationality) joined.push(esc(p.nationality));
   joined.push(played.length ? "<b>" + played.length + "</b> season" + (played.length === 1 ? "" : "s") + " played" : "no minutes yet");
   if (p.departed) joined.push("left" + (int(p.leftYear) ? " <b>" + int(p.leftYear) + "</b>" : "") +
     (p.leftTo ? " for <b>" + esc(p.leftTo) + "</b>" : ""));
@@ -1848,10 +1945,14 @@ function openEditPlayer(id) {
       field("Position", '<select id="ePos">' + positionOptions(p.position) + "</select>") +
     "</div><div class=\"grid2\">" +
       field("Squad number", '<input id="eNum" type="number" min="1" max="99" value="' + esc(p.number || "") + '">') +
-      field("Nationality", '<input id="eNat" value="' + esc(p.nationality || "") + '" maxlength="24" placeholder="Nigeria">') +
+      field("Age", '<input id="eAge" type="number" min="14" max="50" value="' + esc(p.age || "") + '" placeholder="24">') +
     "</div><div class=\"grid2\">" +
+      field("Nationality", '<input id="eNat" list="nations" value="' + esc(p.nationality || "") + '" maxlength="24" placeholder="Nigeria" autocomplete="off">' +
+        '<datalist id="nations">' + NATION_NAMES.map(n => "<option>" + esc(n) + "</option>").join("") + "</datalist>") +
       field("Joined", '<input id="eJoined" value="' + esc(p.joined || "") + '" maxlength="9" placeholder="2024">') +
+    "</div><div class=\"grid2\">" +
       field("Signed from", '<input id="eFrom" value="' + esc(p.from || "") + '" maxlength="40" placeholder="Academy">') +
+      "<div></div>" +
     "</div>",
     '<button class="btn danger" type="button" id="eDelete" style="margin-right:auto">Delete player &amp; stats</button>' +
     '<button class="btn" type="button" data-close>Cancel</button><button class="btn primary" type="button" id="eSave">Save</button>',
@@ -1859,7 +1960,7 @@ function openEditPlayer(id) {
       $("#eSave").onclick = async () => {
         const name = $("#eName").value.trim(); if (!name) return $("#eName").focus();
         await Store.put("players", p.id, Object.assign({}, p, {
-          name:name, position:$("#ePos").value, number:int($("#eNum").value) || "",
+          name:name, position:$("#ePos").value, number:int($("#eNum").value) || "", age:int($("#eAge").value) || "",
           nationality:$("#eNat").value.trim(), joined:$("#eJoined").value.trim(), from:$("#eFrom").value.trim()
         }));
         modal.close(); render();
