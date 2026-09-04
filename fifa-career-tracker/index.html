@@ -1557,7 +1557,7 @@ const SAMPLE_COPY = {
   not_granted: "You declined Claude access for this page, so screenshots can't be read here. Type the numbers in instead.",
   sampling_disabled: "Claude isn't available on this account, so screenshots can't be read. Type the numbers in instead.",
   not_declared: "Screenshot reading isn't enabled for this page.",
-  images_unavailable: "This view can't send images to Claude. Type the numbers in instead.",
+  images_unavailable: "This app or browser can't send images to Claude. Try claude.ai on desktop or mobile web, or type the numbers in instead.",
   image_rejected: "One of those files couldn't be read — use a PNG or JPEG screenshot under 20 MB.",
   rate_limited: "Too many requests just now. Wait a minute and try again.",
   session_expired: "Your Claude session expired. Reload the page and sign in again.",
@@ -1590,7 +1590,7 @@ function renderImport() {
   const body =
     (sampleFn && imageLimits ? "" :
       '<div class="banner"><span>' + (sampleFn
-        ? "This view can't send images to Claude, so screenshots can't be read here."
+        ? "The app or browser you're viewing this page in doesn't support sending images to Claude — that's a limit of this view, not the tracker. If you're in the Claude app, try opening this page's link in claude.ai on a desktop or mobile browser instead."
         : "Reading screenshots needs Claude, which isn't available in this view.") +
       " Everything can still be typed in by hand.</span></div>") +
     '<div class="radio-row">' +
@@ -2277,6 +2277,8 @@ function drawDeals(p) {
     }
   } catch (e) { sampleFn = null; }
   const btn = $("#btnImport");
-  btn.title = sampleFn && imageLimits ? "Read a squad screenshot with Claude" : "Screenshot reading is unavailable in this view";
+  btn.title = sampleFn && imageLimits ? "Read a squad screenshot with Claude"
+    : sampleFn ? "This app/browser can't send images to Claude — try opening the link in claude.ai on desktop or mobile web"
+    : "Screenshot reading needs Claude, which isn't available in this view";
 })();
 </script>
