@@ -848,7 +848,10 @@ function rowsFor(scope) {
   });
 }
 function squadRows(scope) {
-  return rowsFor(scope).filter(r => !r.p.departed);
+  const rows = rowsFor(scope);
+  if (scope === "all") return rows;
+  const d = view();
+  return rows.filter(r => !r.p.departed || d.stats[statKey(scope, r.p.id)]);
 }
 const leftTag = p => p.departed
   ? '<span class="chip muted left-tag">left' + (int(p.leftYear) ? " " + int(p.leftYear) : "") + "</span>"
@@ -1128,8 +1131,8 @@ function renderSquad(rows, cur) {
       th("assists","Assists") + th("contrib","G+A") + (showCS ? th("cs","Clean sheets") : "") +
       (showRating ? th("rating","Rating") : "") + '<th aria-label="Remove"></th></tr></thead>' +
     '<tbody>' + sorted.map(r =>
-      '<tr><td class="l p-name">' +
-      '<a class="plink" href="#/player/' + encodeURIComponent(r.p.id) + '">' + esc(r.p.name) + '</a></td>' +
+      '<tr' + (r.p.departed ? ' class="gone"' : "") + '><td class="l p-name">' +
+      '<a class="plink" href="#/player/' + encodeURIComponent(r.p.id) + '">' + esc(r.p.name) + '</a>' + leftTag(r.p) + '</td>' +
       '<td class="l">' + posChip(r.p.position) + '</td>' +
       '<td class="l">' + nationTag(r.p) + '</td>' +
       '<td class="stat age">' + (int(r.p.age) || "—") + '</td>' +
@@ -1139,7 +1142,10 @@ function renderSquad(rows, cur) {
       '<td class="stat contrib">' + fmt(r.contrib) + '</td>' +
       (showCS ? '<td class="stat">' + cell(r, "cleanSheets", r.cs) + '</td>' : "") +
       (showRating ? '<td class="stat">' + cell(r, "rating", r.rating ? Number(r.rating.toFixed(2)) : "") + '</td>' : "") +
-      '<td><button class="row-x" type="button" data-leave="' + esc(r.p.id) + '" aria-label="Remove ' + esc(r.p.name) + ' from the squad">&times;</button></td></tr>').join("") +
+      '<td>' + (r.p.departed
+        ? '<button class="row-x" type="button" data-return="' + esc(r.p.id) + '" aria-label="Bring ' + esc(r.p.name) + ' back">&#8630;</button>'
+        : '<button class="row-x" type="button" data-leave="' + esc(r.p.id) + '" aria-label="Remove ' + esc(r.p.name) + ' from the squad">&times;</button>') +
+      "</td></tr>").join("") +
     '</tbody>' +
     '<tfoot><tr><td class="l">' + (cur ? esc(cur.label) : "All seasons") + '</td><td></td><td></td><td></td>' +
       '<td>' + fmt(tot.apps) + '</td><td>' + fmt(tot.goals) + '</td><td>' + fmt(tot.assists) + '</td>' +

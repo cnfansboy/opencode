@@ -25,10 +25,14 @@ phone screen.
 A sidebar carries the club, three sections and the current squad list — click any name
 to open that player.
 
-**Squad & seasons** (the default) shows the current squad only — a player who
-has left drops out of the tiles, the leaderboard and the table the moment
-they're marked departed, in any scope. See **All-time players** below for the
-full history including everyone who's ever left.
+**Squad & seasons** (the default) is scope-aware about who counts: pick
+**All seasons** and every contributor's career stats show, including anyone
+who has since left — the tiles, the leaderboard and the table all carry a
+muted "left" tag next to their name rather than dropping them. Pick a single
+season and it shows exactly who played that season, whether or not they're
+still at the club today. Only the sidebar's quick squad list and the wages
+page stay current-only, since roster and contracts are about who's actually
+here now, not the historical record.
 
 - **Players** — name, position (GK / DEF / MID / ATT, colour-coded), shirt number, age
   and nationality. Nationality is typed with autocomplete over ~165 countries (plus
@@ -66,11 +70,13 @@ running down. Years left counts from the end of your newest recorded season, so
 a deal ending that year reads "final year", not "expired".
 
 **Leaving the club** — the × on a squad row (or "Remove from squad" on a profile)
-takes a player off the squad list, the wage bill, the tiles and the leaderboard
-entirely, while keeping everything they did. Record the year and where they
-went; they disappear from the dashboard and reappear on **All-time players**
-with a "left" status. One click there brings them back. Deleting a player
-outright — stats and all — is still available, in the Edit player dialog.
+takes a player off the sidebar list and the wage bill, but their stats stay
+exactly where they earned them: on the dashboard's all-time totals, in any
+season they actually played, and on **All-time players**, each carrying a
+"left" tag. Record the year and where they went; a ↶ button on any of those
+rows brings them back into the current squad with one click. Deleting a
+player outright — stats and all — is still available, in the Edit player
+dialog.
 
 **All-time players** — every player who has ever been part of the club,
 current and departed together. Its own tiles and table show the true club
