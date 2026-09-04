@@ -24,7 +24,10 @@ to open that player.
   The clean-sheet column appears once anyone has one, and on a keeper's or
   defender's profile always; the squad total shows the best individual tally
   rather than a sum, since a shut-out belongs to the whole back line.
-- **All-time** — every season added up; this is what loads first.
+- **All-time** — every season added up; this is what loads first. The
+  Appearances, Goals, Assists and Goal contributions tiles each show the record
+  holder's own number and name, not a squad-wide sum — Clean sheets always
+  worked this way, since a shut-out belongs to one keeper, not the team.
 - **League** — each season picks a league from the top five and the professional
   tier directly below it (Premier League/Championship, LaLiga/LaLiga 2,
   Bundesliga/2. Bundesliga, Serie A/Serie B, Ligue 1/Ligue 2), shown as a flag

@@ -968,15 +968,16 @@ function renderOverview(scope) {
       ' <button class="btn danger" type="button" id="btnDelSeason" style="padding:2px 8px;font-size:12px">Delete season</button>'
     : "All-time totals across every season you have recorded.";
 
-  const tot = rows.reduce((a,r) => ({apps:a.apps + r.apps, goals:a.goals + r.goals, assists:a.assists + r.assists}), {apps:0,goals:0,assists:0});
   const trophies = trophiesFor(scope);
-  const best = rows.slice().sort((a,b) => b.contrib - a.contrib)[0];
+  const leader = key => rows.slice().sort((a,b) => b[key] - a[key])[0];
+  const topApps = leader("apps"), topGoals = leader("goals"), topAssists = leader("assists"), topContrib = leader("contrib");
   const sheets = bestSheets(rows);
+  const leadSub = (top, val) => top && val ? "Most: " + esc(top.p.name) : "none recorded";
   $("#tiles").innerHTML = [
-    tile("Appearances", tot.apps, rows.length + (rows.length === 1 ? " player" : " players") + " tracked"),
-    tile("Goals", tot.goals, tot.apps ? (tot.goals / tot.apps).toFixed(2) + " per appearance" : "—"),
-    tile("Assists", tot.assists, tot.apps ? (tot.assists / tot.apps).toFixed(2) + " per appearance" : "—"),
-    tile("Goal contributions", tot.goals + tot.assists, best && best.contrib ? "Most: " + esc(best.p.name) + " (" + best.contrib + ")" : "—", "is-contrib"),
+    tile("Appearances", topApps ? topApps.apps : 0, leadSub(topApps, topApps && topApps.apps)),
+    tile("Goals", topGoals ? topGoals.goals : 0, leadSub(topGoals, topGoals && topGoals.goals)),
+    tile("Assists", topAssists ? topAssists.assists : 0, leadSub(topAssists, topAssists && topAssists.assists)),
+    tile("Goal contributions", topContrib ? topContrib.contrib : 0, leadSub(topContrib, topContrib && topContrib.contrib), "is-contrib"),
     tile("Clean sheets", sheets && sheets.cs ? sheets.cs : 0, sheets && sheets.cs ? "kept by " + esc(sheets.p.name) : "none recorded"),
     tile("Trophies", trophies.length, trophies.length ? "Latest: " + esc(latestTrophy(trophies).name) : "none yet", "is-trophies")
   ].join("");
