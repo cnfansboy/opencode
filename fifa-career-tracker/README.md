@@ -25,9 +25,12 @@ to open that player.
   defender's profile always; the squad total shows the best individual tally
   rather than a sum, since a shut-out belongs to the whole back line.
 - **All-time** — every season added up; this is what loads first. The
-  Appearances, Goals, Assists and Goal contributions tiles each show the record
-  holder's own number and name, not a squad-wide sum — Clean sheets always
-  worked this way, since a shut-out belongs to one keeper, not the team.
+  Appearances, Goals, Assists, Goal contributions and Clean sheets tiles each
+  show the record holder's own number and name, not a squad-wide sum. Click
+  any of those five and it opens the top 10 for that stat — ranked, with each
+  player's per-appearance rate, a bar against the leader, and their name
+  linking straight to their profile — scoped to whatever the tiles themselves
+  are showing (all-time, or the season picked in the rail).
 - **League** — each season picks a league from the top five and the professional
   tier directly below it (Premier League/Championship, LaLiga/LaLiga 2,
   Bundesliga/2. Bundesliga, Serie A/Serie B, Ligue 1/Ligue 2), shown as a flag

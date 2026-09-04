@@ -132,6 +132,14 @@ button{font:inherit; color:inherit}
 .tile.is-trophies{background:var(--gold-soft); border-color:var(--gold-line)}
 .tile.is-trophies .t-val{color:var(--gold)}
 .tile.is-contrib .t-val{color:var(--accent)}
+button.tile.clickable{
+  font:inherit; text-align:left; cursor:pointer; width:100%; -webkit-appearance:none; appearance:none;
+  transition:border-color .12s, transform .05s;
+}
+.tile.clickable:hover{border-color:var(--accent)}
+.tile.clickable:active{transform:translateY(1px)}
+.tile.clickable .t-sub{text-decoration:underline; text-decoration-color:var(--line-strong); text-underline-offset:2px}
+.tile.clickable:hover .t-sub{text-decoration-color:var(--accent)}
 
 /* ---------- layout rows ---------- */
 .duo{display:grid; grid-template-columns:1.55fr 1fr; gap:14px; margin-bottom:14px; align-items:start}
@@ -974,11 +982,11 @@ function renderOverview(scope) {
   const sheets = bestSheets(rows);
   const leadSub = (top, val) => top && val ? "Most: " + esc(top.p.name) : "none recorded";
   $("#tiles").innerHTML = [
-    tile("Appearances", topApps ? topApps.apps : 0, leadSub(topApps, topApps && topApps.apps)),
-    tile("Goals", topGoals ? topGoals.goals : 0, leadSub(topGoals, topGoals && topGoals.goals)),
-    tile("Assists", topAssists ? topAssists.assists : 0, leadSub(topAssists, topAssists && topAssists.assists)),
-    tile("Goal contributions", topContrib ? topContrib.contrib : 0, leadSub(topContrib, topContrib && topContrib.contrib), "is-contrib"),
-    tile("Clean sheets", sheets && sheets.cs ? sheets.cs : 0, sheets && sheets.cs ? "kept by " + esc(sheets.p.name) : "none recorded"),
+    tile("Appearances", topApps ? topApps.apps : 0, leadSub(topApps, topApps && topApps.apps), "", "apps"),
+    tile("Goals", topGoals ? topGoals.goals : 0, leadSub(topGoals, topGoals && topGoals.goals), "", "goals"),
+    tile("Assists", topAssists ? topAssists.assists : 0, leadSub(topAssists, topAssists && topAssists.assists), "", "assists"),
+    tile("Goal contributions", topContrib ? topContrib.contrib : 0, leadSub(topContrib, topContrib && topContrib.contrib), "is-contrib", "contrib"),
+    tile("Clean sheets", sheets && sheets.cs ? sheets.cs : 0, sheets && sheets.cs ? "kept by " + esc(sheets.p.name) : "none recorded", "", "cs"),
     tile("Trophies", trophies.length, trophies.length ? "Latest: " + esc(latestTrophy(trophies).name) : "none yet", "is-trophies")
   ].join("");
 
@@ -996,9 +1004,12 @@ function chip(id, label, meta, on) {
   return '<button class="season-chip" type="button" data-season="' + esc(id) + '" aria-pressed="' + (on ? "true" : "false") + '">' +
     '<span class="sc-label">' + esc(label) + '</span><span class="sc-meta">' + meta + '</span></button>';
 }
-function tile(label, value, sub, cls) {
-  return '<div class="tile ' + (cls || "") + '"><span class="eyebrow">' + esc(label) + '</span>' +
-    '<span class="t-val">' + fmt(value) + '</span><span class="t-sub">' + sub + '</span></div>';
+function tile(label, value, sub, cls, statKey) {
+  const tag = statKey ? "button" : "div";
+  const open = "<" + tag + ' class="tile' + (cls ? " " + cls : "") + (statKey ? " clickable" : "") + '"' +
+    (statKey ? ' type="button" data-stattile="' + statKey + '"' : "") + ">";
+  return open + '<span class="eyebrow">' + esc(label) + '</span>' +
+    '<span class="t-val">' + fmt(value) + '</span><span class="t-sub">' + sub + '</span></' + tag + '>';
 }
 function posChip(pos) {
   const p = POSITIONS.indexOf(pos) >= 0 ? pos : "—";
@@ -1279,6 +1290,28 @@ function openTrophy() {
     }; });
 }
 
+const STAT_LABELS = {apps:"Appearances", goals:"Goals", assists:"Assists", contrib:"Goal contributions", cs:"Clean sheets"};
+function openStatLeaders(key) {
+  const scope = state.scope;
+  const scopeLabel = scope === "all" ? "All-time" : ((seasonById(scope) || {}).label || "");
+  const rows = rowsFor(scope).filter(r => r[key] > 0).sort((a,b) => b[key] - a[key] || String(a.p.name).localeCompare(String(b.p.name))).slice(0, 10);
+  const max = rows.length ? rows[0][key] : 1;
+  const body = rows.length
+    ? '<div class="lb">' + rows.map((r,i) => {
+        const rate = key !== "apps" && r.apps ? (r[key] / r.apps).toFixed(2) + " per app" : "";
+        const meta = rate + (r.p.departed ? (rate ? " · " : "") + "left" + (int(r.p.leftYear) ? " " + int(r.p.leftYear) : "") : "");
+        return '<div class="lb-row' + (i === 0 ? " top" : "") + '"><div class="lb-id"><span class="lb-name">' +
+          '<span class="lb-rank">' + (i + 1) + '</span><b>' + plink(r.p) + '</b>' + posChip(r.p.position) + '</span>' +
+          '<span class="lb-meta">' + meta + '</span></div>' +
+          '<div class="lb-track"><span class="bar"><span class="seg w" style="width:' + (r[key] / max * 100) + '%"></span></span>' +
+          '<span class="lb-total">' + fmt(r[key]) + '</span></div></div>';
+      }).join("") + '</div>'
+    : '<div class="empty"><b>Nothing recorded yet</b>Record some stats and the leaders appear here.</div>';
+  openDialog((STAT_LABELS[key] || "Leaders") + " · " + scopeLabel, body,
+    '<button class="btn" type="button" data-close>Close</button>',
+    () => { dlgBody.querySelectorAll("a.plink").forEach(a => a.addEventListener("click", () => modal.close())); });
+}
+
 /* ---------------- events --------------------------------------------- */
 document.addEventListener("click", async e => {
   const t = e.target.closest("button");
@@ -1289,6 +1322,7 @@ document.addEventListener("click", async e => {
   if (t.id === "btnPlayer" || t.id === "btnPlayer2") return openPlayer();
   if (t.id === "btnTrophy" || t.id === "btnTrophy2") return openTrophy();
   if (t.id === "btnImport") return openImport();
+  if (t.dataset.stattile) return openStatLeaders(t.dataset.stattile);
   if (t.id === "btnMenu") { $("#side").classList.add("open"); $("#scrim").hidden = false; return; }
   if (t.id === "scrim") { closeDrawer(); return; }
   if (t.dataset.editplayer) return openEditPlayer(t.dataset.editplayer);
