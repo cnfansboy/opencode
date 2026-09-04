@@ -17,10 +17,13 @@ their own panel, and dialogs stack to one column.
 
 ## The three views
 
-A sidebar carries the club, the two sections and the squad list — click any name
+A sidebar carries the club, three sections and the current squad list — click any name
 to open that player.
 
-**Squad & seasons** (the default)
+**Squad & seasons** (the default) shows the current squad only — a player who
+has left drops out of the tiles, the leaderboard and the table the moment
+they're marked departed, in any scope. See **All-time players** below for the
+full history including everyone who's ever left.
 
 - **Players** — name, position (GK / DEF / MID / ATT, colour-coded), shirt number, age
   and nationality. Nationality is typed with autocomplete over ~165 countries (plus
@@ -58,16 +61,23 @@ running down. Years left counts from the end of your newest recorded season, so
 a deal ending that year reads "final year", not "expired".
 
 **Leaving the club** — the × on a squad row (or "Remove from squad" on a profile)
-takes a player off the squad list and the wage bill while keeping everything they
-did. Record the year and where they went; they move to **Moved on** in the
-sidebar, stay in the all-time table and the contribution leaderboard with a
-"left" marker, and still appear in the seasons they actually played when a season
-is selected. One click brings them back. Deleting a player outright — stats and
-all — is still available, in the Edit player dialog.
+takes a player off the squad list, the wage bill, the tiles and the leaderboard
+entirely, while keeping everything they did. Record the year and where they
+went; they disappear from the dashboard and reappear on **All-time players**
+with a "left" status. One click there brings them back. Deleting a player
+outright — stats and all — is still available, in the Edit player dialog.
+
+**All-time players** — every player who has ever been part of the club,
+current and departed together. Its own tiles and table show the true club
+record (so a legend who's since left can still be the all-time top scorer),
+each player carries a Current/Left status, and this is where "+ Player" lives
+for adding someone new to the roster from scratch.
 
 **Player profile** — one page per player: joined year and previous club, career
 totals, a season-by-season table you can type into, the full contract, brand
 deals with the club share, and the honours won in seasons they played.
+Reachable regardless of squad status — from the current sidebar list, the
+All-time players roster, or any leaderboard entry.
 
 ## Entering stats
 
