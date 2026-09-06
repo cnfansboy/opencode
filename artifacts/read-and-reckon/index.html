@@ -1,0 +1,1244 @@
+<title>Read &amp; Reckon</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --ground: #eff2f1;
+    --surface: #fafbfa;
+    --surface-2: #e9edec;
+    --ink: #15201e;
+    --ink-2: #3c4b48;
+    --muted: #5b6a67;
+    --line: #d3dbd9;
+    --line-soft: #e2e8e6;
+    --accent: #1b6b5e;
+    --accent-ink: #0f4b41;
+    --accent-wash: #dceae7;
+    --open: #9a6f24;
+    --right: #2c7a57;
+    --wrong: #9a362f;
+    --mixed: #5f6688;
+    --focus: #1b6b5e;
+    --shadow: 0 1px 2px rgba(21, 32, 30, .05), 0 8px 24px -16px rgba(21, 32, 30, .3);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #0f1716;
+      --surface: #16211f;
+      --surface-2: #1d2a27;
+      --ink: #e3eae7;
+      --ink-2: #c2cecb;
+      --muted: #8fa09c;
+      --line: #26332f;
+      --line-soft: #1f2b28;
+      --accent: #4fb5a3;
+      --accent-ink: #7fcdbe;
+      --accent-wash: #17302c;
+      --open: #cf9d47;
+      --right: #57b083;
+      --wrong: #d1685f;
+      --mixed: #949bc4;
+      --focus: #4fb5a3;
+      --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 8px 24px -16px rgba(0, 0, 0, .8);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground: #0f1716;
+    --surface: #16211f;
+    --surface-2: #1d2a27;
+    --ink: #e3eae7;
+    --ink-2: #c2cecb;
+    --muted: #8fa09c;
+    --line: #26332f;
+    --line-soft: #1f2b28;
+    --accent: #4fb5a3;
+    --accent-ink: #7fcdbe;
+    --accent-wash: #17302c;
+    --open: #cf9d47;
+    --right: #57b083;
+    --wrong: #d1685f;
+    --mixed: #949bc4;
+    --focus: #4fb5a3;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 8px 24px -16px rgba(0, 0, 0, .8);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    font-size: 15px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 0 24px 96px; }
+
+  /* ---------- masthead ---------- */
+
+  header.masthead {
+    border-bottom: 1px solid var(--line);
+    padding: 32px 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .brand { display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; }
+
+  .brand h1 {
+    font-family: Newsreader, Georgia, serif;
+    font-weight: 500;
+    font-size: 34px;
+    letter-spacing: -.015em;
+    margin: 0;
+    line-height: 1.05;
+  }
+
+  .brand .sub {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 11px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .brand .spacer { flex: 1 1 auto; }
+
+  /* calibration strip: the numbers that measure the skill being built */
+  .calib {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    border-top: 1px solid var(--line-soft);
+  }
+
+  .calib .cell {
+    padding: 14px 18px 16px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    border-right: 1px solid var(--line-soft);
+  }
+
+  .calib .cell:last-child { border-right: 0; }
+  .calib .cell + .cell { padding-left: 18px; }
+
+  .calib .k {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 10.5px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .calib .v {
+    font-family: Newsreader, Georgia, serif;
+    font-size: 27px;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.1;
+  }
+
+  .calib-note {
+    margin: -12px 0 0;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 10.5px;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .calib .v small { font-size: 14px; color: var(--muted); font-family: "IBM Plex Mono", monospace; }
+  .calib .v.dim { color: var(--muted); }
+
+  /* ---------- working surface ---------- */
+
+  .surface {
+    display: grid;
+    grid-template-columns: 380px minmax(0, 1fr);
+    gap: 40px;
+    align-items: start;
+    padding-top: 28px;
+  }
+
+  @media (max-width: 1000px) {
+    .surface { grid-template-columns: 1fr; gap: 32px; }
+    .calib { grid-template-columns: repeat(3, 1fr); }
+    .calib .cell:nth-child(3) { border-right: 0; }
+  }
+
+  @media (max-width: 560px) {
+    .wrap { padding: 0 16px 72px; }
+    .calib { grid-template-columns: repeat(2, 1fr); }
+    .calib .cell:nth-child(2n) { border-right: 0; }
+    .brand h1 { font-size: 28px; }
+  }
+
+  /* ---------- capture form ---------- */
+
+  .rail { position: sticky; top: 20px; }
+
+  @media (max-width: 1000px) { .rail { position: static; } }
+
+  form.capture {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 20px;
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .form-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 2px;
+  }
+
+  .form-head h2 {
+    font-family: Newsreader, Georgia, serif;
+    font-size: 20px;
+    font-weight: 500;
+    margin: 0;
+  }
+
+  .field { display: flex; flex-direction: column; gap: 5px; }
+
+  label, .lbl {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 10.5px;
+    letter-spacing: .11em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  input[type="text"], input[type="url"], input[type="date"], textarea, select {
+    font-family: inherit;
+    font-size: 14px;
+    color: var(--ink);
+    background: var(--ground);
+    border: 1px solid var(--line);
+    border-radius: 2px;
+    padding: 8px 10px;
+    width: 100%;
+    line-height: 1.45;
+  }
+
+  textarea { resize: vertical; min-height: 66px; }
+
+  input::placeholder, textarea::placeholder { color: var(--muted); opacity: .72; }
+
+  input:focus-visible, textarea:focus-visible, select:focus-visible,
+  button:focus-visible, a:focus-visible, [tabindex]:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 1px;
+  }
+
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  /* segmented control */
+  .seg { display: flex; position: relative; border: 1px solid var(--line); border-radius: 2px; overflow: hidden; }
+
+  .seg input { position: absolute; opacity: 0; pointer-events: none; }
+
+  .seg label {
+    flex: 1;
+    text-align: center;
+    padding: 7px 4px;
+    cursor: pointer;
+    background: var(--ground);
+    color: var(--muted);
+    border-right: 1px solid var(--line);
+    font-size: 10.5px;
+    transition: background .12s, color .12s;
+  }
+
+  .seg label:last-of-type { border-right: 0; }
+  .seg input:checked + label { background: var(--accent-wash); color: var(--accent-ink); font-weight: 600; }
+  .seg:focus-within { outline: 2px solid var(--focus); outline-offset: 1px; }
+
+  button {
+    font-family: inherit;
+    font-size: 13px;
+    cursor: pointer;
+    border-radius: 2px;
+    border: 1px solid transparent;
+    padding: 9px 14px;
+    background: transparent;
+    color: var(--ink);
+    transition: background .12s, border-color .12s, color .12s;
+  }
+
+  button.primary {
+    background: var(--accent);
+    color: #f7fbfa;
+    font-weight: 600;
+    letter-spacing: .01em;
+    padding: 10px 14px;
+  }
+
+  :root[data-theme="dark"] button.primary { color: #0c1614; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) button.primary { color: #0c1614; } }
+
+  button.primary:hover { background: var(--accent-ink); }
+
+  button.ghost { border-color: var(--line); color: var(--ink-2); background: var(--surface); }
+  button.ghost:hover { border-color: var(--accent); color: var(--accent-ink); }
+
+  button.link {
+    padding: 0;
+    color: var(--muted);
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11px;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+  }
+
+  button.link:hover { color: var(--accent-ink); }
+
+  /* ---------- blotter ---------- */
+
+  .blotter-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .blotter-head h2 {
+    font-family: Newsreader, Georgia, serif;
+    font-size: 20px;
+    font-weight: 500;
+    margin: 0;
+  }
+
+  .count { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: var(--muted); letter-spacing: .06em; }
+
+  .blotter-head .spacer { flex: 1 1 auto; }
+
+  .filters { display: flex; gap: 6px; flex-wrap: wrap; padding: 14px 0 4px; align-items: center; }
+
+  .chip {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 10.5px;
+    letter-spacing: .09em;
+    text-transform: uppercase;
+    padding: 5px 10px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    color: var(--muted);
+    background: transparent;
+  }
+
+  .chip:hover { border-color: var(--accent); color: var(--accent-ink); }
+  .chip[aria-pressed="true"] { background: var(--ink); color: var(--ground); border-color: var(--ink); }
+
+  #search {
+    max-width: 210px;
+    padding: 6px 10px;
+    font-size: 13px;
+    background: var(--surface);
+  }
+
+  .entries { display: flex; flex-direction: column; }
+
+  /* an entry is a ledger row, not a card: hairline rule + status stripe */
+  article.entry {
+    display: grid;
+    grid-template-columns: 3px minmax(0, 1fr);
+    gap: 0 18px;
+    padding: 22px 0;
+    border-bottom: 1px solid var(--line-soft);
+  }
+
+  article.entry .stripe { background: var(--muted); border-radius: 3px; }
+  article.entry[data-status="open"] .stripe { background: var(--open); }
+  article.entry[data-status="right"] .stripe { background: var(--right); }
+  article.entry[data-status="wrong"] .stripe { background: var(--wrong); }
+  article.entry[data-status="mixed"] .stripe { background: var(--mixed); }
+
+  .entry .body { min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+
+  .meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 10.5px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .meta .dot { opacity: .45; }
+
+  .tag {
+    border: 1px solid var(--line);
+    border-radius: 2px;
+    padding: 2px 6px;
+    letter-spacing: .1em;
+  }
+
+  .tag.macro { color: var(--accent-ink); border-color: var(--accent); background: var(--accent-wash); }
+  .tag.micro { color: var(--ink-2); }
+
+  .status-tag { padding: 2px 7px; border-radius: 999px; border: 1px solid currentColor; }
+  article.entry[data-status="open"] .status-tag { color: var(--open); }
+  article.entry[data-status="right"] .status-tag { color: var(--right); }
+  article.entry[data-status="wrong"] .status-tag { color: var(--wrong); }
+  article.entry[data-status="mixed"] .status-tag { color: var(--mixed); }
+
+  .entry h3 { margin: 0; font-size: 17px; font-weight: 500; line-height: 1.3; font-family: Newsreader, Georgia, serif; }
+
+  .entry h3 a { color: var(--ink); text-decoration: none; border-bottom: 1px solid var(--line); }
+  .entry h3 a:hover { color: var(--accent-ink); border-color: var(--accent); }
+
+  .note { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 14px; align-items: baseline; }
+
+  @media (max-width: 620px) { .note { grid-template-columns: 1fr; gap: 3px; } }
+
+  .note .lbl { padding-top: 3px; }
+
+  .note p {
+    margin: 0;
+    font-family: Newsreader, Georgia, serif;
+    font-size: 16px;
+    line-height: 1.5;
+    color: var(--ink-2);
+    max-width: 66ch;
+    overflow-wrap: anywhere;
+  }
+
+  .note.review p { font-style: italic; }
+
+  /* the trade line */
+  .call {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 8px 14px;
+    padding: 9px 12px;
+    background: var(--surface);
+    border: 1px solid var(--line-soft);
+    border-left: 2px solid var(--line);
+    border-radius: 2px;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12px;
+  }
+
+  .call .dir { font-weight: 600; letter-spacing: .1em; text-transform: uppercase; }
+  .call .dir[data-d="Long"] { color: var(--right); }
+  .call .dir[data-d="Short"] { color: var(--wrong); }
+  .call .dir[data-d="Avoid"] { color: var(--wrong); }
+  .call .dir[data-d="Watch"] { color: var(--muted); }
+  .call .k { color: var(--muted); font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; }
+  .call .v { color: var(--ink); }
+
+  .pips { letter-spacing: .16em; color: var(--accent); font-size: 11px; }
+  .pips .off { color: var(--line); }
+
+  .entry-actions { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; padding-top: 2px; }
+
+  .review-form { display: flex; flex-direction: column; gap: 10px; padding: 12px; background: var(--surface-2); border-radius: 2px; }
+  .review-form .seg label { background: var(--surface); }
+
+  .challenge {
+    border-left: 2px solid var(--accent);
+    padding: 10px 14px;
+    background: var(--accent-wash);
+    border-radius: 2px;
+    font-size: 14px;
+    line-height: 1.55;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  .challenge .lbl { display: block; margin-bottom: 5px; color: var(--accent-ink); }
+
+  .example-banner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 10px 14px;
+    margin-top: 16px;
+    border: 1px dashed var(--line);
+    border-radius: 2px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  article.entry.is-example { opacity: .82; }
+
+  .empty { padding: 40px 0; color: var(--muted); font-family: Newsreader, Georgia, serif; font-size: 16px; }
+
+  footer.foot {
+    margin-top: 40px;
+    padding-top: 16px;
+    border-top: 1px solid var(--line);
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    align-items: center;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: .05em;
+  }
+
+  footer.foot .spacer { flex: 1 1 auto; }
+
+  .toast {
+    position: fixed;
+    left: 50%;
+    bottom: 26px;
+    transform: translateX(-50%) translateY(8px);
+    background: var(--ink);
+    color: var(--ground);
+    padding: 9px 18px;
+    border-radius: 2px;
+    font-size: 13px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .18s, transform .18s;
+    z-index: 50;
+  }
+
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+</style>
+
+<div class="wrap">
+  <header class="masthead">
+    <div class="brand">
+      <h1>Read &amp; Reckon</h1>
+      <span class="sub">Article &rarr; issue &rarr; position</span>
+      <span class="spacer"></span>
+      <button class="link" id="theme-toggle" type="button">Theme</button>
+    </div>
+
+    <div class="calib" id="calib">
+      <div class="cell"><span class="k">Reads logged</span><span class="v" id="s-total">0</span></div>
+      <div class="cell"><span class="k">Open calls</span><span class="v" id="s-open">0</span></div>
+      <div class="cell"><span class="k">Resolved</span><span class="v" id="s-resolved">0</span></div>
+      <div class="cell"><span class="k">Hit rate</span><span class="v dim" id="s-hit">&mdash;</span></div>
+      <div class="cell"><span class="k">Markets covered</span><span class="v" id="s-regions">0</span></div>
+    </div>
+    <p class="calib-note" id="calib-note" hidden>Figures above are from the two example entries &mdash; they reset to yours on your first read.</p>
+  </header>
+
+  <div class="surface">
+    <div class="rail">
+      <form class="capture" id="capture" autocomplete="off">
+        <div class="form-head">
+          <h2 id="form-title">Log a read</h2>
+          <button class="link" type="button" id="cancel-edit" hidden>Cancel</button>
+        </div>
+
+        <div class="field">
+          <label for="f-url">Article link</label>
+          <input type="url" id="f-url" name="url" placeholder="https://…" required>
+        </div>
+
+        <div class="field">
+          <label for="f-title">Headline</label>
+          <input type="text" id="f-title" name="title" placeholder="What was it about?">
+        </div>
+
+        <div class="row2">
+          <div class="field">
+            <label for="f-region">Market / country</label>
+            <input type="text" id="f-region" name="region" placeholder="Vietnam" list="regions">
+            <datalist id="regions">
+              <option value="Argentina"></option><option value="Brazil"></option>
+              <option value="Chile"></option><option value="China"></option>
+              <option value="Egypt"></option><option value="Euro area"></option>
+              <option value="Gulf / GCC"></option><option value="India"></option>
+              <option value="Indonesia"></option><option value="Japan"></option>
+              <option value="Kenya"></option><option value="Mexico"></option>
+              <option value="Nigeria"></option><option value="Peru"></option>
+              <option value="Poland"></option><option value="South Africa"></option>
+              <option value="South Korea"></option><option value="Taiwan"></option>
+              <option value="Turkey"></option><option value="United Kingdom"></option>
+              <option value="United States"></option><option value="Vietnam"></option>
+            </datalist>
+          </div>
+          <div class="field">
+            <label for="f-date">Date read</label>
+            <input type="date" id="f-date" name="date">
+          </div>
+        </div>
+
+        <div class="field">
+          <span class="lbl">Level</span>
+          <div class="seg" role="group" aria-label="Level">
+            <input type="radio" id="lv-macro" name="level" value="Macro" checked><label for="lv-macro">MACRO</label>
+            <input type="radio" id="lv-micro" name="level" value="Micro"><label for="lv-micro">MICRO</label>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="f-issue">What&rsquo;s the issue?</label>
+          <textarea id="f-issue" name="issue" required placeholder="The mechanism, not the headline. Who is forced to do what, and by when?"></textarea>
+        </div>
+
+        <div class="field">
+          <label for="f-thesis">Where would you put money?</label>
+          <textarea id="f-thesis" name="thesis" required placeholder="The market, the instrument, and what has to be true for it to work."></textarea>
+        </div>
+
+        <div class="row2">
+          <div class="field">
+            <label for="f-asset">Instrument</label>
+            <select id="f-asset" name="asset">
+              <option>Equities &mdash; listed</option>
+              <option>Equities &mdash; frontier</option>
+              <option>FX cross</option>
+              <option>Local-currency govt debt</option>
+              <option>Hard-currency sovereign</option>
+              <option>Corporate credit</option>
+              <option>Rates / curve</option>
+              <option>Commodities</option>
+              <option>Real assets</option>
+              <option>Private / direct</option>
+              <option>No position yet</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="f-direction">Direction</label>
+            <select id="f-direction" name="direction">
+              <option>Long</option>
+              <option>Short</option>
+              <option>Avoid</option>
+              <option selected>Watch</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row2">
+          <div class="field">
+            <label for="f-conviction">Conviction</label>
+            <select id="f-conviction" name="conviction">
+              <option value="1">1 &mdash; a hunch</option>
+              <option value="2">2 &mdash; leaning</option>
+              <option value="3" selected>3 &mdash; reasoned</option>
+              <option value="4">4 &mdash; would size it</option>
+              <option value="5">5 &mdash; would concentrate</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="f-horizon">Horizon</label>
+            <select id="f-horizon" name="horizon">
+              <option>Weeks</option>
+              <option selected>3&ndash;12 months</option>
+              <option>1&ndash;2 years</option>
+              <option>3 years +</option>
+            </select>
+          </div>
+        </div>
+
+        <button class="primary" type="submit" id="submit-btn">Log this read</button>
+      </form>
+    </div>
+
+    <main>
+      <div class="blotter-head">
+        <h2>The blotter</h2>
+        <span class="count" id="count">0 entries</span>
+        <span class="spacer"></span>
+        <input type="text" id="search" placeholder="Search issues, markets…" aria-label="Search entries">
+      </div>
+
+      <div class="filters" id="filters">
+        <button class="chip" data-filter="all" aria-pressed="true">All</button>
+        <button class="chip" data-filter="Macro" aria-pressed="false">Macro</button>
+        <button class="chip" data-filter="Micro" aria-pressed="false">Micro</button>
+        <button class="chip" data-filter="open" aria-pressed="false">Open</button>
+        <button class="chip" data-filter="right" aria-pressed="false">Played out</button>
+        <button class="chip" data-filter="wrong" aria-pressed="false">Didn&rsquo;t</button>
+        <button class="chip" data-filter="mixed" aria-pressed="false">Partly</button>
+      </div>
+
+      <div class="entries" id="entries"></div>
+      <div id="example-banner"></div>
+    </main>
+  </div>
+
+  <footer class="foot">
+    <span id="storage-note">Loading&hellip;</span>
+    <span class="spacer"></span>
+    <button class="link" id="export-btn" hidden>Export CSV</button>
+  </footer>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  var STATUS = {
+    open:  { label: "Open" },
+    right: { label: "Played out" },
+    wrong: { label: "Didn't play out" },
+    mixed: { label: "Partly right" }
+  };
+
+  var els = {
+    entries: document.getElementById("entries"),
+    form: document.getElementById("capture"),
+    formTitle: document.getElementById("form-title"),
+    submitBtn: document.getElementById("submit-btn"),
+    cancelEdit: document.getElementById("cancel-edit"),
+    count: document.getElementById("count"),
+    search: document.getElementById("search"),
+    filters: document.getElementById("filters"),
+    banner: document.getElementById("example-banner"),
+    note: document.getElementById("storage-note"),
+    exportBtn: document.getElementById("export-btn"),
+    toast: document.getElementById("toast")
+  };
+
+  var state = {
+    entries: [],
+    filter: "all",
+    query: "",
+    editing: null,
+    showExamples: true,
+    ready: false
+  };
+
+  var db = null, downloads = null, sample = null;
+  var api = (typeof claude !== "undefined" && claude && typeof claude.use === "function") ? claude : null;
+
+  /* ---------- examples: a working state on first open, plainly marked ---------- */
+
+  var EXAMPLES = [
+    {
+      id: "ex1", example: true,
+      url: "https://www.example-wire.com/vietnam-power-tariff-reform",
+      title: "Vietnam raises retail power tariffs for the second time in a year",
+      source: "example-wire.com",
+      date: "2026-08-19", level: "Macro", region: "Vietnam",
+      issue: "EVN has been selling power below cost since the 2022 coal spike, so the deficit sat on the utility's balance sheet rather than in the CPI print. The tariff move is the state finally letting that cost surface. It unblocks the IPP payment queue — independent producers have been waiting 200+ days on receivables — which is the real constraint on new grid connections, not capital.",
+      thesis: "Long the listed Vietnamese construction and grid-equipment names that get paid when EVN's arrears clear, rather than the generators themselves — the generators reprice with the tariff and are already bid. Sized small until the second tariff step is actually gazetted.",
+      asset: "Equities — frontier", direction: "Long", conviction: 3, horizon: "3–12 months",
+      status: "open", review: "",
+      created: "2026-08-19T09:12:00.000Z"
+    },
+    {
+      id: "ex2", example: true,
+      url: "https://www.example-review.org/chile-lithium-royalty-ruling",
+      title: "Chile's constitutional court sends the lithium royalty back to committee",
+      source: "example-review.org",
+      date: "2026-06-02", level: "Micro", region: "Chile",
+      issue: "I read this as a fiscal story and it was a contracts story. The ruling didn't change the tax take much; it reset the CORFO lease negotiation clock, which is what the offtake buyers actually price. I anchored on the headline number and missed that the incumbents' leases run to 2030 either way.",
+      thesis: "Short the junior developers on the assumption permitting costs jump. Wrong axis: the juniors sold off for three weeks, then recovered on offtake news I hadn't been watching.",
+      asset: "Equities — listed", direction: "Short", conviction: 4, horizon: "Weeks",
+      status: "wrong",
+      review: "Lesson: when a legal ruling is the catalyst, find out what contract it touches before deciding what it means for price. Headline tax numbers are the least load-bearing part.",
+      created: "2026-06-02T14:40:00.000Z"
+    }
+  ];
+
+  /* ---------- store: db when available, per-browser fallback otherwise ---------- */
+
+  var LS_KEY = "read-and-reckon-v1";
+  var mode = "local";
+
+  function lsRead() {
+    try { return JSON.parse(localStorage.getItem(LS_KEY) || "[]"); } catch (e) { return []; }
+  }
+
+  function lsWrite(list) {
+    try { localStorage.setItem(LS_KEY, JSON.stringify(list)); } catch (e) { /* private mode */ }
+  }
+
+  function newId() {
+    return "e" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  }
+
+  var store = {
+    put: function (id, data) {
+      if (mode === "db") return db.collection("entries").doc(id).set(data);
+      var list = lsRead().filter(function (e) { return e.id !== id; });
+      list.push(Object.assign({ id: id }, data));
+      lsWrite(list);
+      loadLocal();
+      return Promise.resolve();
+    },
+    remove: function (id) {
+      if (mode === "db") return db.collection("entries").doc(id).delete();
+      lsWrite(lsRead().filter(function (e) { return e.id !== id; }));
+      loadLocal();
+      return Promise.resolve();
+    }
+  };
+
+  function loadLocal() {
+    state.entries = lsRead().sort(function (a, b) {
+      return (b.created || "").localeCompare(a.created || "");
+    });
+    state.ready = true;
+    render();
+  }
+
+  /* ---------- helpers ---------- */
+
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  function hostOf(url) {
+    try { return new URL(url).hostname.replace(/^www\./, ""); } catch (e) { return ""; }
+  }
+
+  function safeHref(url) {
+    return /^https?:\/\//i.test(url || "") ? url : "";
+  }
+
+  function fmtDate(iso) {
+    if (!iso) return "";
+    var d = new Date(iso.length === 10 ? iso + "T12:00:00" : iso);
+    if (isNaN(d)) return "";
+    return d.toLocaleDateString(undefined, { day: "2-digit", month: "short", year: "numeric" });
+  }
+
+  function toast(msg) {
+    els.toast.textContent = msg;
+    els.toast.classList.add("show");
+    clearTimeout(toast._t);
+    toast._t = setTimeout(function () { els.toast.classList.remove("show"); }, 2600);
+  }
+
+  function visible() {
+    var list = state.entries.slice();
+    if (!list.length && state.showExamples) list = EXAMPLES.slice();
+
+    var f = state.filter;
+    if (f !== "all") {
+      list = list.filter(function (e) {
+        return f === "Macro" || f === "Micro" ? e.level === f : e.status === f;
+      });
+    }
+
+    var q = state.query.trim().toLowerCase();
+    if (q) {
+      list = list.filter(function (e) {
+        return ["title", "region", "issue", "thesis", "asset", "review", "source"]
+          .some(function (k) { return String(e[k] || "").toLowerCase().indexOf(q) > -1; });
+      });
+    }
+    return list;
+  }
+
+  /* ---------- calibration strip ---------- */
+
+  function renderStats() {
+    var real = state.entries;
+    var showing = real.length ? real : (state.showExamples ? EXAMPLES : []);
+    var open = 0, right = 0, wrong = 0, mixed = 0, regions = {};
+
+    showing.forEach(function (e) {
+      if (e.status === "open") open++;
+      else if (e.status === "right") right++;
+      else if (e.status === "wrong") wrong++;
+      else if (e.status === "mixed") mixed++;
+      if (e.region) regions[e.region.trim().toLowerCase()] = 1;
+    });
+
+    var resolved = right + wrong + mixed;
+    document.getElementById("s-total").textContent = showing.length;
+    document.getElementById("s-open").textContent = open;
+    document.getElementById("s-resolved").textContent = resolved;
+    document.getElementById("s-regions").textContent = Object.keys(regions).length;
+
+    var hit = document.getElementById("s-hit");
+    if (!resolved) {
+      hit.innerHTML = "&mdash;";
+      hit.classList.add("dim");
+    } else {
+      var score = (right + mixed * 0.5) / resolved;
+      hit.classList.remove("dim");
+      hit.innerHTML = Math.round(score * 100) + "<small>%</small>";
+    }
+  }
+
+  /* ---------- entry rendering ---------- */
+
+  function pips(n) {
+    n = Math.max(1, Math.min(5, Number(n) || 3));
+    var out = "";
+    for (var i = 1; i <= 5; i++) out += i <= n ? "●" : '<span class="off">○</span>';
+    return out;
+  }
+
+  function entryHTML(e) {
+    var href = safeHref(e.url);
+    var src = e.source || hostOf(e.url) || "unlinked";
+    var st = STATUS[e.status] ? e.status : "open";
+    var head = e.title || (href ? src : "Untitled read");
+
+    return '' +
+      '<article class="entry' + (e.example ? " is-example" : "") + '" data-status="' + st + '" data-id="' + esc(e.id) + '">' +
+        '<div class="stripe" aria-hidden="true"></div>' +
+        '<div class="body">' +
+          '<div class="meta">' +
+            '<span>' + esc(fmtDate(e.date || e.created)) + '</span>' +
+            '<span class="dot">/</span>' +
+            '<span>' + esc(src) + '</span>' +
+            (e.region ? '<span class="dot">/</span><span>' + esc(e.region) + '</span>' : "") +
+            '<span class="tag ' + (e.level === "Micro" ? "micro" : "macro") + '">' + esc(e.level || "Macro") + '</span>' +
+            '<span class="status-tag">' + esc(STATUS[st].label) + '</span>' +
+            (e.example ? '<span class="dot">&mdash; example</span>' : "") +
+          '</div>' +
+
+          '<h3>' + (href
+            ? '<a href="' + esc(href) + '" target="_blank" rel="noopener noreferrer">' + esc(head) + '</a>'
+            : esc(head)) + '</h3>' +
+
+          '<div class="note"><span class="lbl">The issue</span><p>' + esc(e.issue) + '</p></div>' +
+          '<div class="note"><span class="lbl">The call</span><p>' + esc(e.thesis) + '</p></div>' +
+
+          '<div class="call">' +
+            '<span class="dir" data-d="' + esc(e.direction || "Watch") + '">' + esc(e.direction || "Watch") + '</span>' +
+            '<span class="v">' + esc(e.asset || "") + '</span>' +
+            '<span class="k">Conviction</span><span class="pips">' + pips(e.conviction) + '</span>' +
+            '<span class="k">Horizon</span><span class="v">' + esc(e.horizon || "") + '</span>' +
+          '</div>' +
+
+          (e.review
+            ? '<div class="note review"><span class="lbl">In hindsight</span><p>' + esc(e.review) + '</p></div>'
+            : "") +
+
+          '<div class="challenge-slot"></div>' +
+
+          (e.example ? "" :
+            '<div class="entry-actions">' +
+              '<button class="link" data-act="review">Review outcome</button>' +
+              '<button class="link" data-act="edit">Edit</button>' +
+              (sample ? '<button class="link" data-act="challenge">Argue the other side</button>' : "") +
+              '<button class="link" data-act="delete">Delete</button>' +
+            '</div>') +
+        '</div>' +
+      '</article>';
+  }
+
+  function render() {
+    var list = visible();
+    els.entries.innerHTML = list.length
+      ? list.map(entryHTML).join("")
+      : '<p class="empty">Nothing matches that filter yet.</p>';
+
+    var n = state.entries.length;
+    var onExamples = !n && state.showExamples;
+    els.count.textContent = onExamples
+      ? EXAMPLES.length + " examples"
+      : (n === 1 ? "1 entry" : n + " entries");
+    document.getElementById("calib-note").hidden = !onExamples;
+
+    els.banner.innerHTML = (!n && state.showExamples)
+      ? '<div class="example-banner"><span>The two entries above are examples, so you can see the shape of a good one. Log your first read and they disappear.</span>' +
+        '<button class="link" id="hide-examples">Hide examples</button></div>'
+      : "";
+
+    var hide = document.getElementById("hide-examples");
+    if (hide) hide.addEventListener("click", function () { state.showExamples = false; render(); });
+
+    renderStats();
+  }
+
+  /* ---------- form ---------- */
+
+  function readForm() {
+    var fd = new FormData(els.form);
+    var url = String(fd.get("url") || "").trim();
+    return {
+      url: url,
+      source: hostOf(url),
+      title: String(fd.get("title") || "").trim(),
+      date: String(fd.get("date") || "").trim(),
+      region: String(fd.get("region") || "").trim(),
+      level: String(fd.get("level") || "Macro"),
+      issue: String(fd.get("issue") || "").trim(),
+      thesis: String(fd.get("thesis") || "").trim(),
+      asset: String(fd.get("asset") || ""),
+      direction: String(fd.get("direction") || "Watch"),
+      conviction: Number(fd.get("conviction") || 3),
+      horizon: String(fd.get("horizon") || "")
+    };
+  }
+
+  function fillForm(e) {
+    els.form.url.value = e.url || "";
+    els.form.title.value = e.title || "";
+    els.form.date.value = e.date || "";
+    els.form.region.value = e.region || "";
+    els.form.issue.value = e.issue || "";
+    els.form.thesis.value = e.thesis || "";
+    els.form.asset.value = e.asset || "Equities — listed";
+    els.form.direction.value = e.direction || "Watch";
+    els.form.conviction.value = String(e.conviction || 3);
+    els.form.horizon.value = e.horizon || "3–12 months";
+    document.getElementById(e.level === "Micro" ? "lv-micro" : "lv-macro").checked = true;
+  }
+
+  function resetForm() {
+    state.editing = null;
+    els.form.reset();
+    els.form.date.value = new Date().toISOString().slice(0, 10);
+    els.formTitle.textContent = "Log a read";
+    els.submitBtn.textContent = "Log this read";
+    els.cancelEdit.hidden = true;
+  }
+
+  els.form.addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    var data = readForm();
+    if (!data.issue || !data.thesis) return;
+
+    var existing = state.editing
+      ? state.entries.filter(function (x) { return x.id === state.editing; })[0]
+      : null;
+
+    var rec = Object.assign({
+      status: existing ? existing.status : "open",
+      review: existing ? (existing.review || "") : "",
+      created: existing ? existing.created : new Date().toISOString()
+    }, data, { updated: new Date().toISOString() });
+
+    var id = state.editing || newId();
+    var wasEdit = !!state.editing;
+
+    store.put(id, rec).then(function () {
+      resetForm();
+      toast(wasEdit ? "Entry updated." : "Logged.");
+    }).catch(function (err) {
+      toast(err && err.code === "quota_exceeded" ? "Store is full — delete some entries first." : "Couldn't save. Try again.");
+    });
+  });
+
+  els.cancelEdit.addEventListener("click", resetForm);
+
+  /* ---------- entry actions ---------- */
+
+  els.entries.addEventListener("click", function (ev) {
+    var btn = ev.target.closest("button[data-act]");
+    if (!btn) return;
+    var art = btn.closest("article.entry");
+    var id = art.getAttribute("data-id");
+    var entry = state.entries.filter(function (x) { return x.id === id; })[0];
+    if (!entry) return;
+
+    var act = btn.getAttribute("data-act");
+
+    if (act === "edit") {
+      state.editing = id;
+      fillForm(entry);
+      els.formTitle.textContent = "Edit entry";
+      els.submitBtn.textContent = "Save changes";
+      els.cancelEdit.hidden = false;
+      els.form.scrollIntoView({ behavior: "smooth", block: "start" });
+      els.form.url.focus();
+      return;
+    }
+
+    if (act === "delete") {
+      if (!window.confirm("Delete this entry? This can't be undone.")) return;
+      store.remove(id).then(function () { toast("Deleted."); });
+      return;
+    }
+
+    if (act === "review") { openReview(art, entry); return; }
+    if (act === "challenge") { runChallenge(art, entry, btn); return; }
+  });
+
+  function openReview(art, entry) {
+    var slot = art.querySelector(".challenge-slot");
+    if (art.querySelector(".review-form")) return;
+
+    var box = document.createElement("div");
+    box.className = "review-form";
+    box.innerHTML =
+      '<span class="lbl">How did it play out?</span>' +
+      '<div class="seg" role="group" aria-label="Outcome">' +
+        ['open', 'right', 'mixed', 'wrong'].map(function (k, i) {
+          var rid = "st-" + entry.id + "-" + k;
+          return '<input type="radio" id="' + rid + '" name="st-' + esc(entry.id) + '" value="' + k + '"' +
+                 ((entry.status || "open") === k ? " checked" : "") + '>' +
+                 '<label for="' + rid + '">' + esc(STATUS[k].label) + '</label>';
+        }).join("") +
+      '</div>' +
+      '<div class="field"><label for="rv-' + esc(entry.id) + '">In hindsight</label>' +
+      '<textarea id="rv-' + esc(entry.id) + '" placeholder="What did you get right, what did you misread, and what would you look at first next time?"></textarea></div>' +
+      '<div class="entry-actions"><button class="primary" type="button" data-save="1">Save review</button>' +
+      '<button class="link" type="button" data-cancel="1">Cancel</button></div>';
+
+    slot.appendChild(box);
+    var ta = box.querySelector("textarea");
+    ta.value = entry.review || "";
+    ta.focus();
+
+    box.querySelector("[data-cancel]").addEventListener("click", function () { box.remove(); });
+    box.querySelector("[data-save]").addEventListener("click", function () {
+      var picked = box.querySelector('input[name="st-' + entry.id + '"]:checked');
+      var next = Object.assign({}, entry, {
+        status: picked ? picked.value : "open",
+        review: ta.value.trim(),
+        reviewed: new Date().toISOString(),
+        updated: new Date().toISOString()
+      });
+      delete next.id;
+      store.put(entry.id, next).then(function () { toast("Review saved."); });
+    });
+  }
+
+  function runChallenge(art, entry, btn) {
+    if (!sample) return;
+    var slot = art.querySelector(".challenge-slot");
+    var box = art.querySelector(".challenge");
+    if (!box) {
+      box = document.createElement("div");
+      box.className = "challenge";
+      slot.appendChild(box);
+    }
+    box.innerHTML = '<span class="lbl">The other side</span><span class="out">Thinking&hellip;</span>';
+    var out = box.querySelector(".out");
+    btn.disabled = true;
+
+    var prompt =
+      "You are a sceptical portfolio manager reviewing a junior analyst's note on a foreign market. " +
+      "Give the strongest case AGAINST their reading. Be concrete and specific to this market. Cover, in three short " +
+      "labelled paragraphs: (1) What the analyst may have misread about the mechanism. (2) What is likely already " +
+      "priced in, and who the natural counterparty on this trade is. (3) The single observable that would tell them " +
+      "they are wrong, and roughly when it would show up. No preamble, no flattery, under 200 words total. " +
+      "Plain text, no markdown formatting.\n\n" +
+      "MARKET: " + (entry.region || "unspecified") + "\n" +
+      "LEVEL: " + (entry.level || "Macro") + "\n" +
+      "ARTICLE: " + (entry.title || entry.url || "untitled") + "\n" +
+      "THE ISSUE AS THEY SEE IT: " + entry.issue + "\n" +
+      "THEIR CALL: " + (entry.direction || "") + " " + (entry.asset || "") +
+      ", conviction " + (entry.conviction || 3) + "/5, horizon " + (entry.horizon || "") + ". " + entry.thesis;
+
+    sample(prompt, {
+      modelTier: "default",
+      onText: function (u) { out.textContent = u.text; }
+    }).then(function (res) {
+      out.textContent = res.text;
+      btn.disabled = false;
+    }).catch(function (err) {
+      var code = err && err.code;
+      out.textContent = code === "rate_limited"
+        ? "Too many requests just now — give it a minute."
+        : (err && err.text) || "Couldn't get a response. Try again.";
+      btn.disabled = false;
+    });
+  }
+
+  /* ---------- filters & search ---------- */
+
+  els.filters.addEventListener("click", function (ev) {
+    var chip = ev.target.closest(".chip");
+    if (!chip) return;
+    state.filter = chip.getAttribute("data-filter");
+    Array.prototype.forEach.call(els.filters.querySelectorAll(".chip"), function (c) {
+      c.setAttribute("aria-pressed", String(c === chip));
+    });
+    render();
+  });
+
+  els.search.addEventListener("input", function () {
+    state.query = els.search.value;
+    render();
+  });
+
+  /* ---------- theme ---------- */
+
+  document.getElementById("theme-toggle").addEventListener("click", function () {
+    var root = document.documentElement;
+    var now = root.getAttribute("data-theme");
+    var dark = now ? now === "dark"
+      : window.matchMedia("(prefers-color-scheme: dark)").matches;
+    root.setAttribute("data-theme", dark ? "light" : "dark");
+  });
+
+  /* ---------- export ---------- */
+
+  function toCSV(rows) {
+    var cols = ["date", "region", "level", "title", "url", "issue", "thesis",
+                "asset", "direction", "conviction", "horizon", "status", "review"];
+    var q = function (v) { return '"' + String(v == null ? "" : v).replace(/"/g, '""') + '"'; };
+    return cols.join(",") + "\n" +
+      rows.map(function (r) { return cols.map(function (c) { return q(r[c]); }).join(","); }).join("\n");
+  }
+
+  /* ---------- boot ---------- */
+
+  resetForm();
+  loadLocal();
+
+  (api ? api.use("db") : Promise.resolve(null)).then(function (d) {
+    if (!d) {
+      els.note.textContent = "Saved in this browser only — entries stay on this device.";
+      return;
+    }
+    db = d;
+    mode = "db";
+    els.note.textContent = "Saved to your library — entries persist across devices and sessions.";
+
+    d.collection("entries").orderBy("created", "desc").limit(500).onSnapshot(
+      function (snap) {
+        state.entries = snap.docs.map(function (doc) {
+          return Object.assign({ id: doc.id }, doc.data());
+        });
+        state.ready = true;
+        render();
+      },
+      function (err) {
+        els.note.textContent = "Reconnect to keep saving — falling back to this browser.";
+        mode = "local";
+        loadLocal();
+      }
+    );
+  }).catch(function () { /* stay local */ });
+
+  (api ? api.use("downloads") : Promise.resolve(null)).then(function (d) {
+    if (!d) return;
+    downloads = d;
+    els.exportBtn.hidden = false;
+    els.exportBtn.addEventListener("click", function () {
+      var rows = state.entries.length ? state.entries : EXAMPLES;
+      downloads.save({
+        filename: "read-and-reckon-" + new Date().toISOString().slice(0, 10) + ".csv",
+        data: toCSV(rows)
+      }).then(function () { toast("Exported."); })
+        .catch(function (err) {
+          if (err && err.code === "declined") return;
+          toast("Export failed.");
+        });
+    });
+  }).catch(function () {});
+
+  (api ? api.use("sample") : Promise.resolve(null)).then(function (s) {
+    if (!s) return;
+    sample = s;
+    render();
+  }).catch(function () {});
+})();
+</script>
