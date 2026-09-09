@@ -183,6 +183,25 @@ button.tile.clickable{
 .trophy .tr-name{font-weight:600; font-size:13px; flex:1; min-width:0}
 .trophy .tr-type{font-family:"IBM Plex Mono",monospace; font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--gold)}
 
+/* ---------- awards ---------- */
+.awards{display:flex; flex-direction:column; gap:12px}
+.award-card{border:1px solid var(--line); border-radius:10px; padding:14px 16px; background:var(--surface)}
+.award-card .ac-head{display:flex; flex-wrap:wrap; align-items:baseline; gap:9px; margin-bottom:11px}
+.award-card .ac-season{font-family:"IBM Plex Mono",monospace; font-size:13px; font-weight:600}
+.award-card .ac-club{font-size:12.5px; color:var(--ink-3)}
+.award-select{
+  padding:7px 10px; border-radius:7px; border:1px solid var(--line); background:var(--surface-2);
+  color:var(--ink); font:inherit; font-size:13.5px; max-width:100%;
+}
+.award-select:hover{border-color:var(--line-strong)}
+.award-winner{
+  display:flex; align-items:center; gap:11px; padding:10px 12px; border-radius:8px; margin-top:11px;
+  background:var(--gold-soft); border:1px solid var(--gold-line);
+}
+.award-winner .aw-ico{flex:none; display:grid; place-items:center}
+.award-winner .aw-name{font-weight:700; font-size:14.5px}
+.award-winner .aw-stats{font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--ink-2); margin-top:1px}
+
 /* ---------- squad table ---------- */
 .table-scroll{overflow-x:auto; margin:0 -16px; padding:0 16px}
 .stack-table{min-width:560px}
@@ -547,6 +566,7 @@ input.cell.wide{width:88px}
     <section id="viewFinances" hidden></section>
     <section id="viewPlayer" hidden></section>
     <section id="viewRoster" hidden></section>
+    <section id="viewAwards" hidden></section>
   </div>
 </div>
 
@@ -674,8 +694,8 @@ function leagueTag(name) {
 const DEMO = {
   meta: {club:"Ashfield United", currency:"£"},
   seasons: {
-    d1:{id:"d1",label:"2024/25",club:"Ashfield United",league:"EFL Championship",order:1},
-    d2:{id:"d2",label:"2025/26",club:"Ashfield United",league:"Premier League",order:2}
+    d1:{id:"d1",label:"2024/25",club:"Ashfield United",league:"EFL Championship",order:1,potsPlayerId:"p1"},
+    d2:{id:"d2",label:"2025/26",club:"Ashfield United",league:"Premier League",order:2,potsPlayerId:"p1"}
   },
   players: {
     p1:{id:"p1",name:"J. Okafor",position:"ST",number:9,age:24,nationality:"Nigeria",joined:"2023",from:"Vitesse",
@@ -953,17 +973,22 @@ function render() {
   $("#viewFinances").hidden = v !== "finances";
   $("#viewPlayer").hidden = v !== "player";
   $("#viewRoster").hidden = v !== "roster";
+  $("#viewAwards").hidden = v !== "awards";
   if (v === "finances") renderFinances();
   else if (v === "player") renderPlayerPage(state.route.id);
   else if (v === "roster") renderRoster();
+  else if (v === "awards") renderAwards();
   else renderOverview(scope);
 }
 
 const ICON = {
   pitch: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M12 4v16M3 9h3v6H3M21 9h-3v6h3"/><circle cx="12" cy="12" r="2.4"/></svg>',
   coin: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><path d="M14.5 9.2A3 3 0 0 0 9.6 10c0 2.6 5 1.4 5 4a3 3 0 0 1-5.1 1M12 7v10"/></svg>',
-  roster: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><path d="M16.5 5.5A3 3 0 0 1 17 11.4M20 19a5 5 0 0 0-3.8-6.4"/></svg>'
+  roster: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><path d="M16.5 5.5A3 3 0 0 1 17 11.4M20 19a5 5 0 0 0-3.8-6.4"/></svg>',
+  award: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2.5 15 9.5 22 10.3 16.7 15 18.3 21.8 12 18 5.7 21.8 7.3 15 2 10.3 9 9.5"/></svg>'
 };
+const STAR_SVG = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2.5 15 9.5 22 10.3 16.7 15 18.3 21.8 12 18 5.7 21.8 7.3 15 2 10.3 9 9.5"/></svg>';
+const potsLabel = () => (view().meta && view().meta.potsLabel) || "Player of the Season";
 
 function renderSidebar() {
   const d = view();
@@ -977,7 +1002,8 @@ function renderSidebar() {
   $("#sideNav").innerHTML =
     nav("#/", ICON.pitch, "Squad &amp; seasons", v === "overview", seasonList().length ? seasonList().length + " szn" : "") +
     nav("#/finances", ICON.coin, "Wages &amp; finances", v === "finances", weekly ? money(weekly, "compact") + "/wk" : "") +
-    nav("#/roster", ICON.roster, "All-time players", v === "roster", players.length || "");
+    nav("#/roster", ICON.roster, "All-time players", v === "roster", players.length || "") +
+    nav("#/awards", ICON.award, "Awards", v === "awards", seasonList().filter(s => s.potsPlayerId).length || "");
   const item = p => '<a class="sq-item" href="#/player/' + encodeURIComponent(p.id) + '"' +
     (v === "player" && state.route.id === p.id ? ' aria-current="page"' : "") + '>' +
     posChip(p.position) + (flagFor(p.nationality) ? '<span class="sq-flag" role="img" aria-label="' + esc(p.nationality) + '">' + flagFor(p.nationality) + '</span>' : "") +
@@ -1230,6 +1256,60 @@ function renderRoster() {
     "</div></div>" + table + "</section>";
 }
 
+/* ---------------- view: awards ----------------------------------------- */
+function awardWinnerCard(r) {
+  return '<div class="award-winner"><span class="aw-ico" aria-hidden="true">' +
+    '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">' +
+    '<polygon points="12 2.5 15 9.5 22 10.3 16.7 15 18.3 21.8 12 18 5.7 21.8 7.3 15 2 10.3 9 9.5"/></svg></span>' +
+    '<div style="flex:1;min-width:0"><div class="aw-name">' + plink(r.p) + ' ' + posChip(r.p.position) + '</div>' +
+    '<div class="aw-stats">' + fmt(r.apps) + ' apps · ' + fmt(r.goals) + ' G · ' + fmt(r.assists) + ' A' +
+    (r.rating ? ' · ' + r.rating.toFixed(2) + ' avg' : '') + '</div></div></div>';
+}
+
+function renderAwards() {
+  $("#pageTitle").textContent = "Awards";
+  const seasons = seasonList().slice().reverse();
+  const label = potsLabel();
+
+  const body = !seasons.length
+    ? '<div class="empty"><b>No seasons yet</b>Add a season on the squad page, then come back here to pick a winner.</div>'
+    : '<div class="awards">' + seasons.map(s => {
+        const candidates = rowsFor(s.id).filter(r => r.apps > 0).sort((a,b) => String(a.p.name).localeCompare(String(b.p.name)));
+        const winner = candidates.find(r => r.p.id === s.potsPlayerId);
+        const options = '<option value="">Not set</option>' +
+          candidates.map(r => '<option value="' + esc(r.p.id) + '"' + (r.p.id === s.potsPlayerId ? " selected" : "") + '>' + esc(r.p.name) + '</option>').join("");
+        return '<div class="award-card"><div class="ac-head">' +
+          '<span class="ac-season">' + esc(s.label) + '</span>' +
+          (s.club ? '<span class="ac-club">' + esc(s.club) + '</span>' : "") +
+          (s.league ? leagueTag(s.league) : "") +
+          '</div>' +
+          (candidates.length
+            ? '<div class="award-pick"><label class="sr" for="pots-' + esc(s.id) + '">' + esc(label) + ' for ' + esc(s.label) + '</label>' +
+              '<select class="award-select" id="pots-' + esc(s.id) + '" data-pots="' + esc(s.id) + '">' + options + '</select></div>'
+            : '<p class="note" style="margin:0">No players recorded for this season yet — add stats and a winner can be picked.</p>') +
+          (winner ? awardWinnerCard(winner) : "") +
+          "</div>";
+      }).join("") + "</div>";
+
+  $("#viewAwards").innerHTML =
+    '<section class="panel"><div class="panel-head"><h2>' + esc(label) + '</h2><div class="toolbar">' +
+      '<span class="note">One winner per season, chosen from anyone with an appearance that year</span>' +
+      '<button class="btn ghost" type="button" id="btnRenameAward">Rename award</button>' +
+    "</div></div>" + body + "</section>";
+}
+
+function openRenameAward() {
+  guard();
+  openDialog("Rename the award",
+    field("Award name", '<input id="fAwardLabel" value="' + esc(potsLabel()) + '" maxlength="40" placeholder="Player of the Season">'),
+    '<button class="btn" type="button" data-close>Cancel</button><button class="btn primary" type="button" id="okAwardLabel">Save</button>',
+    () => { $("#okAwardLabel").onclick = async () => {
+      const label = $("#fAwardLabel").value.trim() || "Player of the Season";
+      await Store.setMeta({potsLabel: label});
+      modal.close(); render();
+    }; });
+}
+
 /* focus survives a re-render while typing in the table */
 const origRender = render;
 render = function () {
@@ -1434,6 +1514,7 @@ document.addEventListener("click", async e => {
   if (t.id === "btnTrophy" || t.id === "btnTrophy2") return openTrophy();
   if (t.id === "btnImport") return openImport();
   if (t.dataset.stattile) return openStatLeaders(t.dataset.stattile);
+  if (t.id === "btnRenameAward") return openRenameAward();
   if (t.id === "btnMenu") { $("#side").classList.add("open"); $("#scrim").hidden = false; return; }
   if (t.id === "scrim") { closeDrawer(); return; }
   if (t.dataset.editplayer) return openEditPlayer(t.dataset.editplayer);
@@ -1512,6 +1593,15 @@ document.addEventListener("change", async e => {
 $("#clubName").addEventListener("change", async e => {
   if (demoOn()) { exitDemo(); }
   await Store.setMeta({club:e.target.value.trim()});
+  render();
+});
+
+document.addEventListener("change", async e => {
+  const el = e.target;
+  if (!el.dataset || !el.dataset.pots) return;
+  if (demoOn()) { exitDemo(); render(); notice("Example cleared — add your own season and squad.", "info"); return; }
+  const s = Store.data.seasons[el.dataset.pots]; if (!s) return;
+  await Store.put("seasons", s.id, Object.assign({}, s, {potsPlayerId: el.value}));
   render();
 });
 
@@ -1925,6 +2015,7 @@ function parseHash() {
   const parts = h.split("/");
   if (parts[0] === "finances") return {view:"finances", id:null};
   if (parts[0] === "roster") return {view:"roster", id:null};
+  if (parts[0] === "awards") return {view:"awards", id:null};
   if (parts[0] === "player" && parts[1]) return {view:"player", id:decodeURIComponent(parts[1])};
   return {view:"overview", id:null};
 }
@@ -2058,7 +2149,11 @@ function renderPlayerPage(id) {
   });
   const showCS = keepsSheets(p) || all.cs > 0;
   const played = per.filter(x => x.apps > 0);
-  const honours = played.reduce((acc,x) => acc.concat(Object.values(d.trophies).filter(t => t.seasonId === x.s.id)), []);
+  const honourItems = played.reduce((acc,x) => {
+    const trophies = Object.values(d.trophies).filter(t => t.seasonId === x.s.id).map(t => ({name:t.name, season:x.s.label, star:false}));
+    const pots = x.s.potsPlayerId === p.id ? [{name:potsLabel(), season:x.s.label, star:true}] : [];
+    return acc.concat(trophies, pots);
+  }, []);
 
   const cell = (sid, field, value) =>
     '<input class="cell" type="number" min="0" ' + (field === "rating" ? 'step="0.1" max="10" ' : 'step="1" ') +
@@ -2112,12 +2207,13 @@ function renderPlayerPage(id) {
       : '<div class="empty" style="padding:14px 6px"><b>No deals recorded</b>Boot sponsors, kit deals, anything the player earns off the pitch.</div>') +
     "</section>";
 
-  const honoursPanel = honours.length
-    ? '<section class="panel"><div class="panel-head"><h2>Honours</h2><span class="note">' + honours.length + " with the club</span></div>" +
-      '<div class="hon">' + honours.map(t => '<span class="h-item">' +
-        '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' +
-        '<path d="M7 4h10v5a5 5 0 0 1-10 0V4Z"/><path d="M17 5h3v2a3 3 0 0 1-3 3"/><path d="M7 5H4v2a3 3 0 0 0 3 3"/><path d="M12 14v4"/><path d="M9 20h6"/></svg>' +
-        esc(t.name) + " <em>" + esc((d.seasons[t.seasonId] || {}).label || "") + "</em></span>").join("") + "</div></section>"
+  const honoursPanel = honourItems.length
+    ? '<section class="panel"><div class="panel-head"><h2>Honours</h2><span class="note">' + honourItems.length + " with the club</span></div>" +
+      '<div class="hon">' + honourItems.map(h => '<span class="h-item">' +
+        (h.star ? STAR_SVG :
+          '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' +
+          '<path d="M7 4h10v5a5 5 0 0 1-10 0V4Z"/><path d="M17 5h3v2a3 3 0 0 1-3 3"/><path d="M7 5H4v2a3 3 0 0 0 3 3"/><path d="M12 14v4"/><path d="M9 20h6"/></svg>') +
+        esc(h.name) + " <em>" + esc(h.season) + "</em></span>").join("") + "</div></section>"
     : "";
 
   const joined = [];

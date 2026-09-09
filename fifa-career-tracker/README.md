@@ -89,11 +89,19 @@ record (so a legend who's since left can still be the all-time top scorer),
 each player carries a Current/Left status, and this is where "+ Player" lives
 for adding someone new to the roster from scratch.
 
+**Awards** — pick a Player of the Season for each season, from anyone who
+made an appearance that year (departed players included, same as everywhere
+else stats live). Each pick shows a small card with their stats for that
+season. The award itself can be renamed — "Rename award" — to whatever your
+club actually calls it; the new name is used everywhere it's referenced,
+including on the winner's own profile.
+
 **Player profile** — one page per player: joined year and previous club, career
 totals, a season-by-season table you can type into, the full contract, brand
-deals with the club share, and the honours won in seasons they played.
-Reachable regardless of squad status — from the current sidebar list, the
-All-time players roster, or any leaderboard entry.
+deals with the club share, and the honours won in seasons they played — club
+trophies (cup icon) and any Player of the Season wins (star icon) together,
+in season order. Reachable regardless of squad status — from the current
+sidebar list, the All-time players roster, or any leaderboard entry.
 
 ## Entering stats
 
