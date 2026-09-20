@@ -1,0 +1,1470 @@
+<title>Bridgewell Tutoring</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Public+Sans:wght@400;500;600;700&display=swap"
+/>
+<style>
+  :root {
+    --paper: #f7f5f0;
+    --card: #fffdfa;
+    --sunk: #efebe3;
+    --ink: #1c1a18;
+    --muted: #6d655a;
+    --rule: #e0d9cd;
+    --accent: #8a2b32;
+    --accent-ink: #fffdfa;
+    --accent-wash: #f3e6e4;
+    --covered: #2c6a4c;
+    --covered-wash: #e4efe6;
+    --amber: #92620f;
+    --amber-wash: #f7eddb;
+    --shadow: 0 1px 1px rgba(40, 30, 20, 0.04), 0 6px 20px rgba(40, 30, 20, 0.05);
+    --display: "Newsreader", Georgia, "Times New Roman", serif;
+    --body: "Public Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #14151a;
+      --card: #1c1e25;
+      --sunk: #23262e;
+      --ink: #ece7de;
+      --muted: #a39a8c;
+      --rule: #333741;
+      --accent: #e08a90;
+      --accent-ink: #1a0e0f;
+      --accent-wash: #2e1d1f;
+      --covered: #6cc496;
+      --covered-wash: #163024;
+      --amber: #dcab5c;
+      --amber-wash: #2f2716;
+      --shadow: 0 1px 1px rgba(0, 0, 0, 0.5), 0 8px 26px rgba(0, 0, 0, 0.35);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --paper: #14151a;
+    --card: #1c1e25;
+    --sunk: #23262e;
+    --ink: #ece7de;
+    --muted: #a39a8c;
+    --rule: #333741;
+    --accent: #e08a90;
+    --accent-ink: #1a0e0f;
+    --accent-wash: #2e1d1f;
+    --covered: #6cc496;
+    --covered-wash: #163024;
+    --amber: #dcab5c;
+    --amber-wash: #2f2716;
+    --shadow: 0 1px 1px rgba(0, 0, 0, 0.5), 0 8px 26px rgba(0, 0, 0, 0.35);
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 16px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--display);
+    font-weight: 600;
+    line-height: 1.15;
+    text-wrap: balance;
+    margin: 0;
+  }
+  h1 {
+    font-size: clamp(1.8rem, 4.5vw, 2.5rem);
+  }
+  h2 {
+    font-size: clamp(1.3rem, 3vw, 1.65rem);
+  }
+  h3 {
+    font-size: 1.1rem;
+  }
+  p {
+    margin: 0;
+  }
+  a {
+    color: var(--accent);
+  }
+
+  .shell {
+    width: min(1060px, 100%);
+    margin-inline: auto;
+    padding-inline: 16px;
+  }
+
+  /* header ------------------------------------------------------------- */
+  .masthead {
+    background: var(--card);
+    border-bottom: 1px solid var(--rule);
+    position: sticky;
+    top: env(safe-area-inset-top, 0px);
+    z-index: 5;
+  }
+  .masthead-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding-block: 14px;
+  }
+  .mark {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: 1.15rem;
+    letter-spacing: -0.01em;
+    margin-right: auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .crest {
+    width: 30px;
+    height: 30px;
+    display: grid;
+    place-items: center;
+    border-radius: 4px 4px 14px 14px;
+    background: var(--accent);
+    color: var(--accent-ink);
+    font-size: 0.95rem;
+    font-weight: 600;
+  }
+  .viewer {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.82rem;
+    color: var(--muted);
+  }
+  .viewer img {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+  }
+
+  .tabs {
+    display: flex;
+    gap: 2px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    border-top: 1px solid var(--rule);
+  }
+  .tabs::-webkit-scrollbar {
+    display: none;
+  }
+  .tab {
+    appearance: none;
+    background: none;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    color: var(--muted);
+    font: 500 0.92rem/1 var(--body);
+    padding: 13px 14px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .tab:hover {
+    color: var(--ink);
+  }
+  .tab[aria-selected="true"] {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+  .tab:focus-visible,
+  .btn:focus-visible,
+  select:focus-visible,
+  input:focus-visible,
+  textarea:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  main {
+    padding-block: 28px 56px;
+  }
+  .panel-head {
+    max-width: 62ch;
+    margin-bottom: 24px;
+    display: grid;
+    gap: 8px;
+  }
+  .panel-head p {
+    color: var(--muted);
+  }
+  section + section {
+    margin-top: 32px;
+  }
+
+  /* shared bits --------------------------------------------------------- */
+  .chip {
+    font: 500 0.72rem/1.5 var(--body);
+    letter-spacing: 0.02em;
+    padding: 2px 8px;
+    border-radius: 3px;
+    background: var(--sunk);
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .chip.stage {
+    background: var(--accent-wash);
+    color: var(--accent);
+  }
+  .chip.good {
+    background: var(--covered-wash);
+    color: var(--covered);
+  }
+  .chip.warn {
+    background: var(--amber-wash);
+    color: var(--amber);
+  }
+  .meta {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .rowline {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .btn {
+    appearance: none;
+    font: 600 0.87rem/1 var(--body);
+    padding: 9px 14px;
+    border-radius: 4px;
+    border: 1px solid var(--rule);
+    background: var(--card);
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .btn:hover:not(:disabled) {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .btn.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--accent-ink);
+  }
+  .btn.primary:hover:not(:disabled) {
+    color: var(--accent-ink);
+    opacity: 0.9;
+  }
+  .btn.tiny {
+    padding: 6px 10px;
+    font-size: 0.78rem;
+  }
+  .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  select,
+  input,
+  textarea {
+    font: 400 0.92rem/1.4 var(--body);
+    color: var(--ink);
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    padding: 9px 10px;
+    width: 100%;
+    max-width: 100%;
+  }
+  textarea {
+    min-height: 96px;
+    resize: vertical;
+  }
+  label {
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 5px;
+  }
+  .field-row {
+    display: grid;
+    gap: 14px;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  }
+  .note {
+    background: var(--sunk);
+    border-left: 2px solid var(--rule);
+    padding: 10px 14px;
+    color: var(--muted);
+    font-size: 0.87rem;
+    border-radius: 0 4px 4px 0;
+  }
+  .empty {
+    border: 1px dashed var(--rule);
+    border-radius: 6px;
+    padding: 28px;
+    text-align: center;
+    color: var(--muted);
+  }
+</style>
+<style>
+  /* courses ------------------------------------------------------------ */
+  .filters {
+    display: grid;
+    gap: 14px;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    padding: 16px;
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    margin-bottom: 20px;
+  }
+  .course-list {
+    display: grid;
+    gap: 14px;
+  }
+  .course {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+  .course > summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 18px;
+    display: grid;
+    gap: 6px;
+  }
+  .course > summary::-webkit-details-marker {
+    display: none;
+  }
+  .course-title {
+    display: flex;
+    gap: 10px;
+    align-items: baseline;
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+  .course-title h3 {
+    font-size: 1.22rem;
+  }
+  .course-title h3::after,
+  .tracker-head h3::after {
+    content: " ▸";
+    color: var(--accent);
+    font-family: var(--body);
+    font-size: 0.8rem;
+    display: inline-block;
+    transition: transform 0.18s ease;
+  }
+  details[open] > summary .course-title h3::after,
+  details[open] > summary .tracker-head h3::after {
+    transform: rotate(90deg);
+  }
+  .course-body {
+    padding: 0 18px 18px;
+    display: grid;
+    gap: 14px;
+    border-top: 1px solid var(--rule);
+    padding-top: 16px;
+  }
+  .topic-grid {
+    display: grid;
+    gap: 6px 18px;
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    font-size: 0.88rem;
+    counter-reset: topic;
+  }
+  .topic-grid li {
+    list-style: none;
+    color: var(--muted);
+    display: flex;
+    gap: 8px;
+  }
+  .topic-grid li::before {
+    counter-increment: topic;
+    content: counter(topic);
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--accent);
+    min-width: 1.2em;
+  }
+  ul.topic-grid {
+    margin: 0;
+    padding: 0;
+  }
+
+  /* timetable ----------------------------------------------------------- */
+  .timetable {
+    display: grid;
+    gap: 0;
+  }
+  .slot {
+    display: grid;
+    grid-template-columns: 74px 1fr;
+    gap: 18px;
+    padding-bottom: 18px;
+  }
+  .slot-time {
+    font-family: var(--mono);
+    font-size: 0.92rem;
+    font-weight: 500;
+    padding-top: 16px;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+  .slot-classes {
+    display: grid;
+    gap: 12px;
+    border-left: 1px solid var(--rule);
+    padding-left: 18px;
+  }
+  .class {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    padding: 16px;
+    display: grid;
+    gap: 8px;
+    box-shadow: var(--shadow);
+    position: relative;
+  }
+  .class.booked {
+    border-color: var(--covered);
+  }
+  .class-head {
+    display: flex;
+    gap: 10px;
+    align-items: baseline;
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+  .class p.desc {
+    color: var(--muted);
+    font-size: 0.9rem;
+    max-width: 60ch;
+  }
+  .class-foot {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    border-top: 1px dashed var(--rule);
+    padding-top: 10px;
+  }
+  .seats {
+    display: flex;
+    gap: 3px;
+    align-items: center;
+  }
+  .seat {
+    width: 9px;
+    height: 9px;
+    border-radius: 2px;
+    background: var(--covered);
+  }
+  .seat.taken {
+    background: var(--rule);
+  }
+
+  /* reviews -------------------------------------------------------------- */
+  .review-grid {
+    display: grid;
+    gap: 16px;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  }
+  .review {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    padding: 16px;
+    display: grid;
+    gap: 7px;
+    align-content: start;
+  }
+  .stars {
+    color: var(--accent);
+    letter-spacing: 2px;
+    font-size: 0.95rem;
+  }
+  .review h3 {
+    font-size: 1.05rem;
+  }
+  .review p.text {
+    color: var(--muted);
+    font-size: 0.92rem;
+  }
+  .score {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    font-family: var(--display);
+  }
+  .score strong {
+    font-size: 2.6rem;
+    font-weight: 500;
+    line-height: 1;
+  }
+  .form-card {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    padding: 18px;
+    display: grid;
+    gap: 14px;
+    max-width: 560px;
+  }
+
+  /* progress -------------------------------------------------------------- */
+  .tracker {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    margin-bottom: 14px;
+    overflow: hidden;
+  }
+  .tracker > summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 16px 18px;
+    display: grid;
+    gap: 10px;
+  }
+  .tracker > summary::-webkit-details-marker {
+    display: none;
+  }
+  .tracker-head {
+    display: flex;
+    gap: 10px;
+    align-items: baseline;
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+  .bar {
+    height: 6px;
+    border-radius: 3px;
+    background: var(--sunk);
+    overflow: hidden;
+  }
+  .bar > span {
+    display: block;
+    height: 100%;
+    background: var(--covered);
+  }
+  .topics {
+    margin: 0;
+    padding: 0 18px 18px;
+    display: grid;
+    gap: 4px;
+    list-style: none;
+  }
+  .topic {
+    display: grid;
+    grid-template-columns: 22px 1fr auto;
+    gap: 10px;
+    align-items: center;
+    padding: 9px 10px;
+    border-radius: 4px;
+    background: var(--sunk);
+    font-size: 0.92rem;
+  }
+  .topic.covered,
+  .topic.secure {
+    background: var(--covered-wash);
+  }
+  .topic .tick {
+    font-family: var(--mono);
+    color: var(--muted);
+    text-align: center;
+  }
+  .topic.covered .tick,
+  .topic.secure .tick {
+    color: var(--covered);
+  }
+  .topic .when {
+    grid-column: 2 / -1;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--muted);
+  }
+  .setters {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+  .setters .btn.on {
+    background: var(--muted);
+    border-color: var(--muted);
+    color: var(--card);
+  }
+  .setters .btn.on[data-status="covered"],
+  .setters .btn.on[data-status="secure"] {
+    background: var(--covered);
+    border-color: var(--covered);
+    color: #fff;
+  }
+  .student-row {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+  }
+  .student-row .who {
+    display: grid;
+    gap: 2px;
+  }
+  .student-row .name {
+    font-weight: 600;
+  }
+
+  footer.foot {
+    border-top: 1px solid var(--rule);
+    padding-block: 22px 32px;
+    color: var(--muted);
+    font-size: 0.84rem;
+    display: grid;
+    gap: 4px;
+  }
+
+  #flash {
+    position: fixed;
+    left: 50%;
+    bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+    transform: translate(-50%, 150%);
+    background: var(--ink);
+    color: var(--paper);
+    padding: 9px 18px;
+    border-radius: 999px;
+    font-size: 0.87rem;
+    font-weight: 600;
+    transition: transform 0.24s ease;
+    z-index: 20;
+    max-width: calc(100% - 32px);
+    text-align: center;
+  }
+  #flash.show {
+    transform: translate(-50%, 0);
+  }
+  #flash:empty {
+    display: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      transition: none !important;
+      animation: none !important;
+    }
+  }
+
+  @media (max-width: 560px) {
+    .slot {
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+    .slot-classes {
+      border-left: 0;
+      padding-left: 0;
+    }
+    .slot-time {
+      padding-top: 0;
+      color: var(--accent);
+    }
+    .topic {
+      grid-template-columns: 22px 1fr;
+    }
+    .topic .setters {
+      grid-column: 2 / -1;
+    }
+  }
+</style>
+<header class="masthead">
+  <div class="shell">
+    <div class="masthead-row">
+      <div class="mark"><span class="crest" aria-hidden="true">B</span> Bridgewell Tutoring</div>
+      <div class="viewer" id="viewer"><span>Loading your account…</span></div>
+    </div>
+  </div>
+  <div class="shell">
+    <div class="tabs" role="tablist" aria-label="Sections">
+      <button class="tab" role="tab" id="tab-courses" aria-controls="panel-courses" aria-selected="true" data-tab="courses">Courses</button>
+      <button class="tab" role="tab" id="tab-saturday" aria-controls="panel-saturday" aria-selected="false" data-tab="saturday">Saturday classes</button>
+      <button class="tab" role="tab" id="tab-reviews" aria-controls="panel-reviews" aria-selected="false" data-tab="reviews">Reviews</button>
+      <button class="tab" role="tab" id="tab-learning" aria-controls="panel-learning" aria-selected="false" data-tab="learning">My learning</button>
+      <button class="tab" role="tab" id="tab-tutor" aria-controls="panel-tutor" aria-selected="false" data-tab="tutor">Tutor view</button>
+    </div>
+  </div>
+</header>
+
+<main class="shell">
+  <section id="panel-courses" role="tabpanel" aria-labelledby="tab-courses"></section>
+  <section id="panel-saturday" role="tabpanel" aria-labelledby="tab-saturday" hidden></section>
+  <section id="panel-reviews" role="tabpanel" aria-labelledby="tab-reviews" hidden></section>
+  <section id="panel-learning" role="tabpanel" aria-labelledby="tab-learning" hidden></section>
+  <section id="panel-tutor" role="tabpanel" aria-labelledby="tab-tutor" hidden></section>
+</main>
+
+<footer class="foot shell">
+  <p><strong>Bridgewell Tutoring</strong> — KS2, KS3, GCSE and A Level tuition, online and at the centre.</p>
+  <p id="foot-note">
+    Interactive demo. Courses you add, Saturday bookings, reviews and topic ticks are shared with everyone who opens
+    this page.
+  </p>
+</footer>
+
+<div id="flash" role="status" aria-live="polite"></div>
+
+<script>
+  const CATALOGUE = {"courses":[{"slug":"ks2-english-sats","title":"KS2 English & SATs Preparation","subject":"English","stage":"ks2","summary":"Reading comprehension, SPaG and writing stamina ahead of Year 6 SATs.","description":"Structured preparation for the KS2 reading and SPaG papers, alongside weekly extended writing to build stamina and confidence. Each session ends with a short piece of marked writing.","price":2800,"length":"45 minutes, weekly","topics":["Retrieval questions","Inference and deduction","Vocabulary in context","Word classes and clause types","Punctuation: commas, apostrophes, speech","Active and passive voice","Planning a narrative","Descriptive writing techniques","Non-fiction: reports and persuasive writing","Editing and proofreading"]},{"slug":"ks2-maths-foundations","title":"KS2 Maths Foundations","subject":"Maths","stage":"ks2","summary":"Number confidence, times tables and problem solving for Years 3-6.","description":"Small-group and one-to-one sessions that rebuild number confidence from the ground up. We work through the KS2 national curriculum at the pace the child needs, with plenty of practical apparatus and low-stakes practice.","price":2800,"length":"45 minutes, weekly","topics":["Place value to 1,000,000","Addition and subtraction (column method)","Times tables to 12x12","Short and long multiplication","Short and long division","Fractions: equivalence and simplifying","Adding and subtracting fractions","Decimals and percentages","Measurement: length, mass and capacity","Perimeter, area and volume","Angles and 2D shape properties","Reading and drawing charts","Multi-step word problems"]},{"slug":"ks3-maths-bridge","title":"KS3 Maths (Years 7-9)","subject":"Maths","stage":"ks3","summary":"Bridging primary arithmetic into algebra, ratio and geometry.","description":"The KS3 years are where gaps quietly open up before GCSE. This course covers the full Year 7-9 programme of study, with diagnostic checks each half term so we can go back over anything that has not stuck.","price":3200,"length":"1 hour, weekly","topics":["Negative numbers and order of operations","Prime factors, HCF and LCM","Introduction to algebraic notation","Solving linear equations","Expanding and factorising","Sequences and the nth term","Ratio and proportion","Percentages: increase, decrease and reverse","Straight line graphs","Angles in parallel lines and polygons","Transformations","Averages and data handling","Probability basics"]},{"slug":"ks3-science","title":"KS3 Science (Years 7-9)","subject":"Science","stage":"ks3","summary":"Biology, chemistry and physics fundamentals with practical investigation skills.","description":"A single course covering all three sciences at KS3, with an emphasis on working scientifically: variables, fair tests, graphs and conclusions. Ideal preparation for setting decisions at the end of Year 9.","price":3200,"length":"1 hour, weekly","topics":["Cells and organisation","Body systems: digestion and circulation","Reproduction and inheritance","Photosynthesis and ecosystems","Particle model and states of matter","Atoms, elements and compounds","Chemical reactions and word equations","Acids and alkalis","Forces and motion","Energy stores and transfers","Electricity and circuits","Light and sound waves","Working scientifically: variables and graphs"]},{"slug":"gcse-combined-science","title":"GCSE Combined Science (Trilogy)","subject":"Science","stage":"gcse","summary":"Biology, chemistry and physics content plus the required practicals.","description":"Covers the combined science specification including all required practicals and the maths skills that appear in the papers. We rotate across the three sciences so nothing is left until the last term.","price":3800,"length":"1 hour, weekly","topics":["Cell biology and transport","Infection and response","Bioenergetics","Homeostasis and the nervous system","Inheritance, variation and evolution","Atomic structure and the periodic table","Bonding, structure and properties","Quantitative chemistry","Chemical and energy changes","Rates of reaction and organic chemistry","Energy and efficiency","Electricity","Particle model and atomic structure","Forces and motion","Waves and electromagnetism","Required practicals and working scientifically"]},{"slug":"gcse-computer-science","title":"GCSE Computer Science","subject":"Computer Science","stage":"gcse","summary":"Theory papers plus Python programming practice.","description":"Covers both the theory paper and the programming paper, with weekly Python exercises. Suitable for students who are strong at maths but new to writing code.","price":3800,"length":"1 hour, weekly","topics":["Binary, hexadecimal and data representation","CPU architecture and the fetch-execute cycle","Memory and storage","Networks and topologies","Network security and threats","Operating systems and utility software","Algorithms: searching and sorting","Computational thinking and flowcharts","Python: selection and iteration","Python: functions and subprograms","Python: arrays, lists and file handling","SQL and databases","Ethical, legal and environmental impacts"]},{"slug":"gcse-english-language","title":"GCSE English Language","subject":"English","stage":"gcse","summary":"Paper 1 and Paper 2 technique, plus the spoken language endorsement.","description":"Focused work on the assessment objectives that carry the most marks: language analysis, structural analysis, comparison of viewpoints and the two writing questions. Every piece of writing is marked against the mark scheme.","price":3800,"length":"1 hour, weekly","topics":["Paper 1 Q2: language analysis","Paper 1 Q3: structural analysis","Paper 1 Q4: evaluation","Paper 1 Q5: descriptive and narrative writing","Paper 2 Q2: summary and synthesis","Paper 2 Q4: comparing viewpoints","Paper 2 Q5: writing to argue and persuade","Sentence variety and punctuation for effect","Timing and planning under exam conditions","Spoken language presentation"]},{"slug":"gcse-maths-higher","title":"GCSE Maths (Higher Tier)","subject":"Maths","stage":"gcse","summary":"Full Higher tier coverage with exam technique for grades 6-9.","description":"Complete Higher tier coverage across all exam boards, including the topics that decide grades 7-9: surds, algebraic fractions, circle theorems, vectors and iterative methods. Past paper questions every session.","price":3800,"length":"1 hour, weekly","topics":["Surds and indices","Algebraic fractions","Quadratics: factorising, formula, completing the square","Simultaneous equations (linear and quadratic)","Inequalities and regions","Functions and inverse functions","Iteration and numerical methods","Circle theorems","Trigonometry: SOHCAHTOA","Sine and cosine rules","Vectors and geometric proof","Similarity and congruence","Histograms and cumulative frequency","Probability trees and conditional probability","Direct and inverse proportion","Transformations of graphs"]},{"slug":"alevel-maths","title":"A Level Maths","subject":"Maths","stage":"alevel","summary":"Pure, statistics and mechanics across Years 12 and 13.","description":"Year 12 and Year 13 content taught alongside school, with a focus on the proof and modelling skills that students find hardest in the transition from GCSE. Includes support for the large data set.","price":4500,"length":"1 hour, weekly","topics":["Proof: deduction, exhaustion and counter-example","Algebraic methods and partial fractions","Binomial expansion","Coordinate geometry and circles","Trigonometric identities and equations","Differentiation from first principles","Chain, product and quotient rules","Integration and areas under curves","Integration by parts and substitution","Exponentials and logarithms","Parametric equations","Numerical methods","Vectors in 2D and 3D","Statistical sampling and the large data set","Probability distributions (binomial and normal)","Hypothesis testing","Kinematics and constant acceleration","Newton's laws and connected particles","Moments"]},{"slug":"alevel-physics","title":"A Level Physics","subject":"Physics","stage":"alevel","summary":"Mechanics, fields, quantum and practical endorsement support.","description":"Full A Level physics content with a strong emphasis on the mathematical skills and the practical endorsement. Multi-step exam questions are broken down step by step until the method becomes automatic.","price":4500,"length":"1 hour, weekly","topics":["Measurements and uncertainties","Kinematics and projectiles","Newton's laws and momentum","Work, energy and power","Materials and Young modulus","Waves and superposition","Quantum phenomena and the photoelectric effect","DC circuits and internal resistance","Circular motion","Simple harmonic motion","Gravitational fields","Electric fields and capacitance","Magnetic fields and induction","Thermal physics and gas laws","Nuclear physics and radioactivity","Practical endorsement skills"]}],"classes":[{"slug":"sat-ks2-maths-booster","title":"KS2 Maths Booster","subject":"Maths","stage":"ks2","starts":"09:00","ends":"10:00","tutor":"Ms Rowan Blake","room":"Room 1","capacity":8,"price":1800,"description":"Arithmetic fluency and a weekly problem-solving challenge. Groups of no more than eight, split by year group."},{"slug":"sat-gcse-maths-clinic","title":"GCSE Maths Higher Clinic","subject":"Maths","stage":"gcse","starts":"09:00","ends":"10:30","tutor":"Mr Idris Bello","room":"Room 2","capacity":10,"price":2500,"description":"Bring the questions you got stuck on that week. We work them through on the board, then drill the same idea on fresh questions."},{"slug":"sat-ks2-english","title":"KS2 Reading and Writing","subject":"English","stage":"ks2","starts":"10:00","ends":"11:00","tutor":"Mrs Ella Vance","room":"Room 1","capacity":8,"price":1800,"description":"Comprehension practice in the first half, a piece of extended writing in the second, marked before the next week."},{"slug":"sat-gcse-science-lab","title":"GCSE Science Practical Lab","subject":"Science","stage":"gcse","starts":"10:30","ends":"12:00","tutor":"Dr Nina Shah","room":"Laboratory","capacity":12,"price":3000,"description":"The required practicals, actually carried out rather than described, with the exam questions that come from each one."},{"slug":"sat-ks3-maths","title":"KS3 Maths and Problem Solving","subject":"Maths","stage":"ks3","starts":"11:00","ends":"12:00","tutor":"Mr Idris Bello","room":"Room 2","capacity":10,"price":2000,"description":"Keeps Year 7 to 9 ahead of the school scheme of work, with UKMT junior challenge questions once a month."},{"slug":"sat-gcse-english","title":"GCSE English Language Workshop","subject":"English","stage":"gcse","starts":"11:00","ends":"12:30","tutor":"Mrs Ella Vance","room":"Room 3","capacity":10,"price":2500,"description":"One exam question per week, planned, written under timed conditions and marked against the mark scheme."},{"slug":"sat-alevel-maths","title":"A Level Maths Workshop","subject":"Maths","stage":"alevel","starts":"12:00","ends":"13:30","tutor":"Ms Rowan Blake","room":"Room 3","capacity":8,"price":3200,"description":"Pure, statistics and mechanics on a rotation, pitched at the step up from GCSE in Year 12 and revision in Year 13."},{"slug":"sat-alevel-physics","title":"A Level Physics Problem Class","subject":"Physics","stage":"alevel","starts":"13:30","ends":"15:00","tutor":"Dr Nina Shah","room":"Laboratory","capacity":8,"price":3200,"description":"Multi-step exam questions broken down on the board, then worked independently with help on hand."}]}
+  const STAGES = [
+    { id: "ks2", label: "KS2 (Primary, Years 3-6)", short: "KS2" },
+    { id: "ks3", label: "KS3 (Secondary, Years 7-9)", short: "KS3" },
+    { id: "gcse", label: "GCSE (Years 10-11)", short: "GCSE" },
+    { id: "alevel", label: "A Level (Years 12-13)", short: "A Level" },
+  ]
+  const STATUS = { not_started: "Not covered yet", covered: "Covered", secure: "Secure" }
+  const STAGE_RANK = { ks2: 1, ks3: 2, gcse: 3, alevel: 4 }
+
+  const state = {
+    tab: "courses",
+    db: null,
+    user: null,
+    uid: null,
+    me: null,
+    writable: null,
+    students: new Map(),
+    bookings: new Map(),
+    reviews: [],
+    profiles: {},
+    filters: { stage: "", subject: "", q: "" },
+    openStudent: null,
+    shared: false,
+  }
+
+  const esc = (value) =>
+    String(value ?? "").replace(
+      /[&<>"']/g,
+      (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c],
+    )
+  const money = (pence) => "£" + Math.round(pence / 100)
+  const stageLabel = (id) => (STAGES.find((s) => s.id === id) || {}).label || id
+  const stars = (n) => "★".repeat(Math.round(n)) + "☆".repeat(5 - Math.round(n))
+  const key = (slug, index) => slug + ":" + index
+  const when = (iso) => {
+    if (!iso) return ""
+    const d = new Date(iso)
+    return isNaN(d) ? "" : d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
+  }
+
+  let flashTimer
+  function flash(message) {
+    const node = document.getElementById("flash")
+    node.textContent = message
+    node.classList.add("show")
+    clearTimeout(flashTimer)
+    flashTimer = setTimeout(() => node.classList.remove("show"), 3000)
+  }
+
+  const subjects = [...new Set(CATALOGUE.courses.map((c) => c.subject))].sort()
+  const courseBySlug = (slug) => CATALOGUE.courses.find((c) => c.slug === slug)
+  const sortedCourses = [...CATALOGUE.courses].sort(
+    (a, b) => STAGE_RANK[a.stage] - STAGE_RANK[b.stage] || a.title.localeCompare(b.title),
+  )
+
+  const myDoc = () => (state.uid && state.students.get(state.uid)) || null
+  const myCourses = () => (myDoc() || {}).courses || []
+  const myBookings = () => ((state.uid && state.bookings.get(state.uid)) || {}).classes || []
+  const takenSeats = (slug) =>
+    [...state.bookings.values()].filter((row) => (row.classes || []).includes(slug)).length
+  const nameFor = (id, doc) => (doc && doc.demoName) || (state.profiles[id] || {}).name || "A student"
+
+  function counts(doc, slug) {
+    const course = courseBySlug(slug)
+    if (!course) return { total: 0, covered: 0, secure: 0, percent: 0 }
+    const progress = (doc && doc.progress) || {}
+    const rows = course.topics.map((_, index) => (progress[key(slug, index)] || {}).status || "not_started")
+    const covered = rows.filter((s) => s !== "not_started").length
+    return {
+      total: rows.length,
+      covered,
+      secure: rows.filter((s) => s === "secure").length,
+      percent: rows.length ? Math.round((covered / rows.length) * 100) : 0,
+    }
+  }
+
+  /* ---- writes ---------------------------------------------------------- */
+
+  function needsAccount() {
+    if (state.uid) return false
+    flash("Open this page signed in to save changes.")
+    return true
+  }
+
+  async function saveStudent(patch) {
+    if (needsAccount()) return
+    const current = state.students.get(state.uid) || { stage: "", courses: [], progress: {} }
+    const next = Object.assign({}, current, patch)
+    state.students.set(state.uid, next)
+    render()
+    await write(() => state.db.doc("students/" + state.uid).set(next))
+  }
+
+  async function setStatus(studentId, topicKey, status, note) {
+    const doc = state.students.get(studentId)
+    if (!doc) return
+    const progress = Object.assign({}, doc.progress || {})
+    const previous = progress[topicKey] || {}
+    progress[topicKey] = {
+      status,
+      note: note === undefined ? previous.note || "" : note,
+      by: state.uid || "tutor",
+      at: new Date().toISOString(),
+    }
+    const next = Object.assign({}, doc, { progress })
+    state.students.set(studentId, next)
+    render()
+    await write(() => state.db.doc("students/" + studentId).set(next))
+  }
+
+  async function toggleBooking(slug) {
+    if (needsAccount()) return
+    const mine = new Set(myBookings())
+    if (mine.has(slug)) mine.delete(slug)
+    else {
+      const item = CATALOGUE.classes.find((c) => c.slug === slug)
+      if (takenSeats(slug) >= item.capacity) return flash("That class is full — ask us about the waiting list.")
+      mine.add(slug)
+    }
+    const next = { classes: [...mine] }
+    state.bookings.set(state.uid, next)
+    render()
+    flash(mine.has(slug) ? "Place booked" : "Place cancelled")
+    await write(() => state.db.doc("bookings/" + state.uid).set(next))
+  }
+
+  async function addReview(review) {
+    const row = {
+      by: state.uid || null,
+      rating: review.rating,
+      title: review.title,
+      body: review.body,
+      course: review.course || "",
+      at: new Date().toISOString(),
+    }
+    if (!state.db) {
+      state.reviews = [Object.assign({ id: "local-" + Date.now(), demoName: "You" }, row)].concat(state.reviews)
+      render()
+      flash("Review added (this view only — it is not shared)")
+      return
+    }
+    await write(() => state.db.collection("reviews").add(row), "Thank you — your review is published")
+  }
+
+  async function write(run, message) {
+    if (!state.db) return
+    try {
+      await run()
+      if (message) flash(message)
+    } catch (error) {
+      if (error && error.code === "invalid_argument") {
+        state.writable = false
+        render()
+        flash("You have view-only access, so that change was not saved.")
+        return
+      }
+      flash("That did not save. Please try again.")
+    }
+  }
+
+  /* ---- panels ---------------------------------------------------------- */
+
+  function renderCourses() {
+    const list = sortedCourses
+      .filter((c) => !state.filters.stage || c.stage === state.filters.stage)
+      .filter((c) => !state.filters.subject || c.subject === state.filters.subject)
+      .filter((c) => {
+        const q = state.filters.q.trim().toLowerCase()
+        return !q || (c.title + " " + c.summary + " " + c.topics.join(" ")).toLowerCase().includes(q)
+      })
+
+    const mine = myCourses()
+    return `
+      <div class="panel-head">
+        <h1>What we teach</h1>
+        <p>
+          Weekly one-to-one and small-group tuition from KS2 to A Level, planned around your school's exam board.
+          Open a course to see every topic it covers — these are the topics your tutor ticks off as you go.
+        </p>
+      </div>
+      <div class="filters">
+        <div>
+          <label for="f-stage">Stage</label>
+          <select id="f-stage" data-filter="stage">
+            <option value="">All stages</option>
+            ${STAGES.map((s) => `<option value="${s.id}" ${state.filters.stage === s.id ? "selected" : ""}>${esc(s.label)}</option>`).join("")}
+          </select>
+        </div>
+        <div>
+          <label for="f-subject">Subject</label>
+          <select id="f-subject" data-filter="subject">
+            <option value="">All subjects</option>
+            ${subjects.map((s) => `<option value="${esc(s)}" ${state.filters.subject === s ? "selected" : ""}>${esc(s)}</option>`).join("")}
+          </select>
+        </div>
+        <div>
+          <label for="f-q">Search topics</label>
+          <input id="f-q" data-filter="q" value="${esc(state.filters.q)}" placeholder="e.g. circle theorems" />
+        </div>
+      </div>
+      ${
+        list.length
+          ? `<div class="course-list">${list
+              .map((course) => {
+                const held = mine.includes(course.slug)
+                return `<details class="course">
+                  <summary>
+                    <div class="course-title">
+                      <h3>${esc(course.title)}</h3>
+                      <span class="meta">${money(course.price)} · ${esc(course.length)}</span>
+                    </div>
+                    <div class="rowline">
+                      <span class="chip stage">${esc(stageLabel(course.stage))}</span>
+                      <span class="chip">${esc(course.subject)}</span>
+                      <span class="chip">${course.topics.length} topics</span>
+                      ${held ? '<span class="chip good">In my courses</span>' : ""}
+                    </div>
+                    <p style="color:var(--muted);font-size:0.92rem">${esc(course.summary)}</p>
+                  </summary>
+                  <div class="course-body">
+                    <p style="font-size:0.93rem">${esc(course.description)}</p>
+                    <ul class="topic-grid">${course.topics.map((t) => `<li>${esc(t)}</li>`).join("")}</ul>
+                    <div>
+                      <button class="btn ${held ? "" : "primary"}" data-course-toggle="${esc(course.slug)}">
+                        ${held ? "Remove from my courses" : "Add to my courses"}
+                      </button>
+                    </div>
+                  </div>
+                </details>`
+              })
+              .join("")}</div>`
+          : `<div class="empty">No courses match those filters.</div>`
+      }`
+  }
+
+  function renderSaturday() {
+    const slots = [...new Set(CATALOGUE.classes.map((c) => c.starts))].sort()
+    const mine = myBookings()
+    return `
+      <div class="panel-head">
+        <h1>Saturday classes</h1>
+        <p>
+          Small-group classes at the centre every Saturday in term time, 9am to 3pm. Book a regular place, or drop into
+          a single session while a space is free. Places update live as other families book.
+        </p>
+      </div>
+      ${mine.length ? `<div class="note" style="margin-bottom:20px">You hold ${mine.length} place${mine.length === 1 ? "" : "s"} this Saturday: ${mine.map((slug) => esc((CATALOGUE.classes.find((c) => c.slug === slug) || {}).title || slug)).join(", ")}.</div>` : ""}
+      <div class="timetable">
+        ${slots
+          .map((slot) => {
+            const items = CATALOGUE.classes.filter((c) => c.starts === slot)
+            return `<div class="slot">
+              <div class="slot-time">${esc(slot)}</div>
+              <div class="slot-classes">
+                ${items
+                  .map((item) => {
+                    const taken = takenSeats(item.slug)
+                    const spaces = Math.max(0, item.capacity - taken)
+                    const booked = mine.includes(item.slug)
+                    return `<article class="class ${booked ? "booked" : ""}">
+                      <div class="class-head">
+                        <h3>${esc(item.title)}</h3>
+                        <span class="meta">${esc(item.starts)}–${esc(item.ends)} · ${esc(item.room)}</span>
+                      </div>
+                      <div class="rowline">
+                        <span class="chip stage">${esc(stageLabel(item.stage))}</span>
+                        <span class="chip">${esc(item.subject)}</span>
+                        <span class="chip">${esc(item.tutor)}</span>
+                      </div>
+                      <p class="desc">${esc(item.description)}</p>
+                      <div class="class-foot">
+                        <div class="rowline">
+                          <span class="meta">${money(item.price)} per session</span>
+                          <span class="seats" role="img" aria-label="${spaces} of ${item.capacity} places free">
+                            ${Array.from({ length: item.capacity }, (_, i) => `<span class="seat ${i < taken ? "taken" : ""}"></span>`).join("")}
+                          </span>
+                          <span class="chip ${spaces ? "good" : "warn"}">${spaces ? spaces + " free" : "Full"}</span>
+                        </div>
+                        <button class="btn ${booked ? "" : "primary"}" data-book="${esc(item.slug)}" ${spaces || booked ? "" : "disabled"}>
+                          ${booked ? "Cancel my place" : spaces ? "Book a place" : "Class full"}
+                        </button>
+                      </div>
+                    </article>`
+                  })
+                  .join("")}
+              </div>
+            </div>`
+          })
+          .join("")}
+      </div>`
+  }
+
+  function renderReviews() {
+    const average = state.reviews.length
+      ? (state.reviews.reduce((sum, r) => sum + Number(r.rating || 0), 0) / state.reviews.length).toFixed(1)
+      : null
+    return `
+      <div class="panel-head">
+        <h1>Reviews</h1>
+        <p>Written by the families and students we work with. Anyone using this page can add one.</p>
+      </div>
+      ${
+        average
+          ? `<div class="score" style="margin-bottom:20px"><strong>${average}</strong>
+              <span><span class="stars">${stars(average)}</span><br /><span class="meta">${state.reviews.length} review${state.reviews.length === 1 ? "" : "s"}</span></span></div>`
+          : ""
+      }
+      <section>
+        <form class="form-card" id="review-form">
+          <h2>Leave a review</h2>
+          <div class="field-row">
+            <div>
+              <label for="r-course">Course</label>
+              <select id="r-course">
+                <option value="">Overall experience</option>
+                ${sortedCourses.map((c) => `<option value="${esc(c.slug)}">${esc(c.title)}</option>`).join("")}
+              </select>
+            </div>
+            <div>
+              <label for="r-rating">Rating</label>
+              <select id="r-rating">${[5, 4, 3, 2, 1].map((n) => `<option value="${n}">${stars(n)} (${n})</option>`).join("")}</select>
+            </div>
+          </div>
+          <div>
+            <label for="r-title">Title</label>
+            <input id="r-title" placeholder="Sum it up in a few words" required />
+          </div>
+          <div>
+            <label for="r-body">Your review</label>
+            <textarea id="r-body" placeholder="What went well? What would you tell another family?" required></textarea>
+          </div>
+          <div class="rowline">
+            <button class="btn primary" type="submit">Publish review</button>
+            <span class="meta">${state.uid ? "Posting as " + esc(state.me && state.me.name ? state.me.name : "you") : "Sign in to post"}</span>
+          </div>
+        </form>
+      </section>
+      <section>
+        <h2 style="margin-bottom:14px">What families say</h2>
+        ${
+          state.reviews.length
+            ? `<div class="review-grid">${state.reviews
+                .map(
+                  (review) => `<article class="review">
+                    <span class="stars" aria-label="${esc(review.rating)} out of 5">${stars(review.rating)}</span>
+                    <h3>${esc(review.title)}</h3>
+                    <p class="text">${esc(review.body)}</p>
+                    <p class="meta">
+                      ${esc(review.demoName || nameFor(review.by, null))}${review.course ? " · " + esc((courseBySlug(review.course) || {}).title || review.course) : ""}${review.at ? " · " + esc(when(review.at)) : ""}
+                    </p>
+                  </article>`,
+                )
+                .join("")}</div>`
+            : `<div class="empty">No reviews yet — yours would be the first.</div>`
+        }
+      </section>`
+  }
+
+  function trackerMarkup(doc, slug, editable) {
+    const course = courseBySlug(slug)
+    if (!course) return ""
+    const progress = (doc && doc.progress) || {}
+    const c = counts(doc, slug)
+    return `<details class="tracker" ${editable ? "open" : ""}>
+      <summary>
+        <div class="tracker-head">
+          <h3>${esc(course.title)} <span class="chip stage">${esc(stageLabel(course.stage))}</span></h3>
+          <span class="meta">${c.covered}/${c.total} covered · ${c.percent}%</span>
+        </div>
+        <div class="bar"><span style="width:${c.percent}%"></span></div>
+      </summary>
+      <ul class="topics">
+        ${course.topics
+          .map((title, index) => {
+            const k = key(slug, index)
+            const row = progress[k] || {}
+            const status = row.status || "not_started"
+            return `<li class="topic ${status}">
+              <span class="tick" aria-hidden="true">${status === "not_started" ? "○" : status === "secure" ? "✔✔" : "✔"}</span>
+              <span>${esc(title)}</span>
+              ${
+                editable
+                  ? `<span class="setters">
+                      ${["not_started", "covered", "secure"]
+                        .map(
+                          (option) =>
+                            `<button class="btn tiny ${status === option ? "on" : ""}" data-status="${option}" data-topic="${esc(k)}">${STATUS[option]}</button>`,
+                        )
+                        .join("")}
+                    </span>`
+                  : `<span class="chip ${status === "not_started" ? "" : "good"}">${STATUS[status]}</span>`
+              }
+              ${
+                editable
+                  ? `<input class="topic-note" data-note="${esc(k)}" value="${esc(row.note || "")}" placeholder="Session note — press Enter to save" />`
+                  : row.at || row.note
+                    ? `<span class="when">${row.at ? "Ticked " + esc(when(row.at)) : ""}${row.note ? " · " + esc(row.note) : ""}</span>`
+                    : ""
+              }
+            </li>`
+          })
+          .join("")}
+      </ul>
+    </details>`
+  }
+
+  function renderLearning() {
+    const doc = myDoc()
+    const mine = myCourses()
+    const totals = mine.reduce(
+      (sum, slug) => {
+        const c = counts(doc, slug)
+        return { total: sum.total + c.total, covered: sum.covered + c.covered }
+      },
+      { total: 0, covered: 0 },
+    )
+    const booked = myBookings()
+
+    return `
+      <div class="panel-head">
+        <h1>My learning</h1>
+        <p>
+          Your stage, the courses you are interested in, and every topic your tutor has ticked off. On the live site
+          this sits behind an email and password account; here it belongs to whoever is signed in to view the page.
+        </p>
+      </div>
+      ${
+        state.uid
+          ? ""
+          : `<div class="note" style="margin-bottom:20px">You are viewing as a guest, so nothing you change here is saved.</div>`
+      }
+      <section>
+        <div class="filters" style="margin-bottom:24px">
+          <div>
+            <label for="my-stage">Student stage</label>
+            <select id="my-stage">
+              <option value="">Choose a stage…</option>
+              ${STAGES.map((s) => `<option value="${s.id}" ${doc && doc.stage === s.id ? "selected" : ""}>${esc(s.label)}</option>`).join("")}
+            </select>
+          </div>
+          <div>
+            <label for="my-add">Add a course</label>
+            <select id="my-add">
+              <option value="">Choose a course…</option>
+              ${sortedCourses
+                .filter((c) => !mine.includes(c.slug))
+                .map((c) => `<option value="${esc(c.slug)}">${esc(c.title)} — ${esc((STAGES.find((s) => s.id === c.stage) || {}).short || "")}</option>`)
+                .join("")}
+            </select>
+          </div>
+          <div>
+            <label>Saturday classes</label>
+            <p class="meta" style="padding-top:8px">
+              ${booked.length ? esc(booked.map((slug) => (CATALOGUE.classes.find((c) => c.slug === slug) || {}).title).join(", ")) : "No places booked"}
+            </p>
+          </div>
+        </div>
+      </section>
+      <section>
+        <div class="tracker-head" style="margin-bottom:14px">
+          <h2>Topic progress</h2>
+          <span class="meta">${totals.covered} of ${totals.total} topics covered</span>
+        </div>
+        ${
+          mine.length
+            ? mine.map((slug) => trackerMarkup(doc, slug, false)).join("")
+            : `<div class="empty">No courses yet. Add one above, or open the Courses tab to browse what we teach.</div>`
+        }
+      </section>`
+  }
+
+  function renderTutor() {
+    const rows = [...state.students.entries()].filter(([, doc]) => (doc.courses || []).length || doc.demoName)
+    const open = state.openStudent && state.students.get(state.openStudent)
+
+    if (open) {
+      const courses = open.courses || []
+      return `
+        <div class="panel-head">
+          <button class="btn tiny" id="back-to-students">← All students</button>
+          <h1>${esc(nameFor(state.openStudent, open))}</h1>
+          <p>${esc(open.stage ? stageLabel(open.stage) : "No stage set")} · tick a topic as you cover it and the student sees it in their own account straight away.</p>
+        </div>
+        ${
+          courses.length
+            ? courses.map((slug) => trackerMarkup(open, slug, state.writable !== false)).join("")
+            : `<div class="empty">This student has not added any courses yet.</div>`
+        }`
+    }
+
+    return `
+      <div class="panel-head">
+        <h1>Tutor view</h1>
+        <p>
+          Every student using this page, with how much of their courses has been covered. Open one to tick off topics
+          and leave a session note. On the live site this area is limited to tutor accounts and to their own students.
+        </p>
+      </div>
+      ${
+        rows.length
+          ? rows
+              .map(([id, doc]) => {
+                const total = (doc.courses || []).reduce((sum, slug) => sum + counts(doc, slug).total, 0)
+                const covered = (doc.courses || []).reduce((sum, slug) => sum + counts(doc, slug).covered, 0)
+                const percent = total ? Math.round((covered / total) * 100) : 0
+                return `<div class="student-row">
+                  <div class="who">
+                    <span class="name">${esc(nameFor(id, doc))}${id === state.uid ? " (you)" : ""}</span>
+                    <span class="meta">${esc(doc.stage ? stageLabel(doc.stage) : "No stage set")} · ${(doc.courses || []).length} course${(doc.courses || []).length === 1 ? "" : "s"}</span>
+                  </div>
+                  <div class="rowline">
+                    <span class="meta">${covered}/${total} topics</span>
+                    <span class="bar" style="width:110px"><span style="width:${percent}%"></span></span>
+                    <button class="btn tiny" data-open-student="${esc(id)}">Open tracker</button>
+                  </div>
+                </div>`
+              })
+              .join("")
+          : `<div class="empty">No students yet. Add a course under “My learning” and you will appear here.</div>`
+      }`
+  }
+
+  /* ---- render and events ------------------------------------------------ */
+
+  const PANELS = {
+    courses: renderCourses,
+    saturday: renderSaturday,
+    reviews: renderReviews,
+    learning: renderLearning,
+    tutor: renderTutor,
+  }
+
+  function render() {
+    for (const name of Object.keys(PANELS)) {
+      const panel = document.getElementById("panel-" + name)
+      const tab = document.querySelector('[data-tab="' + name + '"]')
+      const active = name === state.tab
+      tab.setAttribute("aria-selected", String(active))
+      panel.hidden = !active
+      if (active) panel.innerHTML = PANELS[name]()
+    }
+    wire()
+  }
+
+  function wire() {
+    const panel = document.getElementById("panel-" + state.tab)
+
+    for (const node of panel.querySelectorAll("[data-filter]"))
+      node.oninput = () => {
+        state.filters[node.dataset.filter] = node.value
+        const caret = node.selectionStart
+        render()
+        const again = document.querySelector('[data-filter="' + node.dataset.filter + '"]')
+        if (again && again.tagName === "INPUT") {
+          again.focus()
+          again.setSelectionRange(caret, caret)
+        }
+      }
+
+    for (const node of panel.querySelectorAll("[data-course-toggle]"))
+      node.onclick = () => {
+        const slug = node.dataset.courseToggle
+        const mine = myCourses()
+        saveStudent({ courses: mine.includes(slug) ? mine.filter((s) => s !== slug) : mine.concat(slug) })
+        flash(mine.includes(slug) ? "Removed from your courses" : "Added to your courses")
+      }
+
+    for (const node of panel.querySelectorAll("[data-book]")) node.onclick = () => toggleBooking(node.dataset.book)
+
+    for (const node of panel.querySelectorAll("[data-open-student]"))
+      node.onclick = () => {
+        state.openStudent = node.dataset.openStudent
+        render()
+      }
+
+    const back = panel.querySelector("#back-to-students")
+    if (back)
+      back.onclick = () => {
+        state.openStudent = null
+        render()
+      }
+
+    for (const node of panel.querySelectorAll("[data-status]"))
+      node.onclick = () => {
+        const noteInput = panel.querySelector('[data-note="' + CSS.escape(node.dataset.topic) + '"]')
+        setStatus(state.openStudent, node.dataset.topic, node.dataset.status, noteInput ? noteInput.value : undefined)
+      }
+
+    for (const node of panel.querySelectorAll("[data-note]"))
+      node.onkeydown = (event) => {
+        if (event.key !== "Enter") return
+        event.preventDefault()
+        const doc = state.students.get(state.openStudent) || {}
+        const current = ((doc.progress || {})[node.dataset.note] || {}).status || "covered"
+        setStatus(state.openStudent, node.dataset.note, current, node.value)
+        flash("Note saved")
+      }
+
+    const stage = panel.querySelector("#my-stage")
+    if (stage)
+      stage.onchange = () => {
+        if (!stage.value) return
+        saveStudent({ stage: stage.value })
+        flash("Stage saved")
+      }
+
+    const add = panel.querySelector("#my-add")
+    if (add)
+      add.onchange = () => {
+        if (!add.value) return
+        saveStudent({ courses: myCourses().concat(add.value) })
+        flash("Course added")
+      }
+
+    const form = panel.querySelector("#review-form")
+    if (form)
+      form.onsubmit = (event) => {
+        event.preventDefault()
+        const title = form.querySelector("#r-title").value.trim()
+        const text = form.querySelector("#r-body").value.trim()
+        if (title.length < 3) return flash("Please give your review a short title.")
+        if (text.length < 20) return flash("Please write at least 20 characters so the review is useful.")
+        addReview({
+          title,
+          body: text,
+          rating: Number(form.querySelector("#r-rating").value),
+          course: form.querySelector("#r-course").value,
+        })
+        form.reset()
+      }
+  }
+
+  for (const tab of document.querySelectorAll(".tab")) {
+    tab.onclick = () => {
+      state.tab = tab.dataset.tab
+      if (state.tab !== "tutor") state.openStudent = null
+      render()
+    }
+    tab.onkeydown = (event) => {
+      const tabs = [...document.querySelectorAll(".tab")]
+      const step = event.key === "ArrowRight" ? 1 : event.key === "ArrowLeft" ? -1 : 0
+      if (!step) return
+      event.preventDefault()
+      const next = tabs[(tabs.indexOf(tab) + step + tabs.length) % tabs.length]
+      next.focus()
+      next.click()
+    }
+  }
+
+  function renderViewer() {
+    const node = document.getElementById("viewer")
+    if (!state.uid) {
+      node.innerHTML = '<span>Viewing as a guest</span>'
+      return
+    }
+    const name = (state.me && state.me.name) || "your account"
+    node.innerHTML =
+      (state.me && state.me.avatarUrl ? '<img alt="" src="' + esc(state.me.avatarUrl) + '" />' : "") +
+      "<span>Signed in as <strong>" +
+      esc(name) +
+      "</strong></span>"
+  }
+
+  render()
+  renderViewer()
+
+  /* ---- capabilities ----------------------------------------------------- */
+
+  let profileKey = ""
+  async function syncProfiles() {
+    if (!state.user) return
+    const ids = [...state.students.keys()]
+      .concat(state.reviews.map((r) => r.by))
+      .filter((id) => id && !String(id).startsWith("demo_"))
+    const unique = [...new Set(ids)]
+    if (!unique.length) return
+    const resolved = await state.user.profiles(unique)
+    const signature = unique.map((id) => id + ":" + ((resolved[id] || {}).name || "")).join("|")
+    state.profiles = resolved
+    if (signature !== profileKey) {
+      profileKey = signature
+      render()
+    }
+  }
+
+  async function boot() {
+    if (typeof claude === "undefined" || !claude || typeof claude.use !== "function") return
+
+    const [db, user] = await Promise.all([claude.use("db"), claude.use("user")])
+    state.db = db
+    state.user = user
+
+    if (user) {
+      state.me = await user.me()
+      state.uid = state.me.id
+      state.writable = await user.can("data.write")
+      renderViewer()
+      render()
+    }
+
+    if (!db) {
+      document.getElementById("foot-note").textContent =
+        "Shared data is unavailable in this view, so the timetable and reviews are showing the catalogue only."
+      return
+    }
+
+    state.shared = true
+    const onError = () => flash("Live updates stopped. Reload the page to reconnect.")
+
+    db.collection("students").onSnapshot((snap) => {
+      state.students = new Map(snap.docs.map((doc) => [doc.id, doc.data()]))
+      render()
+      syncProfiles()
+    }, onError)
+
+    db.collection("bookings").onSnapshot((snap) => {
+      state.bookings = new Map(snap.docs.map((doc) => [doc.id, doc.data()]))
+      render()
+    }, onError)
+
+    db.collection("reviews")
+      .orderBy("at", "desc")
+      .limit(60)
+      .onSnapshot((snap) => {
+        state.reviews = snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()))
+        render()
+        syncProfiles()
+      }, onError)
+  }
+
+  boot()
+</script>

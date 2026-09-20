@@ -7,6 +7,20 @@ have covered with each student.
 Self-contained — Bun, `bun:sqlite` and vanilla front-end code. No build step and no runtime
 dependencies.
 
+## Viewable artifact version
+
+`artifact/index.html` is a single-page version of this site, published as a Claude Artifact so it can
+be opened in a browser without running the server:
+
+**https://claude.ai/artifact/R57eMvR7XczEfHpdRGGJSB**
+
+It carries the same catalogue (`artifact/catalogue.json`, exported from this app's API) and the same
+five areas, with two differences forced by the medium: there is no email/password sign-up — the
+viewer is identified by the claude.ai account opening the page — and state lives in the artifact's
+shared document store rather than SQLite, so courses, bookings, reviews and topic ticks are shared
+live between everyone who opens it. The example students and reviews in it are seeded demo data and
+are labelled as such.
+
 ## Running it
 
 ```sh
