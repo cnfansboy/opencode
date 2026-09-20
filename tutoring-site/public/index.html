@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en-GB">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Bridgewell Tutoring</title>
+    <meta
+      name="description"
+      content="One-to-one tutoring from KS2 to A Level, with a shared topic tracker so students, parents and tutors all see what has been covered."
+    />
+    <link rel="stylesheet" href="/styles.css" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📘</text></svg>"
+    />
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+    <header class="site-header">
+      <div class="wrap header-inner">
+        <a class="brand" href="#/">
+          <span class="brand-mark">B</span>
+          <span>Bridgewell&nbsp;Tutoring</span>
+        </a>
+        <button class="nav-toggle" id="nav-toggle" aria-expanded="false" aria-controls="nav">Menu</button>
+        <nav id="nav" aria-label="Main">
+          <a href="#/courses">Courses</a>
+          <a href="#/reviews">Reviews</a>
+          <span id="nav-account"></span>
+        </nav>
+      </div>
+    </header>
+
+    <main id="main"></main>
+
+    <footer class="site-footer">
+      <div class="wrap footer-inner">
+        <p><strong>Bridgewell Tutoring</strong> — KS2, KS3, GCSE and A Level tuition, online and in person.</p>
+        <p class="muted">
+          Demo site. Accounts and progress are stored in a local SQLite database and are not sent anywhere.
+        </p>
+      </div>
+    </footer>
+
+    <div id="toast" role="status" aria-live="polite"></div>
+    <script src="/app.js" type="module"></script>
+  </body>
+</html>

@@ -1,0 +1,15 @@
+{
+  "name": "tutoring-site",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun --watch src/server.ts",
+    "start": "bun src/server.ts",
+    "demo": "bun src/demo.ts",
+    "test": "bun test"
+  },
+  "devDependencies": {
+    "@types/bun": "1.3.13",
+    "typescript": "5.8.2"
+  }
+}
