@@ -272,6 +272,120 @@ const COURSES = [
   },
 ]
 
+const SATURDAY = [
+  {
+    slug: "sat-ks2-maths-booster",
+    title: "KS2 Maths Booster",
+    subject: "Maths",
+    stage: "ks2",
+    starts: "09:00",
+    ends: "10:00",
+    tutor: "Ms Rowan Blake",
+    room: "Room 1",
+    capacity: 8,
+    price_pence: 1800,
+    description:
+      "Arithmetic fluency and a weekly problem-solving challenge. Groups of no more than eight, split by year group.",
+  },
+  {
+    slug: "sat-gcse-maths-clinic",
+    title: "GCSE Maths Higher Clinic",
+    subject: "Maths",
+    stage: "gcse",
+    starts: "09:00",
+    ends: "10:30",
+    tutor: "Mr Idris Bello",
+    room: "Room 2",
+    capacity: 10,
+    price_pence: 2500,
+    description:
+      "Bring the questions you got stuck on that week. We work them through on the board, then drill the same idea on fresh questions.",
+  },
+  {
+    slug: "sat-ks2-english",
+    title: "KS2 Reading and Writing",
+    subject: "English",
+    stage: "ks2",
+    starts: "10:00",
+    ends: "11:00",
+    tutor: "Mrs Ella Vance",
+    room: "Room 1",
+    capacity: 8,
+    price_pence: 1800,
+    description:
+      "Comprehension practice in the first half, a piece of extended writing in the second, marked before the next week.",
+  },
+  {
+    slug: "sat-ks3-maths",
+    title: "KS3 Maths and Problem Solving",
+    subject: "Maths",
+    stage: "ks3",
+    starts: "11:00",
+    ends: "12:00",
+    tutor: "Mr Idris Bello",
+    room: "Room 2",
+    capacity: 10,
+    price_pence: 2000,
+    description:
+      "Keeps Year 7 to 9 ahead of the school scheme of work, with UKMT junior challenge questions once a month.",
+  },
+  {
+    slug: "sat-gcse-english",
+    title: "GCSE English Language Workshop",
+    subject: "English",
+    stage: "gcse",
+    starts: "11:00",
+    ends: "12:30",
+    tutor: "Mrs Ella Vance",
+    room: "Room 3",
+    capacity: 10,
+    price_pence: 2500,
+    description:
+      "One exam question per week, planned, written under timed conditions and marked against the mark scheme.",
+  },
+  {
+    slug: "sat-gcse-science-lab",
+    title: "GCSE Science Practical Lab",
+    subject: "Science",
+    stage: "gcse",
+    starts: "10:30",
+    ends: "12:00",
+    tutor: "Dr Nina Shah",
+    room: "Laboratory",
+    capacity: 12,
+    price_pence: 3000,
+    description:
+      "The required practicals, actually carried out rather than described, with the exam questions that come from each one.",
+  },
+  {
+    slug: "sat-alevel-maths",
+    title: "A Level Maths Workshop",
+    subject: "Maths",
+    stage: "alevel",
+    starts: "12:00",
+    ends: "13:30",
+    tutor: "Ms Rowan Blake",
+    room: "Room 3",
+    capacity: 8,
+    price_pence: 3200,
+    description:
+      "Pure, statistics and mechanics on a rotation, pitched at the step up from GCSE in Year 12 and revision in Year 13.",
+  },
+  {
+    slug: "sat-alevel-physics",
+    title: "A Level Physics Problem Class",
+    subject: "Physics",
+    stage: "alevel",
+    starts: "13:30",
+    ends: "15:00",
+    tutor: "Dr Nina Shah",
+    room: "Laboratory",
+    capacity: 8,
+    price_pence: 3200,
+    description: "Multi-step exam questions broken down on the board, then worked independently with help on hand.",
+  },
+]
+
 const REVIEWS = [
   {
     course: "gcse-maths-higher",
@@ -341,6 +455,24 @@ export function seed() {
       ).id
       course.topics.forEach((title, index) => insertTopic.run(id, title, index + 1))
     }
+
+    const insertClass = db.prepare(
+      "INSERT INTO saturday_classes (slug, title, subject, stage, starts, ends, tutor, room, capacity, price_pence, description) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    )
+    for (const item of SATURDAY)
+      insertClass.run(
+        item.slug,
+        item.title,
+        item.subject,
+        item.stage,
+        item.starts,
+        item.ends,
+        item.tutor,
+        item.room,
+        item.capacity,
+        item.price_pence,
+        item.description,
+      )
 
     const insertReview = db.prepare(
       "INSERT INTO reviews (course_id, author_name, rating, title, body) VALUES ((SELECT id FROM courses WHERE slug = ?), ?, ?, ?, ?)",

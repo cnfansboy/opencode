@@ -92,6 +92,28 @@ db.exec(`
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
 
+  CREATE TABLE IF NOT EXISTS saturday_classes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    slug TEXT NOT NULL UNIQUE,
+    title TEXT NOT NULL,
+    subject TEXT NOT NULL,
+    stage TEXT NOT NULL,
+    starts TEXT NOT NULL,
+    ends TEXT NOT NULL,
+    tutor TEXT NOT NULL,
+    room TEXT NOT NULL,
+    capacity INTEGER NOT NULL,
+    price_pence INTEGER NOT NULL,
+    description TEXT NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS class_bookings (
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    class_id INTEGER NOT NULL REFERENCES saturday_classes(id) ON DELETE CASCADE,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    PRIMARY KEY (user_id, class_id)
+  );
+
   CREATE INDEX IF NOT EXISTS topics_course ON topics(course_id, position);
   CREATE INDEX IF NOT EXISTS reviews_course ON reviews(course_id, created_at DESC);
   CREATE INDEX IF NOT EXISTS sessions_user ON sessions(user_id);

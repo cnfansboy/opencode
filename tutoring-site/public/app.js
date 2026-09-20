@@ -243,6 +243,72 @@ async function courseDetail(slug) {
     }
 }
 
+async function saturday() {
+  const { classes } = await api("/saturday-classes")
+  const slots = [...new Set(classes.map((item) => item.starts))].sort()
+
+  main.innerHTML = `
+    <div class="wrap">
+      <h1>Saturday classes</h1>
+      <p class="lead muted">
+        Small-group classes at the Bridgewell centre every Saturday in term time, 9am to 3pm. Book a regular place, or
+        come to a single session while a space is free.
+      </p>
+      ${
+        state.user?.role === "student"
+          ? ""
+          : state.user
+            ? `<p class="muted small">Sign in with a student account to book a place.</p>`
+            : `<p class="muted small"><a href="#/register">Create an account</a> to book a place.</p>`
+      }
+      ${slots
+        .map(
+          (slot) => `<section class="block">
+            <h2 class="slot">${slot}</h2>
+            <div class="grid">
+              ${classes
+                .filter((item) => item.starts === slot)
+                .map(
+                  (item) => `<article class="card class-card">
+                    <div class="row"><span class="tag stage">${esc(item.stageLabel)}</span><span class="tag">${esc(item.subject)}</span></div>
+                    <h3 style="margin-top:10px">${esc(item.title)}</h3>
+                    <p class="small muted">${esc(item.starts)}–${esc(item.ends)} · ${esc(item.room)} · ${esc(item.tutor)}</p>
+                    <p class="muted">${esc(item.description)}</p>
+                    <p class="small"><strong>${money(item.price_pence)}</strong> per session ·
+                      <span class="${item.spaces ? "spaces" : "full"}">${item.spaces ? `${item.spaces} of ${item.capacity} spaces left` : "Full"}</span></p>
+                    ${
+                      state.user?.role === "student"
+                        ? `<button class="btn ${item.mine ? "" : "primary"} ${item.spaces || item.mine ? "" : "disabled"}" data-book="${esc(item.slug)}" data-mine="${item.mine ? "1" : ""}" ${item.spaces || item.mine ? "" : "disabled"}>
+                            ${item.mine ? "✓ Booked — cancel place" : item.spaces ? "Book a place" : "Class full"}
+                          </button>`
+                        : ""
+                    }
+                  </article>`,
+                )
+                .join("")}
+            </div>
+          </section>`,
+        )
+        .join("")}
+    </div>`
+
+  for (const button of document.querySelectorAll("[data-book]"))
+    button.onclick = async () => {
+      button.disabled = true
+      try {
+        await api("/saturday-classes", {
+          method: button.dataset.mine ? "DELETE" : "POST",
+          body: { class: button.dataset.book },
+        })
+        notify(button.dataset.mine ? "Place cancelled" : "Place booked")
+        saturday()
+      } catch (error) {
+        notify(error.message)
+        button.disabled = false
+      }
+    }
+}
+
 async function reviews() {
   const [{ reviews: list, summary }, { courses: all }] = await Promise.all([api("/reviews"), api("/courses")])
 
@@ -391,6 +457,11 @@ async function studentArea() {
           <div><label for="stage">Current stage</label>
             <select id="stage">${state.stages.map((stage) => `<option value="${stage.id}" ${state.user.stage === stage.id ? "selected" : ""}>${esc(stage.label)}</option>`).join("")}</select></div>
         </div>
+        ${
+          me.classes.length
+            ? `<p class="small muted">Saturday classes booked: ${me.classes.map((item) => `${esc(item.title)} (${esc(item.starts)}, ${esc(item.room)})`).join(", ")}. <a href="#/saturday">Change</a></p>`
+            : `<p class="small muted">No Saturday classes booked — <a href="#/saturday">see the timetable</a>.</p>`
+        }
         ${me.teachers.length ? `<p class="small muted">Your tutors: ${me.teachers.map((teacher) => esc(teacher.name)).join(", ")}</p>` : `<p class="small muted">No tutor linked yet — your tutor can add you using your email address (${esc(state.user.email)}).</p>`}
       </section>
 
@@ -614,6 +685,7 @@ async function render() {
     if (!parts.length) await home()
     else if (parts[0] === "courses" && parts[1]) await courseDetail(parts[1])
     else if (parts[0] === "courses") await courses()
+    else if (parts[0] === "saturday") await saturday()
     else if (parts[0] === "reviews") await reviews()
     else if (parts[0] === "login") signIn()
     else if (parts[0] === "register") await register()

@@ -50,6 +50,11 @@ parent) or a _tutor_.
 - Open a student's tracker and mark each topic _not covered yet_, _covered_ or _secure_, with an
   optional session note. The student sees the same tracker in their own account immediately.
 
+**Saturday classes** — a Saturday timetable of small-group classes grouped by start time, showing the
+tutor, room, price and how many places are still free. Students book or cancel a place, the count
+updates for everyone, and a full class is refused rather than overbooked. Booked classes also show in
+the student's own area.
+
 **Reviews** — any signed-in account can leave a review of a specific course or of the service
 overall. Reviews show on the reviews page and on the relevant course page.
 
@@ -58,6 +63,8 @@ overall. Reviews show on the reviews page and on the relevant course page.
 | Table              | Holds                                                               |
 | ------------------ | ------------------------------------------------------------------- |
 | `users`            | Name, email, bcrypt password, role (`student` / `teacher`), stage   |
+| `saturday_classes` | Timetabled class: time, tutor, room, capacity and price             |
+| `class_bookings`   | Which student holds a place in which Saturday class                 |
 | `sessions`         | Session cookie tokens and their expiry                              |
 | `courses`          | Title, subject, stage, description, price, session length           |
 | `topics`           | The ordered topic list belonging to a course                        |
@@ -73,6 +80,9 @@ overall. Reviews show on the reviews page and on the relevant course page.
 | `GET`    | `/api/stages`               | Anyone                                    |
 | `GET`    | `/api/courses`              | Anyone (`?stage=&subject=&q=`)            |
 | `GET`    | `/api/courses/:slug`        | Anyone                                    |
+| `GET`    | `/api/saturday-classes`     | Anyone (adds `mine` when signed in)       |
+| `POST`   | `/api/saturday-classes`     | Student, refused when the class is full   |
+| `DELETE` | `/api/saturday-classes`     | Student                                   |
 | `GET`    | `/api/reviews`              | Anyone (`?course=slug`)                   |
 | `POST`   | `/api/reviews`              | Signed in                                 |
 | `POST`   | `/api/auth/register`        | Anyone                                    |

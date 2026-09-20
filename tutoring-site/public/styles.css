@@ -513,3 +513,23 @@ table.students th {
   text-align: center;
   color: var(--muted);
 }
+
+.slot {
+  font-size: 1.1rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 6px;
+  margin-bottom: 16px;
+}
+.class-card .spaces {
+  color: var(--good);
+  font-weight: 600;
+}
+.class-card .full {
+  color: var(--warn);
+  font-weight: 600;
+}
+.class-card .btn {
+  margin-top: 8px;
+}

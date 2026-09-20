@@ -199,6 +199,87 @@ test("reviews require sign-in and show up in the list", async () => {
   expect(list.body.reviews[0].author_name).toBe("Test Student")
 })
 
+test("saturday classes list with spaces and take bookings", async () => {
+  const list = await call(anonymous, "/api/saturday-classes")
+  expect(list.body.classes.length).toBeGreaterThan(4)
+  const first = list.body.classes[0]
+  expect(first.spaces).toBe(first.capacity)
+  expect(first.mine).toBe(0)
+
+  expect(
+    (await call(anonymous, "/api/saturday-classes", { method: "POST", body: JSON.stringify({ class: first.slug }) }))
+      .status,
+  ).toBe(401)
+  expect(
+    (await call(teacher, "/api/saturday-classes", { method: "POST", body: JSON.stringify({ class: first.slug }) }))
+      .status,
+  ).toBe(403)
+
+  expect(
+    (await call(student, "/api/saturday-classes", { method: "POST", body: JSON.stringify({ class: first.slug }) }))
+      .status,
+  ).toBe(200)
+  const booked = (await call(student, "/api/saturday-classes")).body.classes.find(
+    (item: { slug: string }) => item.slug === first.slug,
+  )
+  expect(booked.mine).toBe(1)
+  expect(booked.spaces).toBe(first.capacity - 1)
+  expect((await call(student, "/api/me")).body.classes.some((item: { slug: string }) => item.slug === first.slug)).toBe(
+    true,
+  )
+
+  // Booking twice is idempotent rather than double-counting a place.
+  await call(student, "/api/saturday-classes", { method: "POST", body: JSON.stringify({ class: first.slug }) })
+  expect(
+    (await call(anonymous, "/api/saturday-classes")).body.classes.find(
+      (item: { slug: string }) => item.slug === first.slug,
+    ).booked,
+  ).toBe(1)
+
+  await call(student, "/api/saturday-classes", { method: "DELETE", body: JSON.stringify({ class: first.slug }) })
+  expect(
+    (await call(student, "/api/saturday-classes")).body.classes.find(
+      (item: { slug: string }) => item.slug === first.slug,
+    ).mine,
+  ).toBe(0)
+})
+
+test("a full class is refused", async () => {
+  const target = (await call(anonymous, "/api/saturday-classes")).body.classes.reduce(
+    (smallest: { capacity: number }, item: { capacity: number }) =>
+      item.capacity < smallest.capacity ? item : smallest,
+  )
+
+  for (let index = 0; index < target.capacity; index++) {
+    const filler: { cookie?: string } = {}
+    await call(filler, "/api/auth/register", {
+      method: "POST",
+      body: JSON.stringify({
+        name: `Filler ${index}`,
+        email: `filler${index}@test.local`,
+        password: "password123",
+        role: "student",
+        stage: "ks2",
+      }),
+    })
+    expect(
+      (await call(filler, "/api/saturday-classes", { method: "POST", body: JSON.stringify({ class: target.slug }) }))
+        .status,
+    ).toBe(200)
+  }
+
+  const full = await call(student, "/api/saturday-classes", {
+    method: "POST",
+    body: JSON.stringify({ class: target.slug }),
+  })
+  expect(full.status).toBe(409)
+  expect(
+    (await call(anonymous, "/api/saturday-classes")).body.classes.find(
+      (item: { slug: string }) => item.slug === target.slug,
+    ).spaces,
+  ).toBe(0)
+})
+
 test("signing out invalidates the session", async () => {
   const session = { ...student }
   await call(session, "/api/auth/logout", { method: "POST" })

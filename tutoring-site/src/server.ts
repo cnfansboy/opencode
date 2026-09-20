@@ -153,6 +153,63 @@ export const server = Bun.serve({
       })
     },
 
+    "/api/saturday-classes": {
+      GET: (request) => {
+        const user = currentUser(request)
+        return json({
+          classes: db
+            .query(
+              `SELECT saturday_classes.*,
+                      (SELECT COUNT(*) FROM class_bookings WHERE class_bookings.class_id = saturday_classes.id) as booked,
+                      EXISTS (SELECT 1 FROM class_bookings WHERE class_bookings.class_id = saturday_classes.id AND class_bookings.user_id = ?) as mine
+               FROM saturday_classes ORDER BY saturday_classes.starts, saturday_classes.room`,
+            )
+            .all(user?.id ?? 0)
+            .map((item) => {
+              const row = item as Record<string, unknown> & { stage: string; capacity: number; booked: number }
+              return {
+                ...row,
+                stageLabel: STAGES.find((s) => s.id === row.stage)?.label ?? row.stage,
+                spaces: Math.max(0, row.capacity - row.booked),
+              }
+            }),
+        })
+      },
+      POST: async (request) => {
+        const auth = require_(request, "student")
+        if (auth.error) return auth.error
+        const input = await body(request)
+        const item = db.query("SELECT id, capacity FROM saturday_classes WHERE slug = ?").get(str(input?.class)) as {
+          id: number
+          capacity: number
+        } | null
+        if (!item) return fail(404, "Class not found.")
+
+        const booked = (
+          db.query("SELECT COUNT(*) as n FROM class_bookings WHERE class_id = ?").get(item.id) as { n: number }
+        ).n
+        const already = db
+          .query("SELECT 1 as ok FROM class_bookings WHERE class_id = ? AND user_id = ?")
+          .get(item.id, auth.user.id)
+        if (!already && booked >= item.capacity)
+          return fail(409, "That class is full. Join the waiting list by getting in touch.")
+
+        db.query("INSERT OR IGNORE INTO class_bookings (user_id, class_id) VALUES (?, ?)").run(auth.user.id, item.id)
+        return json({ ok: true })
+      },
+      DELETE: async (request) => {
+        const auth = require_(request, "student")
+        if (auth.error) return auth.error
+        const input = await body(request)
+        const item = db.query("SELECT id FROM saturday_classes WHERE slug = ?").get(str(input?.class)) as {
+          id: number
+        } | null
+        if (!item) return fail(404, "Class not found.")
+        db.query("DELETE FROM class_bookings WHERE user_id = ? AND class_id = ?").run(auth.user.id, item.id)
+        return json({ ok: true })
+      },
+    },
+
     "/api/reviews": {
       GET: (request) => {
         const slug = str(new URL(request.url).searchParams.get("course"))
@@ -257,6 +314,11 @@ export const server = Bun.serve({
           interests: db
             .query(
               "SELECT courses.id, courses.slug, courses.title, courses.stage, courses.subject FROM interests JOIN courses ON courses.id = interests.course_id WHERE interests.user_id = ? ORDER BY courses.title",
+            )
+            .all(user.id),
+          classes: db
+            .query(
+              "SELECT saturday_classes.slug, saturday_classes.title, saturday_classes.starts, saturday_classes.ends, saturday_classes.room, saturday_classes.tutor FROM class_bookings JOIN saturday_classes ON saturday_classes.id = class_bookings.class_id WHERE class_bookings.user_id = ? ORDER BY saturday_classes.starts",
             )
             .all(user.id),
           teachers:
