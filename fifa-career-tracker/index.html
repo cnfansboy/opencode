@@ -367,6 +367,22 @@ dialog::backdrop{background:rgba(8,14,10,.55)}
 }
 .side-top{display:flex; gap:11px; align-items:center; padding:0 16px 14px; border-bottom:1px solid var(--line)}
 .side-id{min-width:0; flex:1}
+.save-switch{
+  display:flex; align-items:center; gap:7px; width:calc(100% - 20px); margin:10px auto 0; padding:7px 10px;
+  border:1px solid var(--line); border-radius:7px; background:var(--surface-2); color:var(--ink-2);
+  font:inherit; font-size:12.5px; cursor:pointer; text-align:left;
+}
+.save-switch:hover{border-color:var(--line-strong)}
+.save-switch svg{flex:none; opacity:.75}
+.save-switch .sv-name{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:600; color:var(--ink)}
+.save-switch .sv-chev{flex:none; opacity:.55; font-size:10px}
+.save-list{display:flex; flex-direction:column; gap:8px}
+.save-row{display:flex; align-items:center; gap:8px}
+.save-name-input{
+  flex:1; min-width:0; padding:8px 10px; border-radius:7px; border:1px solid var(--line);
+  background:var(--surface-2); color:var(--ink); font:inherit; font-size:13.5px;
+}
+.save-row.active .save-name-input{border-color:var(--accent)}
 .side-nav{display:flex; flex-direction:column; gap:2px; padding:12px 10px; border-bottom:1px solid var(--line)}
 .nav-item{
   display:flex; align-items:center; gap:9px; padding:8px 10px; border-radius:7px; cursor:pointer;
@@ -499,6 +515,7 @@ input.cell.wide{width:88px}
         <input id="clubName" value="" placeholder="YOUR CLUB" aria-label="Club name" maxlength="24">
       </div>
     </div>
+    <div id="saveRow"></div>
     <nav class="side-nav" id="sideNav" aria-label="Sections"></nav>
     <div class="side-squad">
       <div class="eyebrow side-h"><span>Squad</span><span id="squadCount"></span></div>
@@ -743,56 +760,96 @@ const DEMO = {
 /* ---------------- storage: artifact db, else this browser ----------- */
 const LS_KEY = "career-mode-ledger/v1";
 const LS_DEMO = "career-mode-ledger/demo-dismissed";
+const LS_SAVES = "career-mode-ledger/saves-index";
+const LS_ACTIVE = "career-mode-ledger/active-save";
+const DEFAULT_SAVE = "default";
 const EMPTY = () => ({meta:{club:"", currency:"£"}, seasons:{}, players:{}, stats:{}, trophies:{}});
 
+/* Every save beyond the first lives under saves/<id>/... so the original
+ * top-level collections — and therefore every save already in the wild —
+ * keep working untouched as the "default" save. */
 const Store = {
   mode: "",
   db: null,
   data: EMPTY(),
   ready: false,
+  saveId: DEFAULT_SAVE,
+  saves: [],
+  unsub: [],
+
+  prefix() { return this.saveId === DEFAULT_SAVE ? "" : "saves/" + this.saveId + "/"; },
+  localKey() { return this.saveId === DEFAULT_SAVE ? LS_KEY : "career-mode-ledger/save/" + this.saveId; },
 
   async init(onChange) {
     this.onChange = onChange;
+    try { this.saveId = localStorage.getItem(LS_ACTIVE) || DEFAULT_SAVE; } catch (e) {}
     const pending = (window.claude && claude.use) ? claude.use("db").catch(() => null) : Promise.resolve(null);
     const TIMEOUT = {};
     let db = await Promise.race([pending, new Promise(r => setTimeout(() => r(TIMEOUT), 2500))]);
     if (db === TIMEOUT) {
       db = null;
-      pending.then(late => { if (late && !this.db && isEmpty(this.data)) { this.data = EMPTY(); this.bindCloud(late); } });
+      pending.then(late => { if (late && !this.db && isEmpty(this.data)) { this.data = EMPTY(); this.db = late; this.bindSavesRegistry(); this.bindCloud(); } });
     }
-    if (db) { this.bindCloud(db); }
-    else {
+    if (db) {
+      this.db = db;
+      this.bindSavesRegistry();
+      this.bindCloud();
+    } else {
       this.mode = "local";
-      try { const raw = localStorage.getItem(LS_KEY); if (raw) this.data = Object.assign(EMPTY(), JSON.parse(raw)); } catch (e) {}
+      this.loadLocal();
+      this.loadSavesLocal();
       this.ready = true;
     }
   },
 
-  bindCloud(db) {
-      this.db = db; this.mode = "cloud"; this.ready = false;
-      const bind = (coll, key) => db.collection(coll).onSnapshot(
-        snap => {
-          const next = {};
-          snap.docs.forEach(d => { next[d.id] = Object.assign({id:d.id}, d.data()); });
-          this.data[key] = next; this.ready = true; this.onChange();
-        },
-        err => notice("Cloud storage stopped syncing (" + err.code + "). Your last saved data is still shown.", "warn")
-      );
-      bind("seasons","seasons"); bind("players","players"); bind("stats","stats"); bind("trophies","trophies");
-      db.doc("meta/career").onSnapshot(d => {
-        this.data.meta = d.exists ? d.data() : {club:"", currency:"£"}; this.ready = true; this.onChange();
-      }, () => {});
-      setTimeout(() => { if (!this.ready) { this.ready = true; this.onChange(); } }, 1800);
+  loadLocal() {
+    try { const raw = localStorage.getItem(this.localKey()); this.data = raw ? Object.assign(EMPTY(), JSON.parse(raw)) : EMPTY(); }
+    catch (e) { this.data = EMPTY(); }
+  },
+  loadSavesLocal() {
+    try { const raw = localStorage.getItem(LS_SAVES); this.saves = raw ? JSON.parse(raw) : []; } catch (e) { this.saves = []; }
+  },
+  saveSavesLocal() { try { localStorage.setItem(LS_SAVES, JSON.stringify(this.saves)); } catch (e) {} },
+
+  bindSavesRegistry() {
+    this.db.collection("saves").onSnapshot(snap => {
+      this.saves = snap.docs.map(d => Object.assign({id:d.id}, d.data()));
       this.onChange();
+    }, () => {});
   },
 
-  saveLocal() { try { localStorage.setItem(LS_KEY, JSON.stringify(this.data)); } catch (e) {} },
+  bindCloud() {
+    this.mode = "cloud"; this.ready = false;
+    this.unsub.forEach(u => u()); this.unsub = [];
+    const db = this.db, pfx = this.prefix();
+    const bind = (coll, key) => db.collection(pfx + coll).onSnapshot(
+      snap => {
+        const next = {};
+        snap.docs.forEach(d => { next[d.id] = Object.assign({id:d.id}, d.data()); });
+        this.data[key] = next; this.ready = true; this.onChange();
+      },
+      err => notice("Cloud storage stopped syncing (" + err.code + "). Your last saved data is still shown.", "warn")
+    );
+    this.unsub.push(bind("seasons","seasons"), bind("players","players"), bind("stats","stats"), bind("trophies","trophies"));
+    this.unsub.push(db.doc(pfx + "meta/career").onSnapshot(d => {
+      this.data.meta = d.exists ? d.data() : {club:"", currency:"£"}; this.ready = true; this.onChange();
+    }, () => {}));
+    setTimeout(() => { if (!this.ready) { this.ready = true; this.onChange(); } }, 1800);
+    this.onChange();
+  },
+
+  async waitReady(timeoutMs) {
+    const start = Date.now();
+    while (!this.ready && Date.now() - start < (timeoutMs || 2500)) await new Promise(r => setTimeout(r, 60));
+  },
+
+  saveLocal() { try { localStorage.setItem(this.localKey(), JSON.stringify(this.data)); } catch (e) {} },
 
   async put(coll, id, body) {
     const doc = Object.assign({}, body, {id: id});
     this.data[coll][id] = doc;
     if (this.db) {
-      try { await this.db.doc(coll + "/" + id).set(doc); }
+      try { await this.db.doc(this.prefix() + coll + "/" + id).set(doc); }
       catch (e) { notice(dbCopy(e), "warn"); }
     } else { this.saveLocal(); }
     this.onChange();
@@ -800,17 +857,81 @@ const Store = {
 
   async remove(coll, id) {
     delete this.data[coll][id];
-    if (this.db) { try { await this.db.doc(coll + "/" + id).delete(); } catch (e) { notice(dbCopy(e), "warn"); } }
+    if (this.db) { try { await this.db.doc(this.prefix() + coll + "/" + id).delete(); } catch (e) { notice(dbCopy(e), "warn"); } }
     else { this.saveLocal(); }
     this.onChange();
   },
 
   async setMeta(patch) {
     this.data.meta = Object.assign({}, this.data.meta, patch);
-    if (this.db) { try { await this.db.doc("meta/career").set(this.data.meta); } catch (e) { notice(dbCopy(e), "warn"); } }
+    if (this.db) { try { await this.db.doc(this.prefix() + "meta/career").set(this.data.meta); } catch (e) { notice(dbCopy(e), "warn"); } }
     else { this.saveLocal(); }
+  },
+
+  /* ---- save management ---- */
+  async switchSave(id) {
+    if (id === this.saveId) return;
+    this.saveId = id;
+    try { localStorage.setItem(LS_ACTIVE, id); } catch (e) {}
+    this.data = EMPTY();
+    this.ready = false;
+    if (this.db) { this.bindCloud(); await this.waitReady(); }
+    else { this.loadLocal(); this.ready = true; }
+    this.onChange();
+  },
+
+  async createSave(name) {
+    const id = uid("sv");
+    const entry = {id:id, name:(name || "").trim() || "New save", createdAt:Date.now()};
+    if (this.db) { try { await this.db.doc("saves/" + id).set(entry); } catch (e) { notice(dbCopy(e), "warn"); } }
+    else { this.saves.push(entry); this.saveSavesLocal(); }
+    await this.switchSave(id);
+    return id;
+  },
+
+  async renameSave(id, name) {
+    const clean = name.trim(); if (!clean) return;
+    const entry = Object.assign({}, this.saves.find(s => s.id === id) || {createdAt:Date.now()}, {id:id, name:clean});
+    if (this.db) { try { await this.db.doc("saves/" + id).set(entry); } catch (e) { notice(dbCopy(e), "warn"); } }
+    else {
+      const i = this.saves.findIndex(s => s.id === id);
+      if (i >= 0) this.saves[i] = entry; else this.saves.push(entry);
+      this.saveSavesLocal();
+    }
+    this.onChange();
+  },
+
+  /* Wipes the CURRENTLY LOADED save and falls back to the default — switch
+   * into a save first if it isn't already active. Never deletes "default"
+   * itself, so there is always at least one save left. */
+  async deleteCurrentSave() {
+    if (this.saveId === DEFAULT_SAVE) return false;
+    const id = this.saveId;
+    for (const coll of ["stats","trophies","seasons","players"]) {
+      for (const docId of Object.keys(this.data[coll])) await this.remove(coll, docId);
+    }
+    if (this.db) {
+      try { await this.db.doc(this.prefix() + "meta/career").delete(); } catch (e) {}
+      try { await this.db.doc("saves/" + id).delete(); } catch (e) {}
+    } else {
+      try { localStorage.removeItem(this.localKey()); } catch (e) {}
+      this.saves = this.saves.filter(s => s.id !== id);
+      this.saveSavesLocal();
+    }
+    await this.switchSave(DEFAULT_SAVE);
+    return true;
   }
 };
+
+function allSaves() {
+  const def = Store.saves.find(s => s.id === DEFAULT_SAVE) || {id:DEFAULT_SAVE, name:""};
+  return [def].concat(Store.saves.filter(s => s.id !== DEFAULT_SAVE));
+}
+function saveLabel(s) {
+  if (s.name) return s.name;
+  if (s.id === DEFAULT_SAVE) return (Store.saveId === DEFAULT_SAVE && Store.data.meta.club) || "Main save";
+  return "Untitled save";
+}
 
 function dbCopy(e) {
   const c = e && e.code;
@@ -966,6 +1087,7 @@ function render() {
     '<button class="btn" id="btnClearDemo" type="button">Start my career</button></div>');
   $("#banner").innerHTML = bits.join("");
 
+  renderSaveRow();
   renderSidebar();
 
   const v = state.route.view;
@@ -1013,6 +1135,55 @@ function renderSidebar() {
   $("#squadCount").textContent = active.length || "";
   $("#sideList").innerHTML = active.length ? active.map(item).join("")
     : '<div class="side-empty">No current players. Add one, or import a squad screenshot.</div>';
+}
+
+function renderSaveRow() {
+  const cur = allSaves().find(s => s.id === Store.saveId) || {id:Store.saveId, name:""};
+  $("#saveRow").innerHTML =
+    '<button class="save-switch" type="button" id="btnSaves" aria-label="Switch or manage saves">' +
+      '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">' +
+      '<rect x="3" y="7" width="15" height="14" rx="2"/><path d="M7 7V4.5A1.5 1.5 0 0 1 8.5 3H18a2 2 0 0 1 2 2v12.5a1.5 1.5 0 0 1-1.5 1.5H17"/></svg>' +
+      '<span class="sv-name">' + esc(saveLabel(cur)) + '</span>' +
+      '<span class="sv-chev">▾</span>' +
+    '</button>';
+}
+
+function openSaves() {
+  const list = allSaves();
+  const rows = list.map(s => {
+    const active = s.id === Store.saveId;
+    return '<div class="save-row' + (active ? " active" : "") + '">' +
+      '<input type="text" class="save-name-input" data-saveid="' + esc(s.id) + '" value="' + esc(saveLabel(s)) + '" maxlength="30" aria-label="Save name">' +
+      (active ? '<span class="chip">current</span>' : '<button class="btn ghost" type="button" data-switchsave="' + esc(s.id) + '">Switch</button>') +
+      (s.id === DEFAULT_SAVE ? '' : '<button class="row-x" type="button" data-delsave="' + esc(s.id) + '" aria-label="Delete this save">&times;</button>') +
+      "</div>";
+  }).join("");
+  openDialog("Saves",
+    '<div class="save-list">' + rows + "</div>" +
+    '<p class="note">Each save is a completely separate career — its own seasons, squad, wages and awards. Switch to jump between them.</p>',
+    '<button class="btn" type="button" data-close>Close</button><button class="btn primary" type="button" id="btnAddSave">+ New save</button>',
+    () => {
+      dlgBody.querySelectorAll("[data-switchsave]").forEach(b => b.onclick = async () => {
+        b.disabled = true; b.textContent = "Switching…";
+        await Store.switchSave(b.dataset.switchsave);
+        modal.close(); render();
+      });
+      dlgBody.querySelectorAll("[data-delsave]").forEach(b => b.onclick = async () => {
+        const id = b.dataset.delsave;
+        if (!await askConfirm("Delete this save?", "Every season, player, wage and award in it is gone for good. This can't be undone.", "Delete save")) return;
+        if (id !== Store.saveId) await Store.switchSave(id);
+        await Store.deleteCurrentSave();
+        modal.close(); render();
+        notice("Save deleted.", "info");
+      });
+      dlgBody.querySelectorAll(".save-name-input").forEach(inp => inp.onchange = () => Store.renameSave(inp.dataset.saveid, inp.value));
+      $("#btnAddSave").onclick = async () => {
+        const btn = $("#btnAddSave"); btn.disabled = true; btn.textContent = "Creating…";
+        await Store.createSave("New save " + (list.length + 1));
+        modal.close(); render();
+        notice("New save created — it starts empty, ready for its own career.", "info");
+      };
+    });
 }
 
 /* ---------------- view: squad &amp; seasons -------------------------- */
@@ -1516,6 +1687,7 @@ document.addEventListener("click", async e => {
   if (t.dataset.stattile) return openStatLeaders(t.dataset.stattile);
   if (t.id === "btnRenameAward") return openRenameAward();
   if (t.id === "btnMenu") { $("#side").classList.add("open"); $("#scrim").hidden = false; return; }
+  if (t.id === "btnSaves") return openSaves();
   if (t.id === "scrim") { closeDrawer(); return; }
   if (t.dataset.editplayer) return openEditPlayer(t.dataset.editplayer);
   if (t.dataset.editseason) return openEditSeason(t.dataset.editseason);

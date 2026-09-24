@@ -8,6 +8,20 @@ the page there stores data server-side and can read stats out of screenshots. Th
 file also runs on its own in a browser; without those runtime capabilities it
 falls back to `localStorage` and hides the screenshot import.
 
+## Saves
+
+More than one career can live in the same page. A "Main save" button sits at
+the top of the sidebar, above the section list — click it to switch saves,
+rename any of them (type straight into the field), delete one (default
+excluded, so there's always at least one left), or start a new one with
+"+ New save". Each save is fully independent: its own seasons, squad, wages,
+awards, everything — switching never mixes data between them.
+
+The very first save (the one every existing career already lives in) keeps
+using the exact same storage location it always has, so nothing needed to
+move for it to gain this feature. A second save gets its own separate
+storage, entirely isolated from the first.
+
 ## Mobile
 
 The page renders as an Artifact, which scales to any screen. Under 900px wide
