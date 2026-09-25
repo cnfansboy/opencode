@@ -16,7 +16,7 @@ be opened in a browser without running the server:
 **https://claude.ai/artifact/R57eMvR7XczEfHpdRGGJSB**
 
 It carries the same catalogue (`artifact/catalogue.json`, exported from this app's API) and the same
-areas behind four tabs: Courses, Saturday classes, Reviews and a Dashboard. The Dashboard tab is the
+areas behind four tabs: Subjects, Availability, Reviews and a Dashboard. The Dashboard tab is the
 sign-in section: pick student or tutor and it renders that role's dashboard, matching the app's. A
 tutor can rename the site from there, stored in `settings/site` and applied for every viewer.
 
@@ -49,10 +49,10 @@ Demo accounts created by `bun run demo`, all with the password `demopass123`:
 ## What the site does
 
 **What is taught** — maths at KS2, KS3, GCSE and A Level, and science at KS3 and GCSE. The catalogue,
-the Saturday timetable and the seeded reviews all follow that rule, and a test enforces it.
+and the seeded reviews follow that rule, and a test enforces it.
 
-**Public pages** — a home page, a course catalogue filterable by stage, subject and free text, a page
-per course listing every topic it covers, and a reviews page with the overall average rating.
+**Public pages** — a home page, the Subjects tab, a page per course listing every topic it covers, the
+Availability week, and a reviews page with the overall average rating.
 
 **Sign in** — a sign-in section with tabs for signing in and creating an account, hashed with bcrypt
 via `Bun.password` and an httpOnly session cookie that expires after 30 days. An account is either a
@@ -60,12 +60,12 @@ _student_ (a student or their parent) or a _tutor_, and signing in lands on the 
 role.
 
 **Student dashboard** (`#/dashboard`) — a greeting, tiles for courses, topics covered, topics marked
-secure and the next Saturday class, a progress ring per course coloured by subject, and a feed of the
+secure and their tutor's next published slot, a progress ring per course coloured by subject, and a feed of the
 topics the tutor most recently ticked off with their session notes. `#/account` behind it is where
 the student sets their stage, adds or removes courses, and reads the full topic list for each one.
 
 **Tutor dashboard** (`#/dashboard`) — tiles for students, topics ticked in the last seven days,
-students under 25% covered and the tutor's own Saturday class; each student with a progress ring and
+students under 25% covered and the hours the tutor publishes each week; each student with a progress ring and
 a link into their tracker, where every topic is marked _not covered yet_, _covered_ or _secure_ with
 an optional session note. The student sees the same tracker in their own account immediately. The
 dashboard also holds the form to add a student by their registered email, and the site settings.
@@ -73,10 +73,14 @@ dashboard also holds the form to add a student by their registered email, and th
 **Website name** — a tutor renames the site from their dashboard. The name is stored in `settings`
 and drives the header, the brand initial, the footer and the browser tab.
 
-**Saturday classes** — a Saturday timetable of small-group classes grouped by start time, showing the
-tutor, room, price and how many places are still free. Students book or cancel a place, the count
-updates for everyone, and a full class is refused rather than overbooked. Booked classes also show in
-the student's own area.
+**Subjects** (`#/subjects`) — one tab for everything taught: a block per subject showing the levels it
+runs to, and a level per course that opens to its summary, session length and exam boards. A student
+adds a course to their plan from here, and a compact week strip shows when tutors are free.
+
+**Availability** (`#/availability`) — the week as seven columns, each holding the hours tutors have
+published. A signed-in tutor publishes their own (day, from, until and an optional note) and removes
+them again; overlapping hours on the same day are refused, as are malformed or backwards times. A
+tutor can only delete their own slots. Their students see those hours on their dashboard.
 
 **Reviews** — any signed-in account can leave a review of a specific course or of the service
 overall. Reviews show on the reviews page and on the relevant course page.
@@ -88,7 +92,6 @@ overall. Reviews show on the reviews page and on the relevant course page.
 | `settings`         | Site-wide settings, currently the website name                      |
 | `users`            | Name, email, bcrypt password, role (`student` / `teacher`), stage   |
 | `saturday_classes` | Timetabled class: time, tutor, room, capacity and price             |
-| `class_bookings`   | Which student holds a place in which Saturday class                 |
 | `sessions`         | Session cookie tokens and their expiry                              |
 | `courses`          | Title, subject, stage, description, price, session length           |
 | `topics`           | The ordered topic list belonging to a course                        |
@@ -107,9 +110,9 @@ overall. Reviews show on the reviews page and on the relevant course page.
 | `GET`    | `/api/stages`               | Anyone                                    |
 | `GET`    | `/api/courses`              | Anyone (`?stage=&subject=&q=`)            |
 | `GET`    | `/api/courses/:slug`        | Anyone                                    |
-| `GET`    | `/api/saturday-classes`     | Anyone (adds `mine` when signed in)       |
-| `POST`   | `/api/saturday-classes`     | Student, refused when the class is full   |
-| `DELETE` | `/api/saturday-classes`     | Student                                   |
+| `GET`    | `/api/availability`         | Anyone                                    |
+| `POST`   | `/api/availability`         | Tutor, refused when it overlaps           |
+| `DELETE` | `/api/availability`         | Tutor, own slots only                     |
 | `GET`    | `/api/reviews`              | Anyone (`?course=slug`)                   |
 | `POST`   | `/api/reviews`              | Signed in                                 |
 | `POST`   | `/api/auth/register`        | Anyone                                    |

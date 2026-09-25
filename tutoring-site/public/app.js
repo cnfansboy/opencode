@@ -98,7 +98,7 @@ async function home() {
           to come.
         </p>
         <div class="row">
-          <a class="btn primary" href="#/courses">Browse courses</a>
+          <a class="btn primary" href="#/subjects">Browse courses</a>
           <a class="btn" href="#/reviews">Read reviews</a>
         </div>
         <div class="stats">
@@ -118,7 +118,7 @@ async function home() {
       </section>
 
       <section class="block">
-        <div class="row between"><h2>Popular courses</h2><a href="#/courses">See all ${courses.length} →</a></div>
+        <div class="row between"><h2>Popular courses</h2><a href="#/subjects">See all ${courses.length} →</a></div>
         <div class="grid">${featured.map(courseCard).join("")}</div>
       </section>
 
@@ -150,45 +150,184 @@ const courseCard = (course) => `
     ${course.rating ? `<p class="small">${stars(course.rating)} ${course.rating} (${course.review_count})</p>` : `<p class="small muted">No reviews yet</p>`}
   </article>`
 
-async function courses() {
+async function subjects() {
   if (!state.stages.length) Object.assign(state, await api("/stages"))
-  const params = new URLSearchParams(location.hash.split("?")[1] ?? "")
-  const query = new URLSearchParams({
-    stage: params.get("stage") ?? "",
-    subject: params.get("subject") ?? "",
-    q: params.get("q") ?? "",
-  })
-  const { courses: list } = await api(`/courses?${query}`)
+  const [{ courses: list }, { slots, weekdays }] = await Promise.all([api("/courses"), api("/availability")])
+
+  const bySubject = state.subjects
+    .map((subject) => ({
+      subject,
+      courses: list
+        .filter((course) => course.subject === subject)
+        .sort((a, b) => STAGE_RANK[a.stage] - STAGE_RANK[b.stage]),
+    }))
+    .filter((group) => group.courses.length)
 
   main.innerHTML = `
     <div class="wrap">
-      <h1>Courses</h1>
-      <p class="lead muted">Filter by the stage the student is working at, or by subject.</p>
-      <form id="filters" class="card" style="margin-bottom:24px">
-        <div class="field-row">
-          <div><label for="stage">Stage</label>
-            <select id="stage" name="stage">
-              <option value="">All stages</option>
-              ${state.stages.map((stage) => `<option value="${stage.id}" ${query.get("stage") === stage.id ? "selected" : ""}>${esc(stage.label)}</option>`).join("")}
-            </select></div>
-          <div><label for="subject">Subject</label>
-            <select id="subject" name="subject">
-              <option value="">All subjects</option>
-              ${state.subjects.map((subject) => `<option value="${esc(subject)}" ${query.get("subject") === subject ? "selected" : ""}>${esc(subject)}</option>`).join("")}
-            </select></div>
-          <div><label for="q">Search</label><input id="q" name="q" value="${esc(query.get("q"))}" placeholder="e.g. algebra" /></div>
+      <header class="dash-head">
+        <div>
+          <p class="eyebrow">What we teach</p>
+          <h1>Subjects</h1>
+          <p class="muted">Every subject we tutor and the levels we take it to. Open a level to see the topics it covers.</p>
         </div>
-      </form>
-      ${list.length ? `<div class="grid">${list.map(courseCard).join("")}</div>` : `<div class="empty">No courses match those filters.</div>`}
+      </header>
+
+      ${bySubject
+        .map(
+          (group) => `<section class="block subject-block ${subjectClass(group.subject)}">
+            <div class="subject-head">
+              <h2>${esc(group.subject)}</h2>
+              <div class="level-chips">
+                ${group.courses.map((course) => `<span class="chip level">${esc((state.stages.find((s) => s.id === course.stage) || {}).short || course.stage)}</span>`).join("")}
+              </div>
+            </div>
+            <p class="muted small">Taught from ${esc(levelShort(group.courses[0].stage))} to ${esc(levelShort(group.courses[group.courses.length - 1].stage))}.</p>
+            <div class="levels">
+              ${group.courses
+                .map(
+                  (course) => `<details class="level-card">
+                    <summary>
+                      <span class="level-name">
+                        <strong>${esc(levelShort(course.stage))}</strong>
+                        <span class="muted small">${esc(course.title)}</span>
+                      </span>
+                      <span class="level-meta">${course.topic_count} topics · ${money(course.price_pence)}</span>
+                    </summary>
+                    <div class="level-body">
+                      <p class="small">${esc(course.summary)}</p>
+                      <p class="small muted">${esc(course.session_length)} · ${esc(course.exam_boards)}</p>
+                      <div class="rowline">
+                        <a class="btn small" href="#/subjects/${esc(course.slug)}">Topics and reviews</a>
+                        ${state.user?.role === "student" ? `<button class="btn small ${state.interests.some((i) => i.slug === course.slug) ? "" : "primary"}" data-add="${esc(course.slug)}">${state.interests.some((i) => i.slug === course.slug) ? "✓ On my plan" : "Add to my plan"}</button>` : ""}
+                      </div>
+                    </div>
+                  </details>`,
+                )
+                .join("")}
+            </div>
+          </section>`,
+        )
+        .join("")}
+
+      <section class="block">
+        <div class="row between"><h2>When our tutors are free</h2><a href="#/availability">Full week →</a></div>
+        <p class="muted">Sessions are booked into the hours each tutor publishes${state.user?.role === "teacher" ? `, including <a href="#/availability">your own</a>` : ""}.</p>
+        ${
+          slots.length
+            ? `<div class="week-strip">${weekdays
+                .map((day) => {
+                  const items = slots.filter((slot) => slot.weekday === day.id)
+                  return `<div class="strip-day ${items.length ? "" : "strip-empty"}">
+                    <span class="strip-name">${esc(day.short)}</span>
+                    ${items.length ? items.map((slot) => `<span class="strip-time">${esc(slot.starts)}–${esc(slot.ends)}</span>`).join("") : `<span class="strip-time">—</span>`}
+                  </div>`
+                })
+                .join("")}</div>`
+            : `<div class="empty">No tutor hours published yet.</div>`
+        }
+      </section>
     </div>`
 
-  const form = document.getElementById("filters")
-  form.onsubmit = (event) => event.preventDefault()
-  form.oninput = () => {
-    const next = new URLSearchParams(Object.fromEntries(new FormData(form)))
-    for (const [key, value] of [...next]) if (!value) next.delete(key)
-    location.hash = `#/courses${next.toString() ? `?${next}` : ""}`
-  }
+  for (const button of document.querySelectorAll("[data-add]"))
+    button.onclick = async () => {
+      const slug = button.dataset.add
+      const held = state.interests.some((i) => i.slug === slug)
+      await api("/me/interests", { method: held ? "DELETE" : "POST", body: { course: slug } })
+      await refreshUser()
+      notify(held ? "Removed from your plan" : "Added to your plan")
+      subjects()
+    }
+}
+
+async function availability() {
+  const [{ slots, weekdays }, site] = await Promise.all([api("/availability"), Promise.resolve(state.site)])
+  const isTeacher = state.user?.role === "teacher"
+  const mine = slots.filter((slot) => slot.teacher_id === state.user?.id)
+
+  main.innerHTML = `
+    <div class="wrap">
+      <header class="dash-head">
+        <div>
+          <p class="eyebrow">Tutor hours</p>
+          <h1>Availability</h1>
+          <p class="muted">The hours each tutor has published this week. ${isTeacher ? "Add your own below — students and parents see them straight away." : `Get in touch to book one of these slots at ${esc(site.name)}.`}</p>
+        </div>
+      </header>
+
+      <div class="week">
+        ${weekdays
+          .map((day) => {
+            const items = slots.filter((slot) => slot.weekday === day.id)
+            return `<div class="day ${items.length ? "" : "day-empty"}">
+              <h3>${esc(day.label)}</h3>
+              ${
+                items.length
+                  ? items
+                      .map(
+                        (slot) => `<div class="slot ${slot.teacher_id === state.user?.id ? "slot-mine" : ""}">
+                          <span class="slot-time">${esc(slot.starts)}–${esc(slot.ends)}</span>
+                          <span class="slot-who">${esc(slot.teacher)}</span>
+                          ${slot.note ? `<span class="slot-note">${esc(slot.note)}</span>` : ""}
+                          ${slot.teacher_id === state.user?.id ? `<button class="btn small ghost" data-drop-slot="${slot.id}" aria-label="Remove this slot">Remove</button>` : ""}
+                        </div>`,
+                      )
+                      .join("")
+                  : `<p class="small muted">No hours published</p>`
+              }
+            </div>`
+          })
+          .join("")}
+      </div>
+
+      ${
+        isTeacher
+          ? `<section class="block card" style="max-width:640px">
+              <h2>Publish your hours</h2>
+              <p class="small muted">You have ${mine.length} slot${mine.length === 1 ? "" : "s"} published. Overlapping hours on the same day are refused.</p>
+              <form id="slot-form">
+                <div class="field-row">
+                  <div><label for="weekday">Day</label>
+                    <select id="weekday">${weekdays.map((day) => `<option value="${day.id}">${esc(day.label)}</option>`).join("")}</select></div>
+                  <div><label for="starts">From</label><input id="starts" type="time" value="16:00" required /></div>
+                  <div><label for="ends">Until</label><input id="ends" type="time" value="18:00" required /></div>
+                </div>
+                <div class="field"><label for="note">Note (optional)</label><input id="note" maxlength="120" placeholder="Online, or at the centre" /></div>
+                <button class="btn primary" type="submit">Publish these hours</button>
+              </form>
+              <div id="slot-error"></div>
+            </section>`
+          : ""
+      }
+    </div>`
+
+  for (const button of document.querySelectorAll("[data-drop-slot]"))
+    button.onclick = async () => {
+      await api("/availability", { method: "DELETE", body: { id: Number(button.dataset.dropSlot) } })
+      notify("Slot removed")
+      availability()
+    }
+
+  const form = document.getElementById("slot-form")
+  if (form)
+    form.onsubmit = async (event) => {
+      event.preventDefault()
+      try {
+        await api("/availability", {
+          method: "POST",
+          body: {
+            weekday: Number(document.getElementById("weekday").value),
+            starts: document.getElementById("starts").value,
+            ends: document.getElementById("ends").value,
+            note: document.getElementById("note").value,
+          },
+        })
+        notify("Hours published")
+        availability()
+      } catch (error) {
+        document.getElementById("slot-error").innerHTML = `<div class="error">${esc(error.message)}</div>`
+      }
+    }
 }
 
 async function courseDetail(slug) {
@@ -197,7 +336,7 @@ async function courseDetail(slug) {
 
   main.innerHTML = `
     <div class="wrap">
-      <p class="small"><a href="#/courses">← All courses</a></p>
+      <p class="small"><a href="#/subjects">← All subjects</a></p>
       <div class="row"><span class="tag stage">${esc(course.stageLabel)}</span><span class="tag">${esc(course.subject)}</span></div>
       <h1>${esc(course.title)}</h1>
       <p class="lead muted">${esc(course.description)}</p>
@@ -244,72 +383,6 @@ async function courseDetail(slug) {
         await refreshUser()
         notify(saved ? "Removed from your courses" : "Added to your courses")
         courseDetail(slug)
-      } catch (error) {
-        notify(error.message)
-        button.disabled = false
-      }
-    }
-}
-
-async function saturday() {
-  const { classes } = await api("/saturday-classes")
-  const slots = [...new Set(classes.map((item) => item.starts))].sort()
-
-  main.innerHTML = `
-    <div class="wrap">
-      <h1>Saturday classes</h1>
-      <p class="lead muted">
-        Small-group classes at the Bridgewell centre every Saturday in term time, 9am to 3pm. Book a regular place, or
-        come to a single session while a space is free.
-      </p>
-      ${
-        state.user?.role === "student"
-          ? ""
-          : state.user
-            ? `<p class="muted small">Sign in with a student account to book a place.</p>`
-            : `<p class="muted small"><a href="#/register">Create an account</a> to book a place.</p>`
-      }
-      ${slots
-        .map(
-          (slot) => `<section class="block">
-            <h2 class="slot">${slot}</h2>
-            <div class="grid">
-              ${classes
-                .filter((item) => item.starts === slot)
-                .map(
-                  (item) => `<article class="card class-card">
-                    <div class="row"><span class="tag stage">${esc(item.stageLabel)}</span><span class="tag">${esc(item.subject)}</span></div>
-                    <h3 style="margin-top:10px">${esc(item.title)}</h3>
-                    <p class="small muted">${esc(item.starts)}–${esc(item.ends)} · ${esc(item.room)} · ${esc(item.tutor)}</p>
-                    <p class="muted">${esc(item.description)}</p>
-                    <p class="small"><strong>${money(item.price_pence)}</strong> per session ·
-                      <span class="${item.spaces ? "spaces" : "full"}">${item.spaces ? `${item.spaces} of ${item.capacity} spaces left` : "Full"}</span></p>
-                    ${
-                      state.user?.role === "student"
-                        ? `<button class="btn ${item.mine ? "" : "primary"} ${item.spaces || item.mine ? "" : "disabled"}" data-book="${esc(item.slug)}" data-mine="${item.mine ? "1" : ""}" ${item.spaces || item.mine ? "" : "disabled"}>
-                            ${item.mine ? "✓ Booked — cancel place" : item.spaces ? "Book a place" : "Class full"}
-                          </button>`
-                        : ""
-                    }
-                  </article>`,
-                )
-                .join("")}
-            </div>
-          </section>`,
-        )
-        .join("")}
-    </div>`
-
-  for (const button of document.querySelectorAll("[data-book]"))
-    button.onclick = async () => {
-      button.disabled = true
-      try {
-        await api("/saturday-classes", {
-          method: button.dataset.mine ? "DELETE" : "POST",
-          body: { class: button.dataset.book },
-        })
-        notify(button.dataset.mine ? "Place cancelled" : "Place booked")
-        saturday()
       } catch (error) {
         notify(error.message)
         button.disabled = false
@@ -372,6 +445,11 @@ async function reviews() {
     }
 }
 
+const WEEKDAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+
+const STAGE_RANK = { ks2: 1, ks3: 2, gcse: 3, alevel: 4 }
+const levelShort = (stage) => (state.stages.find((s) => s.id === stage) || {}).short || stage
+
 const STATUS_LABEL = { not_started: "Not covered yet", covered: "Covered", secure: "Secure" }
 
 const GREETING = () => {
@@ -406,7 +484,7 @@ async function signIn(mode) {
           <ul class="auth-points">
             <li>See exactly what your tutor has covered</li>
             <li>Follow the AQA, Edexcel or OCR specification</li>
-            <li>Book a Saturday class at the centre</li>
+            <li>Book into the hours your tutor publishes</li>
           </ul>
         </aside>
         <div class="auth-card">
@@ -480,7 +558,7 @@ async function dashboard() {
 }
 
 function studentDashboard(data) {
-  const next = data.classes[0]
+  const next = (data.tutorHours || []).map((slot) => ({ ...slot, day: WEEKDAY_NAMES[slot.weekday] }))[0]
   const percent = data.totals.total ? Math.round((data.totals.covered / data.totals.total) * 100) : 0
 
   main.innerHTML = `
@@ -491,14 +569,14 @@ function studentDashboard(data) {
           <h1>${esc(data.user.name)}</h1>
           <p class="muted">${esc(data.user.stageLabel ?? "No stage set")}${data.teachers.length ? ` · Tutor: ${data.teachers.map((t) => esc(t.name)).join(", ")}` : ""}</p>
         </div>
-        <a class="btn" href="#/courses">Browse courses</a>
+        <a class="btn" href="#/subjects">Browse subjects</a>
       </header>
 
       <div class="tiles">
         <div class="tile"><span class="tile-label">Courses</span><strong>${data.courses.length}</strong><span class="muted small">on your plan</span></div>
         <div class="tile"><span class="tile-label">Topics covered</span><strong>${data.totals.covered}<span class="of">/${data.totals.total}</span></strong><span class="muted small">${percent}% of your courses</span></div>
         <div class="tile"><span class="tile-label">Marked secure</span><strong>${data.totals.secure}</strong><span class="muted small">ready for the exam</span></div>
-        <div class="tile"><span class="tile-label">Next Saturday</span><strong class="tile-small">${next ? esc(next.starts) : "—"}</strong><span class="muted small">${next ? esc(next.title) : "No class booked"}</span></div>
+        <div class="tile"><span class="tile-label">Next tutor slot</span><strong class="tile-small">${next ? esc(next.day) : "—"}</strong><span class="muted small">${next ? `${esc(next.starts)}–${esc(next.ends)} · ${esc(next.teacher)}` : "No hours published"}</span></div>
       </div>
 
       <section class="block">
@@ -520,7 +598,7 @@ function studentDashboard(data) {
                   </article>`,
                 )
                 .join("")}</div>`
-            : `<div class="empty">No courses yet. <a href="#/courses">Pick one from the catalogue</a> and your tutor can start ticking topics off.</div>`
+            : `<div class="empty">No courses yet. <a href="#/subjects">Pick one from the catalogue</a> and your tutor can start ticking topics off.</div>`
         }
       </section>
 
@@ -545,13 +623,13 @@ function studentDashboard(data) {
       </section>
 
       ${
-        data.classes.length
+        (data.tutorHours || []).length
           ? `<section class="block">
-              <div class="row between"><h2>Your Saturday classes</h2><a href="#/saturday">Timetable →</a></div>
-              <ul class="feed">${data.classes
+              <div class="row between"><h2>When your tutor is free</h2><a href="#/availability">Full week →</a></div>
+              <ul class="feed">${data.tutorHours
                 .map(
-                  (item) => `<li><span class="feed-time">${esc(item.starts)}</span>
-                    <div><strong>${esc(item.title)}</strong><span class="small muted">${esc(item.room)} · ${esc(item.tutor)} · until ${esc(item.ends)}</span></div></li>`,
+                  (slot) => `<li><span class="feed-time">${esc(WEEKDAY_NAMES[slot.weekday])}</span>
+                    <div><strong>${esc(slot.starts)}–${esc(slot.ends)}</strong><span class="small muted">${esc(slot.teacher)}</span></div></li>`,
                 )
                 .join("")}</ul>
             </section>`
@@ -569,14 +647,14 @@ function teacherDashboard(data) {
           <h1>${esc(data.user.name)}</h1>
           <p class="muted">${data.students.length} student${data.students.length === 1 ? "" : "s"} on your list</p>
         </div>
-        <a class="btn" href="#/saturday">Saturday timetable</a>
+        <a class="btn" href="#/availability">My availability</a>
       </header>
 
       <div class="tiles">
         <div class="tile"><span class="tile-label">Students</span><strong>${data.students.length}</strong><span class="muted small">you tutor</span></div>
         <div class="tile"><span class="tile-label">Topics ticked</span><strong>${data.ticksThisWeek}</strong><span class="muted small">in the last 7 days</span></div>
         <div class="tile"><span class="tile-label">Needs attention</span><strong>${data.needsAttention}</strong><span class="muted small">under 25% covered</span></div>
-        <div class="tile"><span class="tile-label">Your Saturdays</span><strong class="tile-small">${data.classes.length ? esc(data.classes[0].starts) : "—"}</strong><span class="muted small">${data.classes.length ? esc(data.classes[0].title) : "No class booked"}</span></div>
+        <div class="tile"><span class="tile-label">Hours published</span><strong>${data.weeklyHours}</strong><span class="muted small">across ${data.slots.length} slot${data.slots.length === 1 ? "" : "s"} a week</span></div>
       </div>
 
       <section class="block">
@@ -693,7 +771,7 @@ async function studentArea() {
                 .join("")}
             </select>
           </div>
-          ${me.classes.length ? `<p class="small muted">Saturday: ${me.classes.map((item) => `${esc(item.title)} (${esc(item.starts)})`).join(", ")}. <a href="#/saturday">Change</a></p>` : `<p class="small muted">No Saturday classes booked — <a href="#/saturday">see the timetable</a>.</p>`}
+          <p class="small muted"><a href="#/availability">See when tutors are free</a> this week.</p>
         </div>
       </section>
 
@@ -725,7 +803,7 @@ async function studentArea() {
                   </details>`,
                 )
                 .join("")
-            : `<div class="empty">No courses yet. Add one above, or <a href="#/courses">browse the catalogue</a>.</div>`
+            : `<div class="empty">No courses yet. Add one above, or <a href="#/subjects">browse the catalogue</a>.</div>`
         }
       </section>
     </div>`
@@ -839,9 +917,9 @@ async function render() {
 
   try {
     if (!parts.length) await home()
-    else if (parts[0] === "courses" && parts[1]) await courseDetail(parts[1])
-    else if (parts[0] === "courses") await courses()
-    else if (parts[0] === "saturday") await saturday()
+    else if ((parts[0] === "subjects" || parts[0] === "courses") && parts[1]) await courseDetail(parts[1])
+    else if (parts[0] === "subjects" || parts[0] === "courses") await subjects()
+    else if (parts[0] === "availability" || parts[0] === "saturday") await availability()
     else if (parts[0] === "reviews") await reviews()
     else if (parts[0] === "signin" || parts[0] === "login") await signIn("login")
     else if (parts[0] === "signup" || parts[0] === "register") await signIn("register")

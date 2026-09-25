@@ -1,5 +1,5 @@
 import path from "node:path"
-import { db, DEFAULT_SITE_NAME, PROGRESS_STATUS, siteName, STAGES, type ProgressStatus } from "./db"
+import { db, DEFAULT_SITE_NAME, PROGRESS_STATUS, siteName, STAGES, WEEKDAYS, type ProgressStatus } from "./db"
 import { seed } from "./seed"
 import { clearCookie, currentUser, hash, login, logout, readCookie, sessionCookie, verify, type User } from "./auth"
 
@@ -172,14 +172,14 @@ export const server = Bun.serve({
       const auth = require_(request)
       if (auth.error) return auth.error
 
-      const classes = db
+      const slots = db
         .query(
-          `SELECT saturday_classes.slug, saturday_classes.title, saturday_classes.starts, saturday_classes.ends,
-                  saturday_classes.room, saturday_classes.tutor
-           FROM class_bookings JOIN saturday_classes ON saturday_classes.id = class_bookings.class_id
-           WHERE class_bookings.user_id = ? ORDER BY saturday_classes.starts`,
+          `SELECT availability.id, availability.weekday, availability.starts, availability.ends, availability.note,
+                  users.name as teacher
+           FROM availability JOIN users ON users.id = availability.teacher_id
+           WHERE availability.teacher_id = ? ORDER BY availability.weekday, availability.starts`,
         )
-        .all(auth.user.id)
+        .all(auth.user.id) as { weekday: number; starts: string; ends: string }[]
 
       if (auth.user.role === "student") {
         const courses = courseProgress(auth.user.id)
@@ -187,7 +187,14 @@ export const server = Bun.serve({
           role: "student",
           user: publicUser(auth.user),
           courses,
-          classes,
+          tutorHours: db
+            .query(
+              `SELECT availability.weekday, availability.starts, availability.ends, users.name as teacher
+               FROM availability JOIN users ON users.id = availability.teacher_id
+               JOIN teacher_students ON teacher_students.teacher_id = availability.teacher_id
+               WHERE teacher_students.student_id = ? ORDER BY availability.weekday, availability.starts`,
+            )
+            .all(auth.user.id),
           totals: courses.reduce(
             (sum, course) => ({
               total: sum.total + course.counts.total,
@@ -240,7 +247,20 @@ export const server = Bun.serve({
         role: "teacher",
         user: publicUser(auth.user),
         students: detailed,
-        classes,
+        slots,
+        weeklyHours:
+          Math.round(
+            slots.reduce(
+              (sum, slot) =>
+                sum +
+                (Number(slot.ends.slice(0, 2)) * 60 +
+                  Number(slot.ends.slice(3)) -
+                  Number(slot.starts.slice(0, 2)) * 60 -
+                  Number(slot.starts.slice(3))) /
+                  60,
+              0,
+            ) * 10,
+          ) / 10,
         ticksThisWeek: (
           db
             .query(
@@ -252,59 +272,57 @@ export const server = Bun.serve({
       })
     },
 
-    "/api/saturday-classes": {
-      GET: (request) => {
-        const user = currentUser(request)
-        return json({
-          classes: db
+    "/api/availability": {
+      GET: () =>
+        json({
+          weekdays: WEEKDAYS,
+          slots: db
             .query(
-              `SELECT saturday_classes.*,
-                      (SELECT COUNT(*) FROM class_bookings WHERE class_bookings.class_id = saturday_classes.id) as booked,
-                      EXISTS (SELECT 1 FROM class_bookings WHERE class_bookings.class_id = saturday_classes.id AND class_bookings.user_id = ?) as mine
-               FROM saturday_classes ORDER BY saturday_classes.starts, saturday_classes.room`,
+              `SELECT availability.id, availability.weekday, availability.starts, availability.ends, availability.note,
+                      availability.teacher_id, users.name as teacher
+               FROM availability JOIN users ON users.id = availability.teacher_id
+               ORDER BY availability.weekday, availability.starts, users.name`,
             )
-            .all(user?.id ?? 0)
-            .map((item) => {
-              const row = item as Record<string, unknown> & { stage: string; capacity: number; booked: number }
-              return {
-                ...row,
-                stageLabel: STAGES.find((s) => s.id === row.stage)?.label ?? row.stage,
-                spaces: Math.max(0, row.capacity - row.booked),
-              }
-            }),
-        })
-      },
+            .all(),
+        }),
       POST: async (request) => {
-        const auth = require_(request, "student")
+        const auth = require_(request, "teacher")
         if (auth.error) return auth.error
         const input = await body(request)
-        const item = db.query("SELECT id, capacity FROM saturday_classes WHERE slug = ?").get(str(input?.class)) as {
-          id: number
-          capacity: number
-        } | null
-        if (!item) return fail(404, "Class not found.")
+        if (!input) return fail(400, "Expected a JSON body.")
 
-        const booked = (
-          db.query("SELECT COUNT(*) as n FROM class_bookings WHERE class_id = ?").get(item.id) as { n: number }
-        ).n
-        const already = db
-          .query("SELECT 1 as ok FROM class_bookings WHERE class_id = ? AND user_id = ?")
-          .get(item.id, auth.user.id)
-        if (!already && booked >= item.capacity)
-          return fail(409, "That class is full. Join the waiting list by getting in touch.")
+        const weekday = Number(input.weekday)
+        const starts = str(input.starts)
+        const ends = str(input.ends)
+        const note = str(input.note).slice(0, 120)
+        const time = /^([01]\d|2[0-3]):[0-5]\d$/
 
-        db.query("INSERT OR IGNORE INTO class_bookings (user_id, class_id) VALUES (?, ?)").run(auth.user.id, item.id)
-        return json({ ok: true })
+        if (!WEEKDAYS.some((day) => day.id === weekday)) return fail(400, "Choose a day of the week.")
+        if (!time.test(starts) || !time.test(ends)) return fail(400, "Times must look like 16:00.")
+        if (ends <= starts) return fail(400, "The finish time must be after the start time.")
+
+        const clash = db
+          .query(
+            "SELECT starts, ends FROM availability WHERE teacher_id = ? AND weekday = ? AND starts < ? AND ends > ?",
+          )
+          .get(auth.user.id, weekday, ends, starts) as { starts: string; ends: string } | null
+        if (clash) return fail(409, `That overlaps the ${clash.starts}–${clash.ends} you already published.`)
+
+        const id = db
+          .query(
+            "INSERT INTO availability (teacher_id, weekday, starts, ends, note) VALUES (?, ?, ?, ?, ?) RETURNING id",
+          )
+          .get(auth.user.id, weekday, starts, ends, note) as { id: number }
+        return json({ id: id.id }, { status: 201 })
       },
       DELETE: async (request) => {
-        const auth = require_(request, "student")
+        const auth = require_(request, "teacher")
         if (auth.error) return auth.error
         const input = await body(request)
-        const item = db.query("SELECT id FROM saturday_classes WHERE slug = ?").get(str(input?.class)) as {
-          id: number
-        } | null
-        if (!item) return fail(404, "Class not found.")
-        db.query("DELETE FROM class_bookings WHERE user_id = ? AND class_id = ?").run(auth.user.id, item.id)
+        const removed = db
+          .query("DELETE FROM availability WHERE id = ? AND teacher_id = ? RETURNING id")
+          .get(Number(input?.id), auth.user.id)
+        if (!removed) return fail(404, "That slot is not one of yours.")
         return json({ ok: true })
       },
     },
@@ -413,11 +431,6 @@ export const server = Bun.serve({
           interests: db
             .query(
               "SELECT courses.id, courses.slug, courses.title, courses.stage, courses.subject FROM interests JOIN courses ON courses.id = interests.course_id WHERE interests.user_id = ? ORDER BY courses.title",
-            )
-            .all(user.id),
-          classes: db
-            .query(
-              "SELECT saturday_classes.slug, saturday_classes.title, saturday_classes.starts, saturday_classes.ends, saturday_classes.room, saturday_classes.tutor FROM class_bookings JOIN saturday_classes ON saturday_classes.id = class_bookings.class_id WHERE class_bookings.user_id = ? ORDER BY saturday_classes.starts",
             )
             .all(user.id),
           teachers:

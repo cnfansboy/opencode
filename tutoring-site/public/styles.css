@@ -798,3 +798,194 @@ table.students th {
   color: var(--muted);
   font-style: italic;
 }
+
+/* ---- subjects ---------------------------------------------------------- */
+.subject-block {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left-width: 4px;
+  border-radius: 14px;
+  padding: 20px;
+  box-shadow: var(--shadow);
+}
+.subject-block.subject-maths {
+  border-left-color: #2f6fb0;
+}
+.subject-block.subject-science {
+  border-left-color: #1d7a54;
+}
+.subject-head {
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+.subject-head h2 {
+  margin: 0;
+}
+.level-chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.chip.level {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--muted);
+}
+.levels {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+}
+.level-card {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+}
+.level-card > summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 12px 14px;
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+.level-card > summary::-webkit-details-marker {
+  display: none;
+}
+.level-name {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+.level-name strong {
+  min-width: 62px;
+}
+.level-meta {
+  font-size: 0.85rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.level-body {
+  padding: 0 14px 14px;
+  display: grid;
+  gap: 8px;
+}
+
+/* ---- availability ------------------------------------------------------ */
+.week {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  margin-bottom: 32px;
+}
+.day {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+  display: grid;
+  gap: 8px;
+  align-content: start;
+}
+.day h3 {
+  margin: 0;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+.day-empty {
+  background: transparent;
+  border-style: dashed;
+}
+.slot {
+  background: var(--surface-2);
+  border-radius: 8px;
+  padding: 9px 10px;
+  display: grid;
+  gap: 2px;
+}
+.slot-mine {
+  background: var(--good-soft);
+  border: 1px solid var(--good);
+}
+.slot-time {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.slot-who {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.slot-note {
+  font-size: 0.78rem;
+  color: var(--muted);
+  font-style: italic;
+}
+.slot .btn {
+  margin-top: 4px;
+  justify-self: start;
+}
+
+.level-card > summary::after {
+  content: "▾";
+  color: var(--accent);
+  font-size: 0.8rem;
+  margin-left: auto;
+  padding-left: 10px;
+  transition: transform 0.2s ease;
+}
+.level-card[open] > summary::after {
+  transform: rotate(180deg);
+  display: inline-block;
+}
+.week {
+  grid-template-columns: repeat(auto-fit, minmax(172px, 1fr));
+}
+.slot-time {
+  white-space: nowrap;
+  font-size: 0.95rem;
+}
+.week-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+.strip-day {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px;
+  display: grid;
+  gap: 3px;
+  text-align: center;
+}
+.strip-day.strip-empty {
+  border-style: dashed;
+  background: transparent;
+  color: var(--muted);
+}
+.strip-name {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+.strip-time {
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}

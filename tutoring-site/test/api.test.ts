@@ -61,9 +61,8 @@ test("courses are seeded and filterable", async () => {
 
 test("the catalogue is maths to A Level and science to GCSE only", async () => {
   const { courses } = (await call(anonymous, "/api/courses")).body
-  const { classes } = (await call(anonymous, "/api/saturday-classes")).body
 
-  for (const item of [...courses, ...classes]) {
+  for (const item of courses) {
     expect(["Maths", "Science"]).toContain(item.subject)
     if (item.subject === "Science") expect(item.stage).not.toBe("alevel")
   }
@@ -217,87 +216,6 @@ test("reviews require sign-in and show up in the list", async () => {
   expect(list.body.reviews[0].author_name).toBe("Test Student")
 })
 
-test("saturday classes list with spaces and take bookings", async () => {
-  const list = await call(anonymous, "/api/saturday-classes")
-  expect(list.body.classes.length).toBeGreaterThan(2)
-  const first = list.body.classes[0]
-  expect(first.spaces).toBe(first.capacity)
-  expect(first.mine).toBe(0)
-
-  expect(
-    (await call(anonymous, "/api/saturday-classes", { method: "POST", body: JSON.stringify({ class: first.slug }) }))
-      .status,
-  ).toBe(401)
-  expect(
-    (await call(teacher, "/api/saturday-classes", { method: "POST", body: JSON.stringify({ class: first.slug }) }))
-      .status,
-  ).toBe(403)
-
-  expect(
-    (await call(student, "/api/saturday-classes", { method: "POST", body: JSON.stringify({ class: first.slug }) }))
-      .status,
-  ).toBe(200)
-  const booked = (await call(student, "/api/saturday-classes")).body.classes.find(
-    (item: { slug: string }) => item.slug === first.slug,
-  )
-  expect(booked.mine).toBe(1)
-  expect(booked.spaces).toBe(first.capacity - 1)
-  expect((await call(student, "/api/me")).body.classes.some((item: { slug: string }) => item.slug === first.slug)).toBe(
-    true,
-  )
-
-  // Booking twice is idempotent rather than double-counting a place.
-  await call(student, "/api/saturday-classes", { method: "POST", body: JSON.stringify({ class: first.slug }) })
-  expect(
-    (await call(anonymous, "/api/saturday-classes")).body.classes.find(
-      (item: { slug: string }) => item.slug === first.slug,
-    ).booked,
-  ).toBe(1)
-
-  await call(student, "/api/saturday-classes", { method: "DELETE", body: JSON.stringify({ class: first.slug }) })
-  expect(
-    (await call(student, "/api/saturday-classes")).body.classes.find(
-      (item: { slug: string }) => item.slug === first.slug,
-    ).mine,
-  ).toBe(0)
-})
-
-test("a full class is refused", async () => {
-  const target = (await call(anonymous, "/api/saturday-classes")).body.classes.reduce(
-    (smallest: { capacity: number }, item: { capacity: number }) =>
-      item.capacity < smallest.capacity ? item : smallest,
-  )
-
-  for (let index = 0; index < target.capacity; index++) {
-    const filler: { cookie?: string } = {}
-    await call(filler, "/api/auth/register", {
-      method: "POST",
-      body: JSON.stringify({
-        name: `Filler ${index}`,
-        email: `filler${index}@test.local`,
-        password: "password123",
-        role: "student",
-        stage: "ks2",
-      }),
-    })
-    expect(
-      (await call(filler, "/api/saturday-classes", { method: "POST", body: JSON.stringify({ class: target.slug }) }))
-        .status,
-    ).toBe(200)
-  }
-
-  const full = await call(student, "/api/saturday-classes", {
-    method: "POST",
-    body: JSON.stringify({ class: target.slug }),
-  })
-  expect(full.status).toBe(409)
-  expect(
-    (await call(anonymous, "/api/saturday-classes")).body.classes.find(
-      (item: { slug: string }) => item.slug === target.slug,
-    ).spaces,
-  ).toBe(0)
-})
-
 test("the site name is readable by anyone and only a teacher may change it", async () => {
   expect((await call(anonymous, "/api/site")).body.name).toBe("Bridgewell Tutoring")
 
@@ -342,6 +260,107 @@ test("courses carry the exam boards they follow", async () => {
   const gcseMaths = courses.find((c: { slug: string }) => c.slug === "gcse-maths-higher")
   expect(gcseMaths.exam_boards).toContain("AQA")
   expect(courses.every((c: { exam_boards: string }) => c.exam_boards.length > 0)).toBe(true)
+})
+
+test("a tutor publishes weekly availability that everyone can read", async () => {
+  expect((await call(anonymous, "/api/availability")).body.weekdays).toHaveLength(7)
+
+  expect(
+    (
+      await call(anonymous, "/api/availability", {
+        method: "POST",
+        body: JSON.stringify({ weekday: 1, starts: "16:00", ends: "18:00" }),
+      })
+    ).status,
+  ).toBe(401)
+  expect(
+    (
+      await call(student, "/api/availability", {
+        method: "POST",
+        body: JSON.stringify({ weekday: 1, starts: "16:00", ends: "18:00" }),
+      })
+    ).status,
+  ).toBe(403)
+
+  const added = await call(teacher, "/api/availability", {
+    method: "POST",
+    body: JSON.stringify({ weekday: 1, starts: "16:00", ends: "18:00", note: "After school, online" }),
+  })
+  expect(added.status).toBe(201)
+
+  const published = (await call(anonymous, "/api/availability")).body.slots.find(
+    (slot: { id: number }) => slot.id === added.body.id,
+  )
+  expect(published.teacher).toBe("Test Tutor")
+  expect(published.weekday).toBe(1)
+  expect(published.note).toBe("After school, online")
+
+  // The tutor's own hours reach their dashboard, and their students' dashboards.
+  const tutorDash = await call(teacher, "/api/dashboard")
+  expect(tutorDash.body.weeklyHours).toBe(2)
+  expect(
+    (await call(student, "/api/dashboard")).body.tutorHours.some((slot: { starts: string }) => slot.starts === "16:00"),
+  ).toBe(true)
+
+  await call(teacher, "/api/availability", { method: "DELETE", body: JSON.stringify({ id: added.body.id }) })
+  expect(
+    (await call(anonymous, "/api/availability")).body.slots.some((slot: { id: number }) => slot.id === added.body.id),
+  ).toBe(false)
+})
+
+test("availability rejects bad times, overlaps and other tutors' slots", async () => {
+  const bad = [
+    { weekday: 9, starts: "16:00", ends: "18:00" },
+    { weekday: 2, starts: "9am", ends: "11am" },
+    { weekday: 2, starts: "18:00", ends: "16:00" },
+    { weekday: 2, starts: "16:00", ends: "16:00" },
+  ]
+  for (const slot of bad)
+    expect((await call(teacher, "/api/availability", { method: "POST", body: JSON.stringify(slot) })).status).toBe(400)
+
+  const first = await call(teacher, "/api/availability", {
+    method: "POST",
+    body: JSON.stringify({ weekday: 3, starts: "16:00", ends: "18:00" }),
+  })
+  expect(first.status).toBe(201)
+
+  const overlap = await call(teacher, "/api/availability", {
+    method: "POST",
+    body: JSON.stringify({ weekday: 3, starts: "17:00", ends: "19:00" }),
+  })
+  expect(overlap.status).toBe(409)
+
+  // Back to back is fine; a different day is fine.
+  expect(
+    (
+      await call(teacher, "/api/availability", {
+        method: "POST",
+        body: JSON.stringify({ weekday: 3, starts: "18:00", ends: "19:00" }),
+      })
+    ).status,
+  ).toBe(201)
+
+  const other: { cookie?: string } = {}
+  await call(other, "/api/auth/register", {
+    method: "POST",
+    body: JSON.stringify({
+      name: "Other Tutor",
+      email: "other-tutor@test.local",
+      password: "password123",
+      role: "teacher",
+    }),
+  })
+  expect(
+    (await call(other, "/api/availability", { method: "DELETE", body: JSON.stringify({ id: first.body.id }) })).status,
+  ).toBe(404)
+  expect(
+    (
+      await call(other, "/api/availability", {
+        method: "POST",
+        body: JSON.stringify({ weekday: 3, starts: "16:00", ends: "18:00" }),
+      })
+    ).status,
+  ).toBe(201)
 })
 
 test("signing out invalidates the session", async () => {

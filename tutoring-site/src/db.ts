@@ -3,10 +3,10 @@ import { mkdirSync } from "node:fs"
 import path from "node:path"
 
 export const STAGES = [
-  { id: "ks2", label: "KS2 (Primary, Years 3-6)", order: 1 },
-  { id: "ks3", label: "KS3 (Secondary, Years 7-9)", order: 2 },
-  { id: "gcse", label: "GCSE (Years 10-11)", order: 3 },
-  { id: "alevel", label: "A Level (Years 12-13)", order: 4 },
+  { id: "ks2", label: "KS2 (Primary, Years 3-6)", short: "KS2", order: 1 },
+  { id: "ks3", label: "KS3 (Secondary, Years 7-9)", short: "KS3", order: 2 },
+  { id: "gcse", label: "GCSE (Years 10-11)", short: "GCSE", order: 3 },
+  { id: "alevel", label: "A Level (Years 12-13)", short: "A Level", order: 4 },
 ] as const
 
 export type StageId = (typeof STAGES)[number]["id"]
@@ -98,32 +98,33 @@ db.exec(`
     value TEXT NOT NULL
   );
 
-  CREATE TABLE IF NOT EXISTS saturday_classes (
+
+
+  CREATE TABLE IF NOT EXISTS availability (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    slug TEXT NOT NULL UNIQUE,
-    title TEXT NOT NULL,
-    subject TEXT NOT NULL,
-    stage TEXT NOT NULL,
+    teacher_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    weekday INTEGER NOT NULL CHECK (weekday BETWEEN 0 AND 6),
     starts TEXT NOT NULL,
     ends TEXT NOT NULL,
-    tutor TEXT NOT NULL,
-    room TEXT NOT NULL,
-    capacity INTEGER NOT NULL,
-    price_pence INTEGER NOT NULL,
-    description TEXT NOT NULL
+    note TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
 
-  CREATE TABLE IF NOT EXISTS class_bookings (
-    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    class_id INTEGER NOT NULL REFERENCES saturday_classes(id) ON DELETE CASCADE,
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    PRIMARY KEY (user_id, class_id)
-  );
-
+  CREATE INDEX IF NOT EXISTS availability_teacher ON availability(teacher_id, weekday, starts);
   CREATE INDEX IF NOT EXISTS topics_course ON topics(course_id, position);
   CREATE INDEX IF NOT EXISTS reviews_course ON reviews(course_id, created_at DESC);
   CREATE INDEX IF NOT EXISTS sessions_user ON sessions(user_id);
 `)
+
+export const WEEKDAYS = [
+  { id: 0, label: "Monday", short: "Mon" },
+  { id: 1, label: "Tuesday", short: "Tue" },
+  { id: 2, label: "Wednesday", short: "Wed" },
+  { id: 3, label: "Thursday", short: "Thu" },
+  { id: 4, label: "Friday", short: "Fri" },
+  { id: 5, label: "Saturday", short: "Sat" },
+  { id: 6, label: "Sunday", short: "Sun" },
+] as const
 
 export const DEFAULT_SITE_NAME = "Bridgewell Tutoring"
 
