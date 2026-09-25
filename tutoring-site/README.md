@@ -15,17 +15,19 @@ be opened in a browser without running the server:
 
 **https://claude.ai/artifact/R57eMvR7XczEfHpdRGGJSB**
 
-It carries the same catalogue (`artifact/catalogue.json`, exported from this app's API) and the same
-areas behind three tabs: Subjects, Reviews and a Dashboard. The Dashboard tab is the
-sign-in section: pick student or tutor and it renders that role's dashboard, matching the app's. A
-tutor can rename the site from there, stored in `settings/site` and applied for every viewer.
+It carries the same catalogue (`artifact/catalogue.json`, exported from this app's API) behind three
+tabs, Dashboard first: the Dashboard tab is the sign-in gate, so it opens on the role chooser and
+then that role's sign-in page, exactly like the app. A tutor can rename the site from their
+dashboard, stored in `settings/site` and applied for every viewer.
 
-Two differences are forced by the medium: there is no password — the claude.ai account opening the
-page authenticates you, and signing in stores your email address and role (the email goes in your own
-private subtree, which no other viewer can read) — and state lives in the
-artifact's shared document store rather than SQLite, so courses, bookings, reviews, topic ticks and
-the site name are shared live between everyone who opens it. The example students and reviews are
-seeded demo data and are labelled as such.
+Two differences are forced by the medium. There is no password: the claude.ai account opening the
+page authenticates you, and signing in stores your email address and role, with the email in your own
+private subtree that no other viewer can read. The sign-in page still shows the password field and
+the forgotten-password screens the deployed site runs, labelled as such, with the field disabled
+because no password is ever stored here. And state lives in the artifact's shared document store
+rather than SQLite, so courses, released time slots, reviews, topic ticks and the site name are
+shared live between everyone who opens it. The example students and reviews are seeded demo data and
+are labelled as such.
 
 ## Running it
 

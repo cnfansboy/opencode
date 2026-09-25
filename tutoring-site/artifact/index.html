@@ -1138,6 +1138,43 @@
     gap: 14px;
   }
 
+  .auth-title {
+    font-size: clamp(1.4rem, 3vw, 1.8rem);
+    margin-bottom: 4px;
+  }
+  .label-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+  }
+  .label-row label {
+    margin-bottom: 0;
+  }
+  .sent-note {
+    background: var(--covered-wash);
+    border: 1px solid var(--covered);
+    border-radius: 8px;
+    padding: 13px 15px;
+    display: grid;
+    gap: 4px;
+  }
+  .demo-note {
+    border: 1px dashed var(--rule);
+    border-radius: 8px;
+    padding: 13px 15px;
+    background: var(--sunk);
+  }
+  #forgot-form {
+    display: grid;
+    gap: 14px;
+  }
+  input:disabled {
+    background: var(--sunk);
+    color: var(--muted);
+    cursor: not-allowed;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     * {
       transition: none !important;
@@ -1175,17 +1212,17 @@
   </div>
   <div class="shell">
     <div class="tabs" role="tablist" aria-label="Sections">
-      <button class="tab" role="tab" id="tab-subjects" aria-controls="panel-subjects" aria-selected="true" data-tab="subjects">Subjects</button>
+      <button class="tab" role="tab" id="tab-dashboard" aria-controls="panel-dashboard" aria-selected="true" data-tab="dashboard">Dashboard</button>
+      <button class="tab" role="tab" id="tab-subjects" aria-controls="panel-subjects" aria-selected="false" data-tab="subjects">Subjects</button>
       <button class="tab" role="tab" id="tab-reviews" aria-controls="panel-reviews" aria-selected="false" data-tab="reviews">Reviews</button>
-      <button class="tab" role="tab" id="tab-dashboard" aria-controls="panel-dashboard" aria-selected="false" data-tab="dashboard">Dashboard</button>
     </div>
   </div>
 </header>
 
 <main class="shell">
-  <section id="panel-subjects" role="tabpanel" aria-labelledby="tab-subjects"></section>
+  <section id="panel-dashboard" role="tabpanel" aria-labelledby="tab-dashboard"></section>
+  <section id="panel-subjects" role="tabpanel" aria-labelledby="tab-subjects" hidden></section>
   <section id="panel-reviews" role="tabpanel" aria-labelledby="tab-reviews" hidden></section>
-  <section id="panel-dashboard" role="tabpanel" aria-labelledby="tab-dashboard" hidden></section>
 </main>
 
 <footer class="foot shell">
@@ -1210,7 +1247,7 @@
   const STAGE_RANK = { ks2: 1, ks3: 2, gcse: 3, alevel: 4 }
 
   const state = {
-    tab: "subjects",
+    tab: "dashboard",
     db: null,
     user: null,
     uid: null,
@@ -1227,6 +1264,9 @@
     account: null,
     accounts: new Map(),
     email: "",
+    authRole: null,
+    authView: "chooser",
+    forgotEmail: "",
     site: { name: "Bridgewell Tutoring" },
   }
 
@@ -1383,6 +1423,8 @@
     if (role === "tutor" && tutorTaken()) return flash(`${tutorHolder()} already holds the tutor account.`)
 
     state.email = address
+    state.authView = "chooser"
+    state.authRole = null
     state.account = { role, at: new Date().toISOString() }
     state.accounts.set(state.uid, state.account)
     writeSignedOut(false)
@@ -1672,8 +1714,22 @@
     return held ? nameFor(held[0], state.students.get(held[0]) || state.slots.get(held[0])) : "Someone"
   }
 
-  function renderSignIn() {
-    const name = (state.me && state.me.name) || ""
+  const ROLE_COPY = {
+    student: {
+      title: "Student sign in",
+      blurb: "For students and parents following their topics.",
+      label: "I'm a student or parent",
+      detail: "Pick your courses, set your stage and follow every topic your tutor has covered.",
+    },
+    tutor: {
+      title: "Tutor sign in",
+      blurb: "For the one person tutoring here.",
+      label: "I'm the tutor",
+      detail: "See every student, tick off the topics you cover and release the hours you are free.",
+    },
+  }
+
+  function authShell(inner) {
     return `
       <div class="auth">
         <aside class="auth-brand">
@@ -1683,57 +1739,107 @@
           <ul class="auth-points">
             <li>See exactly what your tutor has covered</li>
             <li>Follow the AQA, Edexcel or OCR specification</li>
-            <li>Book a Saturday class at the centre</li>
+            <li>Book into the slots your tutor releases</li>
           </ul>
         </aside>
-        <div class="auth-card">
-          <h2>Sign in</h2>
-          ${
-            state.uid
-              ? `<p class="muted" style="font-size:0.92rem">
-                   You are signed in as <strong>${esc(name || "your account")}</strong>. Choose how you use
-                   ${esc(state.site.name)} and your dashboard is built for that role.
-                 </p>
-                 <form id="signin-form">
-                   <div>
-                     <label for="account-email">Email address (required)</label>
-                     <input id="account-email" type="email" required autocomplete="email"
-                       value="${esc(state.email || (state.me && state.me.email) || "")}"
-                       placeholder="you@example.com" />
-                     <p class="muted" style="font-size:0.8rem;margin-top:5px">
-                       Every account needs one. Yours is stored privately — no other viewer of this page can read it.
-                     </p>
-                   </div>
-                   <div class="role-picker">
-                     <button class="role" type="submit" data-role="student">
-                       <span class="role-icon" aria-hidden="true">✎</span>
-                       <strong>I'm a student or parent</strong>
-                       <span class="muted">Pick your courses, set your stage and follow the topics your tutor has covered.</span>
-                     </button>
-                     ${
-                       tutorTaken()
-                         ? `<div class="role role-taken">
-                             <span class="role-icon" aria-hidden="true">✓</span>
-                             <strong>The tutor account is taken</strong>
-                             <span class="muted">${esc(tutorHolder())} already holds it. Only one person tutors here.</span>
-                           </div>`
-                         : `<button class="role" type="submit" data-role="tutor">
-                             <span class="role-icon" aria-hidden="true">✓</span>
-                             <strong>I'm the tutor</strong>
-                             <span class="muted">See every student, tick off the topics you cover and leave session notes.</span>
-                           </button>`
-                     }
-                   </div>
-                 </form>
-                 <p class="muted" style="font-size:0.8rem">
-                   The deployed site signs in with an email and password. Here your claude.ai account is the sign-in,
-                   so there is no password to keep.
-                 </p>`
-              : `<p class="muted">This page could not identify your account, so there is nothing to sign in to. The
-                   catalogue, the timetable and the reviews all still work.</p>`
-          }
-        </div>
+        <div class="auth-card">${inner}</div>
       </div>`
+  }
+
+  function renderSignIn() {
+    if (!state.uid)
+      return authShell(`
+        <h1 class="auth-title">Sign in</h1>
+        <p class="muted">This page could not identify your account, so there is nothing to sign in to. The subjects,
+          the released time slots and the reviews all still work.</p>`)
+
+    if (state.authView === "forgot") return renderForgot()
+    if (state.authView === "sent") return renderForgotSent()
+    if (state.authRole) return renderRoleSignIn(state.authRole)
+
+    return authShell(`
+      <h1 class="auth-title">Sign in</h1>
+      <p class="muted">Who is signing in?</p>
+      <div class="role-picker">
+        ${["student", "tutor"]
+          .map((role) => {
+            const taken = role === "tutor" && tutorTaken()
+            return taken
+              ? `<div class="role role-taken">
+                  <span class="role-icon" aria-hidden="true">✓</span>
+                  <strong>The tutor account is taken</strong>
+                  <span class="muted">${esc(tutorHolder())} already holds it. Only one person tutors here.</span>
+                </div>`
+              : `<button class="role" data-pick-role="${role}">
+                  <span class="role-icon" aria-hidden="true">${role === "student" ? "✎" : "✓"}</span>
+                  <strong>${esc(ROLE_COPY[role].label)}</strong>
+                  <span class="muted">${esc(ROLE_COPY[role].detail)}</span>
+                </button>`
+          })
+          .join("")}
+      </div>`)
+  }
+
+  function renderRoleSignIn(role) {
+    return authShell(`
+      <p class="meta"><a href="#" data-auth-back="chooser">← Not you?</a></p>
+      <h1 class="auth-title">${esc(ROLE_COPY[role].title)}</h1>
+      <p class="muted">${esc(ROLE_COPY[role].blurb)}</p>
+      <form id="signin-form">
+        <div>
+          <label for="account-email">Email address</label>
+          <input id="account-email" type="email" required autocomplete="email"
+            value="${esc(state.email || "")}" placeholder="you@example.com" />
+          <p class="muted" style="font-size:0.8rem;margin-top:5px">
+            Every account needs one. Yours is stored privately — no other viewer of this page can read it.
+          </p>
+        </div>
+        <div>
+          <div class="label-row">
+            <label for="account-password">Password</label>
+            <a href="#" data-auth-back="forgot" style="font-size:0.82rem">Forgotten your password?</a>
+          </div>
+          <input id="account-password" type="password" autocomplete="current-password" disabled
+            placeholder="Not needed here" />
+          <p class="muted" style="font-size:0.8rem;margin-top:5px">
+            On the deployed site this is where your password goes. Here your claude.ai account has already signed you
+            in, so there is no password to type — or to forget.
+          </p>
+        </div>
+        <button class="btn primary block" type="submit">Continue as ${esc(ROLE_COPY[role].label.replace("I'm ", ""))}</button>
+      </form>`)
+  }
+
+  function renderForgot() {
+    return authShell(`
+      <p class="meta"><a href="#" data-auth-back="chooser">← Back to sign in</a></p>
+      <h1 class="auth-title">Forgotten your password?</h1>
+      <p class="muted">Enter the email address on your account and we will send a link to set a new one.</p>
+      <form id="forgot-form">
+        <div>
+          <label for="forgot-email">Email address</label>
+          <input id="forgot-email" type="email" required autocomplete="email" value="${esc(state.email || "")}" />
+        </div>
+        <button class="btn primary block" type="submit">Email me a link</button>
+      </form>
+      <p class="muted" style="font-size:0.8rem">
+        This is the flow the deployed site runs. There, the link is emailed, works once and expires after an hour.
+      </p>`)
+  }
+
+  function renderForgotSent() {
+    return authShell(`
+      <h1 class="auth-title">Check your inbox</h1>
+      <div class="sent-note">
+        <p><strong>If ${esc(state.forgotEmail || "that address")} has an account, a link to set a new password is on its way.</strong></p>
+        <p class="muted" style="font-size:0.85rem">The link works once and expires in an hour.</p>
+      </div>
+      <div class="demo-note">
+        <p style="font-size:0.85rem"><strong>On this page:</strong> no email is sent and no password is stored — your
+          claude.ai account is the sign-in. The deployed site emails a single-use link that opens a “set a new
+          password” screen.</p>
+      </div>
+      <p class="meta"><a href="#" data-auth-back="chooser">Back to sign in</a></p>`)
   }
 
   function renderDashboard() {
@@ -2076,13 +2182,38 @@
         })
       }
 
+    for (const node of panel.querySelectorAll("[data-pick-role]"))
+      node.onclick = () => {
+        state.authRole = node.dataset.pickRole
+        state.authView = "role"
+        render()
+      }
+
+    for (const node of panel.querySelectorAll("[data-auth-back]"))
+      node.onclick = (event) => {
+        event.preventDefault()
+        state.authView = node.dataset.authBack === "forgot" ? "forgot" : "chooser"
+        if (node.dataset.authBack !== "forgot") state.authRole = null
+        render()
+      }
+
     const signInForm = panel.querySelector("#signin-form")
     if (signInForm)
-      for (const node of signInForm.querySelectorAll("button[data-role]"))
-        node.onclick = (event) => {
-          event.preventDefault()
-          chooseRole(node.dataset.role, panel.querySelector("#account-email").value)
-        }
+      signInForm.onsubmit = (event) => {
+        event.preventDefault()
+        chooseRole(state.authRole, panel.querySelector("#account-email").value)
+      }
+
+    const forgotForm = panel.querySelector("#forgot-form")
+    if (forgotForm)
+      forgotForm.onsubmit = (event) => {
+        event.preventDefault()
+        const address = panel.querySelector("#forgot-email").value.trim()
+        if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(address)) return flash("Please enter a valid email address.")
+        state.forgotEmail = address
+        state.authView = "sent"
+        render()
+      }
 
     const signOut = panel.querySelector("#sign-out")
     if (signOut)
@@ -2091,6 +2222,8 @@
         state.openStudent = null
         state.openCourse = null
         state.email = ""
+        state.authView = "chooser"
+        state.authRole = null
         writeSignedOut(true)
         render()
         flash("Signed out")
