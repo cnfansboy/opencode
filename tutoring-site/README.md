@@ -26,7 +26,9 @@ private subtree that no other viewer can read. The sign-in page still shows the 
 the forgotten-password screens the deployed site runs, labelled as such, with the field disabled
 because no password is ever stored here. And state lives in the artifact's shared document store
 rather than SQLite, so courses, released time slots, reviews, topic ticks and the site name are
-shared live between everyone who opens it. The example students and reviews are seeded demo data and
+shared live between everyone who opens it. The tutor schedules sessions from their dashboard there too, and the join
+link behaves the same way; signing in with Zoom needs a server for the OAuth handshake, so the
+sign-in page explains that rather than offering it. The example students and reviews are seeded demo data and
 are labelled as such.
 
 ## Running it

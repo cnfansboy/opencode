@@ -1175,6 +1175,95 @@
     cursor: not-allowed;
   }
 
+  .lessons {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 8px;
+  }
+  .lesson {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    flex-wrap: wrap;
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: 12px 14px;
+  }
+  .lesson-now {
+    border-color: var(--covered);
+    background: var(--covered-wash);
+  }
+  .lesson-when {
+    display: grid;
+    gap: 1px;
+    min-width: 176px;
+  }
+  .lesson-when strong {
+    font-family: var(--mono);
+    font-weight: 500;
+  }
+  .lesson-what {
+    display: grid;
+    gap: 1px;
+    flex: 1 1 180px;
+  }
+  .lesson-join {
+    display: flex;
+    gap: 7px;
+    align-items: center;
+    margin-left: auto;
+  }
+  .or-line {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--muted);
+    font-size: 0.8rem;
+    margin: 4px 0;
+  }
+  .or-line::before,
+  .or-line::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--rule);
+  }
+  .zoom-note {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    font-size: 0.84rem;
+    color: var(--muted);
+    background: var(--sunk);
+    border-radius: 8px;
+    padding: 12px 14px;
+  }
+  .zoom-mark {
+    display: grid;
+    place-items: center;
+    width: 20px;
+    height: 20px;
+    flex: 0 0 20px;
+    border-radius: 5px;
+    background: #2d8cff;
+    color: #fff;
+    font-weight: 800;
+    font-size: 0.72rem;
+  }
+  .chip-x {
+    appearance: none;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+    padding: 0 0 0 4px;
+    opacity: 0.7;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     * {
       transition: none !important;
@@ -1255,6 +1344,8 @@
     writable: null,
     students: new Map(),
     slots: new Map(),
+    lessons: new Map(),
+    lessonStudent: null,
     reviews: [],
     profiles: {},
     filters: { stage: "", subject: "", q: "" },
@@ -1317,6 +1408,79 @@
   const myDoc = () => (state.uid && state.students.get(state.uid)) || null
   const myCourses = () => (myDoc() || {}).courses || []
   const mySlots = () => ((state.uid && state.slots.get(state.uid)) || {}).slots || []
+
+  const lessonsFor = (studentId) =>
+    (((state.lessons.get(studentId) || {}).lessons || []).filter(
+      (lesson) => Date.parse(lesson.startsAt) + lesson.minutes * 60000 >= Date.now() - 2 * 60 * 60 * 1000,
+    ) || []).sort((a, b) => a.startsAt.localeCompare(b.startsAt))
+
+  const allLessons = () =>
+    [...state.lessons.keys()].flatMap((id) => lessonsFor(id).map((lesson) => ({ ...lesson, student: id })))
+      .sort((a, b) => a.startsAt.localeCompare(b.startsAt))
+
+  const LESSON_FORMAT = { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }
+  const lessonWhen = (iso) => {
+    const when = new Date(iso)
+    return isNaN(when) ? "" : when.toLocaleString("en-GB", LESSON_FORMAT)
+  }
+
+  // The joining link goes live a quarter of an hour before the session and stays up until it ends.
+  function joinState(lesson) {
+    const starts = Date.parse(lesson.startsAt)
+    if (isNaN(starts)) return "later"
+    if (Date.now() >= starts + lesson.minutes * 60000) return "over"
+    return Date.now() >= starts - 15 * 60000 ? "open" : "later"
+  }
+
+  function lessonRow(lesson, forTutor) {
+    const open = joinState(lesson) === "open"
+    const course = courseBySlug(lesson.course) || {}
+    return `<li class="lesson ${open ? "lesson-now" : ""}">
+      <div class="lesson-when">
+        <strong>${esc(lessonWhen(lesson.startsAt))}</strong>
+        <span class="meta">${lesson.minutes} minutes</span>
+      </div>
+      <div class="lesson-what">
+        <strong>${esc(course.title || lesson.course)}</strong>
+        <span class="meta">${forTutor ? esc(nameFor(lesson.student, state.students.get(lesson.student))) : esc(course.subject || "")}${lesson.note ? " · " + esc(lesson.note) : ""}</span>
+      </div>
+      <div class="lesson-join">
+        ${
+          lesson.joinUrl
+            ? `<a class="btn ${open ? "primary" : ""} tiny" href="${esc(lesson.joinUrl)}" target="_blank" rel="noopener">${open ? "Join the Zoom meeting" : "Zoom link"}</a>`
+            : `<span class="meta">No link yet</span>`
+        }
+        ${forTutor ? `<button class="btn tiny" data-drop-lesson="${esc(lesson.student)}:${esc(lesson.id)}">Cancel</button>` : ""}
+      </div>
+    </li>`
+  }
+
+  async function scheduleLesson(lesson) {
+    if (needsAccount()) return
+    if (!lesson.course) return flash("Put the student on a course first.")
+    if (isNaN(Date.parse(lesson.startsAt))) return flash("Give the session a date and time.")
+    if (lesson.joinUrl && !/^https:\/\/[\w.-]*zoom\.us\//i.test(lesson.joinUrl))
+      return flash("The joining link should be a https://zoom.us link.")
+
+    const current = state.lessons.get(lesson.student) || { lessons: [] }
+    const next = {
+      lessons: (current.lessons || []).concat({ ...lesson, id: crypto.randomUUID().slice(0, 8) }),
+    }
+    state.lessons.set(lesson.student, next)
+    state.lessonStudent = lesson.student
+    render()
+    flash("Session scheduled")
+    await write(() => state.db.doc("lessons/" + lesson.student).set(next))
+  }
+
+  async function cancelLesson(studentId, lessonId) {
+    const current = state.lessons.get(studentId) || { lessons: [] }
+    const next = { lessons: (current.lessons || []).filter((lesson) => lesson.id !== lessonId) }
+    state.lessons.set(studentId, next)
+    render()
+    flash("Session cancelled")
+    await write(() => state.db.doc("lessons/" + studentId).set(next))
+  }
   const nameFor = (id, doc) => (doc && doc.demoName) || (state.profiles[id] || {}).name || "A student"
 
   function counts(doc, slug) {
@@ -1536,13 +1700,7 @@
                         <p style="font-size:0.92rem">${esc(course.description)}</p>
                         <p class="meta">${esc(course.length)} · ${esc(course.boards)}</p>
                         <ul class="topic-grid">${course.topics.map((t) => `<li>${esc(t)}</li>`).join("")}</ul>
-                        ${
-                          state.account && state.account.role === "student"
-                            ? `<div><button class="btn ${held ? "" : "primary"}" data-course-toggle="${esc(course.slug)}">
-                                ${held ? "Remove from my plan" : "Add to my plan"}
-                              </button></div>`
-                            : `<p class="meta">Sign in as a student on the Dashboard tab to add this level to your plan.</p>`
-                        }
+                        ${held ? `<p class="meta"><span class="chip slots-count">You're taking this</span></p>` : `<p class="meta">Your tutor adds courses to your plan — ask them about this one.</p>`}
                       </div>
                     </details>`
                   })
@@ -1806,6 +1964,12 @@
             in, so there is no password to type — or to forget.
           </p>
         </div>
+        <div class="or-line"><span>or</span></div>
+        <div class="zoom-note">
+          <span class="zoom-mark" aria-hidden="true">Z</span>
+          <span>The deployed site also offers <strong>Continue with Zoom</strong>, so session links open straight into
+            your own Zoom account. That handshake needs a server, so it is not wired up on this page.</span>
+        </div>
         <button class="btn primary block" type="submit">Continue as ${esc(ROLE_COPY[role].label.replace("I'm ", ""))}</button>
       </form>`)
   }
@@ -1870,54 +2034,13 @@
       { total: 0, covered: 0, secure: 0 },
     )
     const percent = totals.total ? Math.round((totals.covered / totals.total) * 100) : 0
-    const booked = slotList()
-
-    const progress = (doc && doc.progress) || {}
-    const recent = Object.entries(progress)
-      .filter(([, row]) => row.status !== "not_started")
-      .sort((a, b) => String(b[1].at || "").localeCompare(String(a[1].at || "")))
-      .slice(0, 6)
-      .map(([k, row]) => {
-        const [slug, index] = k.split(":")
-        const course = courseBySlug(slug)
-        return { course, topic: course ? course.topics[Number(index)] : "", row }
-      })
-      .filter((item) => item.course && item.topic)
+    const lessons = lessonsFor(state.uid)
 
     return `
       ${dashHead((state.me && state.me.name) || "Your learning", `${esc(doc && doc.stage ? stageLabel(doc.stage) : "No stage set")} · student`, "")}
 
-      <div class="tiles">
-        <div class="tile"><span class="tile-label">Courses</span><strong>${mine.length}</strong><span class="muted">on your plan</span></div>
-        <div class="tile"><span class="tile-label">Topics covered</span><strong>${totals.covered}<span class="of">/${totals.total}</span></strong><span class="muted">${percent}% of your courses</span></div>
-        <div class="tile"><span class="tile-label">Marked secure</span><strong>${totals.secure}</strong><span class="muted">ready for the exam</span></div>
-        <div class="tile"><span class="tile-label">Next tutor slot</span><strong class="small-figure">${booked[0] ? esc(WEEKDAYS[booked[0].weekday].short) + " " + esc(booked[0].starts) : "—"}</strong><span class="muted">${booked[0] ? esc(booked[0].subject === "Any" ? "Any subject" : booked[0].subject) : "No hours released"}</span></div>
-      </div>
-
       <section>
-        <div class="filters">
-          <div>
-            <label for="my-stage">Your stage</label>
-            <select id="my-stage">
-              <option value="">Choose a stage…</option>
-              ${STAGES.map((s) => `<option value="${s.id}" ${doc && doc.stage === s.id ? "selected" : ""}>${esc(s.label)}</option>`).join("")}
-            </select>
-          </div>
-          <div>
-            <label for="my-add">Add a course</label>
-            <select id="my-add">
-              <option value="">Choose a course…</option>
-              ${sortedCourses
-                .filter((c) => !mine.includes(c.slug))
-                .map((c) => `<option value="${esc(c.slug)}">${esc(c.title)}</option>`)
-                .join("")}
-            </select>
-          </div>
-        </div>
-      </section>
-
-      <section>
-        <h2>Your courses</h2>
+        <h2>Courses you're taking</h2>
         ${
           mine.length
             ? `<div class="dash-grid">${mine
@@ -1933,52 +2056,34 @@
                       </div>
                     </div>
                     <p class="muted" style="font-size:0.88rem">${c.covered} of ${c.total} topics covered · ${c.secure} secure</p>
-                    <div class="rowline">
-                      <button class="btn tiny" data-show-topics="${esc(slug)}">${state.openCourse === slug ? "Hide topics" : "Show topics"}</button>
-                      <button class="btn tiny" data-drop="${esc(slug)}">Remove</button>
-                    </div>
-                    ${state.openCourse === slug ? trackerMarkup(doc, slug, false) : ""}
                   </article>`
                 })
                 .join("")}</div>`
-            : `<div class="empty">No courses yet. Add one above, or open the Courses tab to see what we teach.</div>`
+            : `<div class="empty">Your tutor hasn't put you on a course yet. They add courses from their own dashboard.</div>`
         }
       </section>
 
       <section>
-        <h2>Recent sessions</h2>
+        <h2>Next sessions</h2>
         ${
-          recent.length
-            ? `<ul class="feed">${recent
-                .map(
-                  (item) => `<li>
-                    <span class="feed-tick">${item.row.status === "secure" ? "✔✔" : "✔"}</span>
-                    <div>
-                      <strong>${esc(item.topic)}</strong>
-                      <span class="meta">${esc(item.course.title)} · ${esc(when(item.row.at))}</span>
-                      ${item.row.note ? `<p class="note-line">“${esc(item.row.note)}”</p>` : ""}
-                    </div>
-                  </li>`,
-                )
-                .join("")}</ul>`
-            : `<div class="empty">Nothing ticked off yet — your tutor updates this after each session.</div>`
+          lessons.length
+            ? `<ul class="lessons">${lessons.map((lesson) => lessonRow({ ...lesson, student: state.uid }, false)).join("")}</ul>
+               <p class="meta">The joining link opens 15 minutes before the session starts.</p>`
+            : `<div class="empty">No sessions booked in. Your tutor schedules these.</div>`
         }
       </section>
 
-      ${
-        booked.length
-          ? `<section>
-              <h2>Slots released this week</h2>
-              <ul class="feed">${booked
-                .slice(0, 6)
-                .map(
-                  (slot) => `<li><span class="feed-time">${WEEKDAYS[slot.weekday].short}</span>
-                    <div><strong>${esc(slot.starts)}–${esc(slot.ends)}</strong><span class="meta">${esc(slot.subject === "Any" ? "Any subject" : slot.subject)}${slot.note ? " · " + esc(slot.note) : ""}</span></div></li>`,
-                )
-                .join("")}</ul>
-            </section>`
-          : ""
-      }`
+      <section>
+        <div class="tracker-head">
+          <h2>Progress</h2>
+          <span class="meta">${totals.covered} of ${totals.total} topics covered · ${percent}%</span>
+        </div>
+        ${
+          mine.length
+            ? mine.map((slug) => trackerMarkup(doc, slug, false)).join("")
+            : `<div class="empty">Progress appears here once you are on a course.</div>`
+        }
+      </section>`
   }
 
   function renderTutorDash() {
@@ -2020,6 +2125,38 @@
         <div class="tile"><span class="tile-label">Needs attention</span><strong>${behind}</strong><span class="muted">under 25% covered</span></div>
         <div class="tile"><span class="tile-label">Hours published</span><strong>${hours}</strong><span class="muted">across ${mySlots().length} slot${mySlots().length === 1 ? "" : "s"} released</span></div>
       </div>
+
+      <section>
+        <div class="tracker-head"><h2>Next sessions</h2><span class="meta">${allLessons().length} booked in</span></div>
+        ${
+          allLessons().length
+            ? `<ul class="lessons">${allLessons().map((lesson) => lessonRow(lesson, true)).join("")}</ul>`
+            : `<div class="empty">Nothing in the diary yet. Schedule a session below.</div>`
+        }
+      </section>
+
+      <section>
+        <div class="form-card">
+          <h2>Schedule a session</h2>
+          <p class="muted" style="font-size:0.9rem">The student sees it under “Next sessions”, and the Zoom link goes live 15 minutes before.</p>
+          <form id="lesson-form">
+            <div class="field-row">
+              <div><label for="lesson-student">Student</label>
+                <select id="lesson-student">
+                  ${rows.map(([id, doc]) => `<option value="${esc(id)}" ${state.lessonStudent === id ? "selected" : ""}>${esc(nameFor(id, doc))}</option>`).join("")}
+                </select></div>
+              <div><label for="lesson-course">Course</label><select id="lesson-course"></select></div>
+            </div>
+            <div class="field-row">
+              <div><label for="lesson-when">Date and time</label><input id="lesson-when" type="datetime-local" required /></div>
+              <div><label for="lesson-minutes">Minutes</label><input id="lesson-minutes" type="number" min="15" max="240" step="15" value="60" required /></div>
+            </div>
+            <div><label for="lesson-url">Zoom joining link</label><input id="lesson-url" type="url" placeholder="https://zoom.us/j/123456789" /></div>
+            <div><label for="lesson-note">Note (optional)</label><input id="lesson-note" maxlength="120" placeholder="Circle theorems" /></div>
+            <div class="rowline"><button class="btn primary" type="submit">Schedule session</button></div>
+          </form>
+        </div>
+      </section>
 
       <section>
         <h2>Your students</h2>
@@ -2109,10 +2246,36 @@
         <h1>${esc(nameFor(state.openStudent, open))}</h1>
         <p>${esc(open.stage ? stageLabel(open.stage) : "No stage set")} · tick a topic as you cover it and the student sees it in their own dashboard straight away.</p>
       </div>
+      <div class="form-card" style="margin-bottom:16px">
+        <h2>Courses</h2>
+        <p class="muted" style="font-size:0.9rem">You decide what this student is taking.</p>
+        <div class="rowline">
+          ${
+            courses.length
+              ? courses
+                  .map(
+                    (slug) => `<span class="chip level">${esc((courseBySlug(slug) || {}).title || slug)}
+                      <button class="chip-x" data-unenrol="${esc(slug)}" aria-label="Remove">×</button></span>`,
+                  )
+                  .join("")
+              : `<span class="meta">Not on any course yet.</span>`
+          }
+        </div>
+        <div>
+          <label for="enrol">Put them on a course</label>
+          <select id="enrol">
+            <option value="">Choose a course…</option>
+            ${sortedCourses
+              .filter((course) => !courses.includes(course.slug))
+              .map((course) => `<option value="${esc(course.slug)}">${esc(course.title)}</option>`)
+              .join("")}
+          </select>
+        </div>
+      </div>
       ${
         courses.length
           ? courses.map((slug) => trackerMarkup(open, slug, state.writable !== false)).join("")
-          : `<div class="empty">This student has not added any courses yet.</div>`
+          : `<div class="empty">Put this student on a course to start ticking topics off.</div>`
       }`
   }
 
@@ -2156,14 +2319,6 @@
           again.focus()
           again.setSelectionRange(caret, caret)
         }
-      }
-
-    for (const node of panel.querySelectorAll("[data-course-toggle]"))
-      node.onclick = () => {
-        const slug = node.dataset.courseToggle
-        const mine = myCourses()
-        saveStudent({ courses: mine.includes(slug) ? mine.filter((s) => s !== slug) : mine.concat(slug) })
-        flash(mine.includes(slug) ? "Removed from your courses" : "Added to your courses")
       }
 
     for (const node of panel.querySelectorAll("[data-drop-slot]"))
@@ -2239,6 +2394,67 @@
       node.onclick = () => {
         saveStudent({ courses: myCourses().filter((slug) => slug !== node.dataset.drop) })
         flash("Course removed")
+      }
+
+    const lessonForm = panel.querySelector("#lesson-form")
+    if (lessonForm) {
+      const pickStudent = panel.querySelector("#lesson-student")
+      const pickCourse = panel.querySelector("#lesson-course")
+      const fillCourses = () => {
+        const doc = state.students.get(pickStudent.value) || {}
+        pickCourse.innerHTML =
+          (doc.courses || [])
+            .map((slug) => `<option value="${esc(slug)}">${esc((courseBySlug(slug) || {}).title || slug)}</option>`)
+            .join("") || `<option value="">Put them on a course first</option>`
+      }
+      fillCourses()
+      pickStudent.onchange = () => {
+        state.lessonStudent = pickStudent.value
+        fillCourses()
+      }
+      lessonForm.onsubmit = (event) => {
+        event.preventDefault()
+        scheduleLesson({
+          student: pickStudent.value,
+          course: pickCourse.value,
+          startsAt: new Date(panel.querySelector("#lesson-when").value).toISOString(),
+          minutes: Number(panel.querySelector("#lesson-minutes").value) || 60,
+          joinUrl: panel.querySelector("#lesson-url").value.trim(),
+          note: panel.querySelector("#lesson-note").value.trim().slice(0, 120),
+        })
+      }
+    }
+
+    for (const node of panel.querySelectorAll("[data-drop-lesson]"))
+      node.onclick = () => {
+        const [studentId, lessonId] = node.dataset.dropLesson.split(":")
+        cancelLesson(studentId, lessonId)
+      }
+
+    const enrol = panel.querySelector("#enrol")
+    if (enrol)
+      enrol.onchange = async () => {
+        if (!enrol.value) return
+        const doc = state.students.get(state.openStudent)
+        if (!doc) return
+        const next = Object.assign({}, doc, { courses: (doc.courses || []).concat(enrol.value) })
+        state.students.set(state.openStudent, next)
+        render()
+        flash("Course added")
+        await write(() => state.db.doc("students/" + state.openStudent).set(next))
+      }
+
+    for (const node of panel.querySelectorAll("[data-unenrol]"))
+      node.onclick = async () => {
+        const doc = state.students.get(state.openStudent)
+        if (!doc) return
+        const next = Object.assign({}, doc, {
+          courses: (doc.courses || []).filter((slug) => slug !== node.dataset.unenrol),
+        })
+        state.students.set(state.openStudent, next)
+        render()
+        flash("Course removed")
+        await write(() => state.db.doc("students/" + state.openStudent).set(next))
       }
 
     const siteForm = panel.querySelector("#site-form")
@@ -2425,6 +2641,11 @@
       state.students = incoming
       render()
       syncProfiles()
+    }, onError)
+
+    db.collection("lessons").onSnapshot((snap) => {
+      state.lessons = new Map(snap.docs.map((doc) => [doc.id, doc.data()]))
+      render()
     }, onError)
 
     db.collection("availability").onSnapshot((snap) => {
