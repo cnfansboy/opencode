@@ -596,6 +596,202 @@ test("signing in with Zoom creates and then reuses the account", async () => {
   expect((await call(secondSession, "/api/me")).body.user.id).toBe(me.body.user.id)
 })
 
+test("a parent sets up a child and books lessons in the tutor's released hours", async () => {
+  const parent: { cookie?: string } = {}
+  expect(
+    (
+      await call(parent, "/api/auth/register", {
+        method: "POST",
+        body: JSON.stringify({
+          name: "Test Parent",
+          email: "parent@test.local",
+          password: "password123",
+          role: "parent",
+        }),
+      })
+    ).status,
+  ).toBe(201)
+
+  // Only a parent may add children.
+  expect(
+    (
+      await call(student, "/api/parent/children", {
+        method: "POST",
+        body: JSON.stringify({ name: "Nope", stage: "ks2" }),
+      })
+    ).status,
+  ).toBe(403)
+  expect(
+    (await call(parent, "/api/parent/children", { method: "POST", body: JSON.stringify({ name: "X", stage: "nope" }) }))
+      .status,
+  ).toBe(400)
+
+  // A child with no email is managed by the parent and cannot sign in.
+  const child = await call(parent, "/api/parent/children", {
+    method: "POST",
+    body: JSON.stringify({ name: "Managed Child", stage: "ks3" }),
+  })
+  expect(child.status).toBe(201)
+
+  const account = await call(parent, "/api/me/account")
+  expect(account.body.children).toHaveLength(1)
+  expect(account.body.children[0].email).toBeNull()
+
+  // The tutor picks the child up automatically and puts them on a course.
+  expect(
+    (
+      await call(teacher, "/api/teacher/enrolments", {
+        method: "POST",
+        body: JSON.stringify({ studentId: child.body.id, course: "ks3-maths-bridge" }),
+      })
+    ).status,
+  ).toBe(201)
+
+  // Released hours: Wednesday 16:00-19:00 for maths.
+  const released = await call(teacher, "/api/availability", {
+    method: "POST",
+    body: JSON.stringify({ weekday: 2, starts: "16:00", ends: "19:00", subject: "Maths" }),
+  })
+  expect(released.status).toBe(201)
+
+  const nextWednesday = (hour: number, minute = 0) => {
+    const when = new Date()
+    when.setDate(when.getDate() + ((3 - when.getDay() + 7) % 7 || 7))
+    when.setHours(hour, minute, 0, 0)
+    return when.toISOString()
+  }
+
+  // Outside the released hours.
+  const tooEarly = await call(parent, "/api/parent/lessons", {
+    method: "POST",
+    body: JSON.stringify({
+      childId: child.body.id,
+      course: "ks3-maths-bridge",
+      startsAt: nextWednesday(9),
+      minutes: 60,
+    }),
+  })
+  expect(tooEarly.status).toBe(409)
+
+  // Runs past the end of the released block.
+  const overruns = await call(parent, "/api/parent/lessons", {
+    method: "POST",
+    body: JSON.stringify({
+      childId: child.body.id,
+      course: "ks3-maths-bridge",
+      startsAt: nextWednesday(18, 30),
+      minutes: 60,
+    }),
+  })
+  expect(overruns.status).toBe(409)
+
+  // Someone else's child.
+  expect(
+    (
+      await call(parent, "/api/parent/lessons", {
+        method: "POST",
+        body: JSON.stringify({
+          childId: studentId,
+          course: "gcse-maths-higher",
+          startsAt: nextWednesday(17),
+          minutes: 60,
+        }),
+      })
+    ).status,
+  ).toBe(403)
+
+  const booked = await call(parent, "/api/parent/lessons", {
+    method: "POST",
+    body: JSON.stringify({
+      childId: child.body.id,
+      course: "ks3-maths-bridge",
+      startsAt: nextWednesday(17),
+      minutes: 60,
+      note: "Ratio",
+    }),
+  })
+  expect(booked.status).toBe(201)
+
+  // The tutor's own meeting room came through on the booking.
+  const dash = await call(parent, "/api/dashboard")
+  expect(dash.body.role).toBe("parent")
+  expect(dash.body.children[0].lessons[0].note).toBe("Ratio")
+
+  // The tutor sees it in their diary.
+  expect(
+    (await call(teacher, "/api/dashboard")).body.lessons.some((item: { note: string }) => item.note === "Ratio"),
+  ).toBe(true)
+
+  // Double booking the tutor is refused.
+  const clash = await call(parent, "/api/parent/lessons", {
+    method: "POST",
+    body: JSON.stringify({
+      childId: child.body.id,
+      course: "ks3-maths-bridge",
+      startsAt: nextWednesday(17, 30),
+      minutes: 60,
+    }),
+  })
+  expect(clash.status).toBe(409)
+
+  expect(
+    (await call(parent, "/api/parent/lessons", { method: "DELETE", body: JSON.stringify({ id: booked.body.id }) }))
+      .status,
+  ).toBe(200)
+  expect((await call(parent, "/api/dashboard")).body.children[0].lessons).toHaveLength(0)
+})
+
+test("account settings change a name and a password, and keep the lessons had", async () => {
+  const before = await call(student, "/api/me/account")
+  expect(before.body.user.name).toBe("Test Student")
+  expect(Array.isArray(before.body.past)).toBe(true)
+
+  expect((await call(anonymous, "/api/me/account")).status).toBe(401)
+
+  await call(student, "/api/me", { method: "PATCH", body: JSON.stringify({ name: "Renamed Student" }) })
+  expect((await call(student, "/api/me/account")).body.user.name).toBe("Renamed Student")
+
+  // A password change needs the current one.
+  expect(
+    (
+      await call(student, "/api/me", {
+        method: "PATCH",
+        body: JSON.stringify({ currentPassword: "wrong", password: "newpassword1" }),
+      })
+    ).status,
+  ).toBe(403)
+  expect(
+    (
+      await call(student, "/api/me", {
+        method: "PATCH",
+        body: JSON.stringify({ currentPassword: "password123", password: "short" }),
+      })
+    ).status,
+  ).toBe(400)
+
+  expect(
+    (
+      await call(student, "/api/me", {
+        method: "PATCH",
+        body: JSON.stringify({ currentPassword: "password123", password: "newpassword1" }),
+      })
+    ).status,
+  ).toBe(200)
+  expect(
+    (
+      await call({}, "/api/auth/login", {
+        method: "POST",
+        body: JSON.stringify({ email: "pupil@test.local", password: "newpassword1" }),
+      })
+    ).status,
+  ).toBe(200)
+
+  await call(student, "/api/me", {
+    method: "PATCH",
+    body: JSON.stringify({ currentPassword: "newpassword1", password: "password123" }),
+  })
+})
+
 test("a forgotten password can be reset once, and the old one stops working", async () => {
   // The answer is the same whether or not the address has an account.
   const unknown = await call({}, "/api/auth/forgot", {

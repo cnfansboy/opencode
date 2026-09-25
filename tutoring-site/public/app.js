@@ -66,7 +66,10 @@ function renderAccountNav() {
     return
   }
   account.innerHTML = `
-    <span class="who small muted">${esc(state.user.name)}</span>
+    <a class="who" href="#/account" title="Account settings">
+      <span class="who-mark" aria-hidden="true">${esc(state.user.name.trim().charAt(0).toUpperCase())}</span>
+      <span class="who-text">Signed in as <strong>${esc(state.user.name)}</strong></span>
+    </a>
     <button class="btn ghost small" id="logout">Sign out</button>`
   document.getElementById("logout").onclick = async () => {
     await api("/auth/logout", { method: "POST" })
@@ -90,7 +93,11 @@ function loading() {
 
 async function subjects() {
   if (!state.stages.length) Object.assign(state, await api("/stages"))
-  const [{ courses: list }, { slots }] = await Promise.all([api("/courses"), api("/availability")])
+  const [{ courses: list }, { slots }, { reviews: latest, summary }] = await Promise.all([
+    api("/courses"),
+    api("/availability"),
+    api("/reviews"),
+  ])
 
   const groups = state.subjects
     .map((subject) => ({
@@ -175,6 +182,29 @@ async function subjects() {
           </details>`,
         )
         .join("")}
+
+      <section class="block">
+        <div class="row between">
+          <h2>What families say</h2>
+          <span class="muted small">${summary.average ? `${summary.average} out of 5 from ${summary.count} reviews` : ""}</span>
+        </div>
+        ${
+          latest.length
+            ? `<div class="grid">${latest
+                .slice(0, 3)
+                .map(
+                  (review) => `<article class="card">
+                    <span class="stars">${"★".repeat(review.rating)}${"☆".repeat(5 - review.rating)}</span>
+                    <h3 style="margin:6px 0">${esc(review.title)}</h3>
+                    <p class="muted small">${esc(review.body)}</p>
+                    <p class="small muted">${esc(review.author_name)}${review.course_title ? ` · ${esc(review.course_title)}` : ""}</p>
+                  </article>`,
+                )
+                .join("")}</div>
+               ${state.user ? `<p class="small muted"><a href="#/account">Leave a review</a> from your account settings.</p>` : ""}`
+            : `<div class="empty">No reviews yet.</div>`
+        }
+      </section>
     </div>`
 }
 
@@ -216,7 +246,7 @@ async function courseDetail(slug) {
                 .join("")
             : `<div class="empty">No reviews for this course yet.</div>`
         }
-        <a class="btn" href="#/reviews">Leave a review</a>
+        <a class="btn" href="#/account">Leave a review</a>
       </section>
     </div>`
 }
@@ -306,9 +336,15 @@ function ring(percent, subject) {
 const ROLE_COPY = {
   student: {
     title: "Student sign in",
-    blurb: "For students and parents following their topics.",
-    label: "I'm a student or parent",
+    blurb: "For students following their own topics.",
+    label: "I'm a student",
     detail: "Pick your courses, set your stage and follow every topic your tutor has covered.",
+  },
+  parent: {
+    title: "Parent sign in",
+    blurb: "For parents booking and following their child's lessons.",
+    label: "I'm a parent",
+    detail: "Set up your child's account, book their lessons and watch their progress from one place.",
   },
   tutor: {
     title: "Tutor sign in",
@@ -342,10 +378,10 @@ function roleChooser() {
     <h1 class="auth-title">Sign in</h1>
     <p class="muted">Who is signing in?</p>
     <div class="role-picker">
-      ${["student", "tutor"]
+      ${["student", "parent", "tutor"]
         .map(
           (role) => `<button class="role" data-role="${role}">
-            <span class="role-icon" aria-hidden="true">${role === "student" ? "✎" : "✓"}</span>
+            <span class="role-icon" aria-hidden="true">${role === "student" ? "✎" : role === "parent" ? "☂" : "✓"}</span>
             <strong>${esc(ROLE_COPY[role].label)}</strong>
             <span class="muted">${esc(ROLE_COPY[role].detail)}</span>
           </button>`,
@@ -408,8 +444,8 @@ async function signIn(role, mode) {
       ${
         creating
           ? `Already have an account? <a href="#/signin/${role}">Sign in</a>.`
-          : role === "student"
-            ? `New here? <a href="#/signup/student">Create an account</a>.`
+          : role === "student" || role === "parent"
+            ? `New here? <a href="#/signup/${role}">Create an account</a>.`
             : state.site.tutor
               ? `${esc(state.site.tutor.name)} holds the tutor account for this site.`
               : `Setting up? <a href="#/signup/tutor">Claim the tutor account</a>.`
@@ -510,6 +546,7 @@ async function dashboard() {
   if (!state.user) return go("/")
   if (!state.stages.length) Object.assign(state, await api("/stages"))
   const data = await api("/dashboard")
+  if (data.role === "parent") return parentDashboard(data)
   if (data.role === "student") return studentDashboard(data)
   return teacherDashboard(data)
 }
@@ -633,6 +670,140 @@ function studentDashboard(data) {
         }
       </section>
     </div>`
+}
+
+function parentDashboard(data) {
+  const slotsByDay = (subject) => data.availability.filter((slot) => slot.subject === "Any" || slot.subject === subject)
+
+  main.innerHTML = `
+    <div class="wrap">
+      <header class="dash-head">
+        <div>
+          <p class="eyebrow">${GREETING()}</p>
+          <h1>${esc(data.user.name)}</h1>
+          <p class="muted">${data.children.length} ${data.children.length === 1 ? "child" : "children"} · you book their lessons</p>
+        </div>
+        <a class="btn" href="#/account">Account settings</a>
+      </header>
+
+      ${
+        data.children.length
+          ? data.children
+              .map(
+                (child) => `<section class="block child-block">
+                  <div class="row between">
+                    <h2>${esc(child.name)}</h2>
+                    <span class="muted small">${esc(child.stageLabel ?? "No stage set")} · ${child.counts.covered}/${child.counts.total} topics · ${child.counts.percent}%</span>
+                  </div>
+
+                  <h3 class="section-label">Courses</h3>
+                  ${
+                    child.courses.length
+                      ? `<div class="grid">${child.courses
+                          .map(
+                            (course) => `<article class="card course-tile ${subjectClass(course.subject)}">
+                              <div class="course-tile-top">
+                                ${ring(course.counts.percent, course.subject)}
+                                <div><h3>${esc(course.title)}</h3><p class="small muted">${esc(course.stageLabel)}</p></div>
+                              </div>
+                              <p class="small muted">${course.counts.covered} of ${course.counts.total} topics covered</p>
+                            </article>`,
+                          )
+                          .join("")}</div>`
+                      : `<div class="empty">The tutor hasn't put ${esc(child.name)} on a course yet.</div>`
+                  }
+
+                  <h3 class="section-label">Next lessons</h3>
+                  ${
+                    child.lessons.length
+                      ? `<ul class="lessons">${child.lessons
+                          .map(
+                            (lesson) => `<li class="lesson ${joinState(lesson) === "open" ? "lesson-now" : ""}">
+                              <div class="lesson-when"><strong>${esc(lessonWhen(lesson.starts_at))}</strong><span class="small muted">${lesson.minutes} minutes</span></div>
+                              <div class="lesson-what"><strong>${esc(lesson.course)}</strong><span class="small muted">${lesson.note ? esc(lesson.note) : ""}</span></div>
+                              <div class="lesson-join">
+                                ${lesson.join_url ? `<a class="btn small ${joinState(lesson) === "open" ? "primary" : ""}" href="${esc(lesson.join_url)}" target="_blank" rel="noopener">${joinState(lesson) === "open" ? "Join the Zoom meeting" : "Zoom link"}</a>` : ""}
+                                <button class="btn small ghost" data-cancel-lesson="${lesson.id}">Cancel</button>
+                              </div>
+                            </li>`,
+                          )
+                          .join("")}</ul>`
+                      : `<div class="empty">No lessons booked for ${esc(child.name)} yet.</div>`
+                  }
+
+                  ${
+                    child.courses.length
+                      ? `<div class="card" style="margin-top:16px">
+                          <h3>Book a lesson for ${esc(child.name)}</h3>
+                          <p class="small muted">Pick a course, then a time inside the hours the tutor has released.</p>
+                          <form class="book-form" data-child="${child.id}">
+                            <div class="field-row">
+                              <div><label for="course-${child.id}">Course</label>
+                                <select id="course-${child.id}" class="book-course">
+                                  ${child.courses.map((course) => `<option value="${esc(course.slug)}" data-subject="${esc(course.subject)}">${esc(course.title)}</option>`).join("")}
+                                </select></div>
+                              <div><label for="when-${child.id}">Date and time</label><input id="when-${child.id}" class="book-when" type="datetime-local" required /></div>
+                              <div><label for="mins-${child.id}">Minutes</label>
+                                <select id="mins-${child.id}" class="book-minutes"><option>30</option><option>45</option><option selected>60</option><option>90</option></select></div>
+                            </div>
+                            <div class="field"><label for="note-${child.id}">Note for the tutor (optional)</label><input id="note-${child.id}" class="book-note" maxlength="120" /></div>
+                            <button class="btn primary" type="submit">Book this lesson</button>
+                          </form>
+                          <div class="book-error"></div>
+                          <details class="slot-help">
+                            <summary>When is the tutor free?</summary>
+                            <ul class="slot-list">
+                              ${slotsByDay(child.courses[0].subject)
+                                .map(
+                                  (slot) => `<li class="slot-row">
+                                    <span class="slot-day">${esc(WEEKDAY_NAMES[slot.weekday])}</span>
+                                    <span class="slot-time">${esc(slot.starts)}–${esc(slot.ends)}</span>
+                                    <span class="slot-detail">${slot.subject === "Any" ? "Any subject" : esc(slot.subject)}${slot.note ? ` · ${esc(slot.note)}` : ""}</span>
+                                  </li>`,
+                                )
+                                .join("")}
+                            </ul>
+                          </details>
+                        </div>`
+                      : ""
+                  }
+                </section>`,
+              )
+              .join("")
+          : `<div class="empty">
+              No children set up yet. <a href="#/account">Add your child in account settings</a> and you can book their lessons here.
+            </div>`
+      }
+    </div>`
+
+  for (const form of document.querySelectorAll(".book-form"))
+    form.onsubmit = async (event) => {
+      event.preventDefault()
+      const errorBox = form.parentElement.querySelector(".book-error")
+      try {
+        await api("/parent/lessons", {
+          method: "POST",
+          body: {
+            childId: Number(form.dataset.child),
+            course: form.querySelector(".book-course").value,
+            startsAt: new Date(form.querySelector(".book-when").value).toISOString(),
+            minutes: Number(form.querySelector(".book-minutes").value),
+            note: form.querySelector(".book-note").value,
+          },
+        })
+        notify("Lesson booked")
+        dashboard()
+      } catch (error) {
+        errorBox.innerHTML = `<div class="error">${esc(error.message)}</div>`
+      }
+    }
+
+  for (const button of document.querySelectorAll("[data-cancel-lesson]"))
+    button.onclick = async () => {
+      await api("/parent/lessons", { method: "DELETE", body: { id: Number(button.dataset.cancelLesson) } })
+      notify("Lesson cancelled")
+      dashboard()
+    }
 }
 
 function teacherDashboard(data) {
@@ -857,6 +1028,197 @@ function teacherDashboard(data) {
   }
 }
 
+async function accountSettings() {
+  if (!state.user) return go("/")
+  const [data, { courses: all }] = await Promise.all([api("/me/account"), api("/courses")])
+  const parent = data.user.role === "parent"
+
+  main.innerHTML = `
+    <div class="wrap">
+      <header class="dash-head">
+        <div>
+          <p class="eyebrow">Account</p>
+          <h1>${esc(data.user.name)}</h1>
+          <p class="muted">${esc(data.user.email ?? "No email")} · ${esc(data.user.role === "teacher" ? "Tutor" : parent ? "Parent" : "Student")}${data.user.stageLabel ? ` · ${esc(data.user.stageLabel)}` : ""}</p>
+        </div>
+        <a class="btn" href="#/dashboard">← Dashboard</a>
+      </header>
+
+      <section class="block grid two">
+        <div class="card">
+          <h3>Your details</h3>
+          <form id="details-form">
+            <div class="field"><label for="name">Name</label><input id="name" value="${esc(data.user.name)}" required /></div>
+            <div class="field">
+              <label for="email">Email</label>
+              <input id="email" value="${esc(data.user.email ?? "")}" disabled />
+              <p class="small muted" style="margin:6px 0 0">Get in touch if you need your email changed.</p>
+            </div>
+            <button class="btn primary" type="submit">Save name</button>
+          </form>
+          <div id="details-error"></div>
+        </div>
+
+        <div class="card">
+          <h3>Password</h3>
+          <form id="password-form">
+            <div class="field"><label for="current">Current password</label><input id="current" type="password" required autocomplete="current-password" /></div>
+            <div class="field"><label for="next">New password</label><input id="next" type="password" required minlength="8" autocomplete="new-password" /></div>
+            <div class="field"><label for="confirm">Confirm new password</label><input id="confirm" type="password" required autocomplete="new-password" /></div>
+            <button class="btn primary" type="submit">Change password</button>
+          </form>
+          <div id="password-error"></div>
+        </div>
+      </section>
+
+      ${
+        parent
+          ? `<section class="block card">
+              <h3>Your children</h3>
+              <p class="small muted">Each child gets their own record. Leave the email blank and you manage their account for them; give one and they can sign in themselves.</p>
+              ${
+                data.children.length
+                  ? `<ul class="child-list">${data.children
+                      .map(
+                        (child) => `<li>
+                          <div><strong>${esc(child.name)}</strong><span class="small muted"> · ${esc(child.stageLabel ?? "No stage")}</span></div>
+                          <span class="small muted">${child.email ? esc(child.email) : "Managed by you — no sign-in"}</span>
+                        </li>`,
+                      )
+                      .join("")}</ul>`
+                  : `<p class="small muted">No children set up yet.</p>`
+              }
+              <form id="child-form" style="margin-top:16px">
+                <div class="field-row">
+                  <div><label for="child-name">Child's name</label><input id="child-name" required /></div>
+                  <div><label for="child-stage">Stage</label>
+                    <select id="child-stage">${state.stages.map((stage) => `<option value="${stage.id}">${esc(stage.label)}</option>`).join("")}</select></div>
+                </div>
+                <div class="field-row">
+                  <div><label for="child-email">Their email (optional)</label><input id="child-email" type="email" placeholder="Leave blank if they won't sign in" /></div>
+                  <div><label for="child-password">Their password (if they sign in)</label><input id="child-password" type="password" minlength="8" autocomplete="new-password" /></div>
+                </div>
+                <button class="btn primary" type="submit">Add child</button>
+              </form>
+              <div id="child-error"></div>
+            </section>`
+          : ""
+      }
+
+      <section class="block">
+        <h2>Lessons had</h2>
+        ${
+          data.past.length
+            ? `<ul class="lessons">${data.past
+                .map(
+                  (lesson) => `<li class="lesson">
+                    <div class="lesson-when"><strong>${esc(lessonWhen(lesson.starts_at))}</strong><span class="small muted">${lesson.minutes} minutes</span></div>
+                    <div class="lesson-what"><strong>${esc(lesson.course)}</strong><span class="small muted">${parent ? esc(lesson.student) : ""}${lesson.note ? `${parent ? " · " : ""}${esc(lesson.note)}` : ""}</span></div>
+                  </li>`,
+                )
+                .join("")}</ul>`
+            : `<div class="empty">No lessons yet. Once a session has finished it appears here.</div>`
+        }
+      </section>
+
+      <section class="block card">
+        <h3>Leave a review</h3>
+        <p class="small muted">Reviews show on the course pages. ${data.reviews.length ? `You have written ${data.reviews.length}.` : ""}</p>
+        <form id="review-form" class="narrow">
+          <div class="field"><label for="course">Course</label>
+            <select id="course"><option value="">Overall experience</option>
+            ${all.map((course) => `<option value="${esc(course.slug)}">${esc(course.title)}</option>`).join("")}</select></div>
+          <div class="field"><label for="rating">Rating</label>
+            <select id="rating">${[5, 4, 3, 2, 1].map((n) => `<option value="${n}">${"★".repeat(n)} (${n})</option>`).join("")}</select></div>
+          <div class="field"><label for="title">Title</label><input id="title" required placeholder="Sum it up in a few words" /></div>
+          <div class="field"><label for="body">Your review</label><textarea id="body" required placeholder="What went well?"></textarea></div>
+          <button class="btn primary" type="submit">Publish review</button>
+        </form>
+        <div id="review-error"></div>
+        ${
+          data.reviews.length
+            ? `<ul class="own-reviews">${data.reviews
+                .map(
+                  (review) =>
+                    `<li><span class="stars">${"★".repeat(review.rating)}</span> <strong>${esc(review.title)}</strong> <span class="small muted">${date(review.created_at)}</span></li>`,
+                )
+                .join("")}</ul>`
+            : ""
+        }
+      </section>
+    </div>`
+
+  document.getElementById("details-form").onsubmit = async (event) => {
+    event.preventDefault()
+    try {
+      await api("/me", { method: "PATCH", body: { name: document.getElementById("name").value } })
+      await refreshUser()
+      notify("Name updated")
+      accountSettings()
+    } catch (error) {
+      document.getElementById("details-error").innerHTML = `<div class="error">${esc(error.message)}</div>`
+    }
+  }
+
+  document.getElementById("password-form").onsubmit = async (event) => {
+    event.preventDefault()
+    const next = document.getElementById("next").value
+    if (next !== document.getElementById("confirm").value)
+      return (document.getElementById("password-error").innerHTML =
+        `<div class="error">Those passwords do not match.</div>`)
+    try {
+      await api("/me", {
+        method: "PATCH",
+        body: { currentPassword: document.getElementById("current").value, password: next },
+      })
+      notify("Password changed")
+      accountSettings()
+    } catch (error) {
+      document.getElementById("password-error").innerHTML = `<div class="error">${esc(error.message)}</div>`
+    }
+  }
+
+  const childForm = document.getElementById("child-form")
+  if (childForm)
+    childForm.onsubmit = async (event) => {
+      event.preventDefault()
+      try {
+        await api("/parent/children", {
+          method: "POST",
+          body: {
+            name: document.getElementById("child-name").value,
+            stage: document.getElementById("child-stage").value,
+            email: document.getElementById("child-email").value,
+            password: document.getElementById("child-password").value,
+          },
+        })
+        notify("Child added")
+        accountSettings()
+      } catch (error) {
+        document.getElementById("child-error").innerHTML = `<div class="error">${esc(error.message)}</div>`
+      }
+    }
+
+  document.getElementById("review-form").onsubmit = async (event) => {
+    event.preventDefault()
+    try {
+      await api("/reviews", {
+        method: "POST",
+        body: {
+          course: document.getElementById("course").value,
+          rating: Number(document.getElementById("rating").value),
+          title: document.getElementById("title").value,
+          body: document.getElementById("body").value,
+        },
+      })
+      notify("Thank you — your review is published")
+      accountSettings()
+    } catch (error) {
+      document.getElementById("review-error").innerHTML = `<div class="error">${esc(error.message)}</div>`
+    }
+  }
+}
+
 async function studentTracker(id) {
   if (!state.user) return go("/")
   const [{ student, courses: tracked }, { courses: all }] = await Promise.all([
@@ -1009,6 +1371,7 @@ async function render() {
     else if (parts[0] === "signin" || parts[0] === "login" || parts[0] === "signup" || parts[0] === "register")
       roleChooser()
     else if (parts[0] === "dashboard") await dashboard()
+    else if (parts[0] === "account") await accountSettings()
     else if (parts[0] === "teaching" && parts[1]) await studentTracker(parts[1])
     else if (parts[0] === "teaching") await dashboard()
     else main.innerHTML = `<div class="wrap"><h1>Page not found</h1><p><a href="#/">Back to the home page</a></p></div>`

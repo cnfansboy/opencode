@@ -7,7 +7,7 @@ export type User = {
   id: number
   name: string
   email: string
-  role: "student" | "teacher"
+  role: "student" | "parent" | "teacher"
   stage: string | null
   created_at: string
 }

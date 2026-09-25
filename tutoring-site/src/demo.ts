@@ -10,6 +10,7 @@ const accounts = [
   { name: "Ms Rowan Blake", email: "teacher@example.com", role: "teacher", stage: null },
   { name: "Amira Khan", email: "amira@example.com", role: "student", stage: "gcse" },
   { name: "Tom Fielding", email: "tom@example.com", role: "student", stage: "ks2" },
+  { name: "Dana Fielding", email: "parent@example.com", role: "parent", stage: null },
 ] as const
 
 for (const account of accounts) {
@@ -27,6 +28,12 @@ const id = (email: string) => (db.query("SELECT id FROM users WHERE email = ?").
 const courseId = (slug: string) => (db.query("SELECT id FROM courses WHERE slug = ?").get(slug) as { id: number }).id
 
 const teacher = id("teacher@example.com")
+
+// Tom is managed by his parent, and the tutor's own meeting room is where booked lessons land.
+db.query("UPDATE users SET parent_id = ? WHERE email = 'tom@example.com'").run(id("parent@example.com"))
+db.query(
+  "INSERT INTO settings (key, value) VALUES ('tutor_join_url', 'https://zoom.us/j/9876543210') ON CONFLICT (key) DO UPDATE SET value = excluded.value",
+).run()
 for (const email of ["amira@example.com", "tom@example.com"])
   db.query("INSERT OR IGNORE INTO teacher_students (teacher_id, student_id) VALUES (?, ?)").run(teacher, id(email))
 

@@ -30,7 +30,7 @@ async function body(request: Request) {
 
 const str = (value: unknown) => (typeof value === "string" ? value.trim() : "")
 
-function require_(request: Request, role?: "student" | "teacher") {
+function require_(request: Request, role?: "student" | "parent" | "teacher") {
   const user = currentUser(request)
   if (!user) return { error: fail(401, "You need to sign in to do that.") }
   if (role && user.role !== role) return { error: fail(403, `That area is for ${role} accounts.`) }
@@ -97,6 +97,11 @@ function courseProgress(studentId: number) {
       },
     }
   })
+}
+
+function tutorJoinUrl() {
+  const row = db.query("SELECT value FROM settings WHERE key = 'tutor_join_url'").get() as { value: string } | null
+  return row?.value ?? ""
 }
 
 function teaches(teacherId: number, studentId: number) {
@@ -206,6 +211,36 @@ export const server = Bun.serve({
              ORDER BY lessons.starts_at LIMIT 10`,
           )
           .all(id)
+
+      if (auth.user.role === "parent") {
+        const children = db
+          .query("SELECT id, name, stage FROM users WHERE parent_id = ? ORDER BY name")
+          .all(auth.user.id) as { id: number; name: string; stage: string | null }[]
+
+        return json({
+          role: "parent",
+          user: publicUser(auth.user),
+          children: children.map((child) => {
+            const courses = courseProgress(child.id)
+            const total = courses.reduce((sum, course) => sum + course.counts.total, 0)
+            const covered = courses.reduce((sum, course) => sum + course.counts.covered, 0)
+            return {
+              ...child,
+              stageLabel: STAGES.find((s) => s.id === child.stage)?.label ?? null,
+              courses,
+              lessons: lessonsFor("student_id", child.id),
+              counts: { total, covered, percent: total ? Math.round((covered / total) * 100) : 0 },
+            }
+          }),
+          availability: db
+            .query(
+              `SELECT availability.weekday, availability.starts, availability.ends, availability.subject, availability.note
+               FROM availability ORDER BY availability.weekday, availability.starts`,
+            )
+            .all(),
+          weekdays: WEEKDAYS,
+        })
+      }
 
       if (auth.user.role === "student") {
         const courses = courseProgress(auth.user.id)
@@ -421,7 +456,8 @@ export const server = Bun.serve({
         if (!email) return fail(400, "An email address is required to create an account.")
         if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return fail(400, "Please enter a valid email address.")
         if (password.length < 8) return fail(400, "Passwords must be at least 8 characters.")
-        if (role !== "student" && role !== "teacher") return fail(400, "Choose whether you are a student or a teacher.")
+        if (role !== "student" && role !== "parent" && role !== "teacher")
+          return fail(400, "Choose whether you are a student, a parent or the tutor.")
         if (role === "student" && !STAGES.some((s) => s.id === stage)) return fail(400, "Choose the student's stage.")
         // One person tutors here, so the tutor account can only be claimed once.
         if (role === "teacher" && theTutor())
@@ -574,6 +610,18 @@ export const server = Bun.serve({
         if (name && name.length < 2) return fail(400, "Please enter your name.")
         if (name) db.query("UPDATE users SET name = ? WHERE id = ?").run(name, auth.user.id)
 
+        const password = typeof input.password === "string" ? input.password : ""
+        if (password) {
+          const stored = db.query("SELECT password FROM users WHERE id = ?").get(auth.user.id) as {
+            password: string | null
+          }
+          const current = typeof input.currentPassword === "string" ? input.currentPassword : ""
+          if (!stored.password || !(await verify(current, stored.password)))
+            return fail(403, "That is not your current password.")
+          if (password.length < 8) return fail(400, "Passwords must be at least 8 characters.")
+          db.query("UPDATE users SET password = ? WHERE id = ?").run(await hash(password), auth.user.id)
+        }
+
         const stage = str(input.stage)
         if (stage) {
           if (auth.user.role !== "student") return fail(400, "Only student accounts have a stage.")
@@ -582,6 +630,120 @@ export const server = Bun.serve({
         }
 
         return json({ user: publicUser(currentUserById(auth.user.id)) })
+      },
+    },
+
+    "/api/parent/children": {
+      POST: async (request) => {
+        const auth = require_(request, "parent")
+        if (auth.error) return auth.error
+        const input = await body(request)
+        if (!input) return fail(400, "Expected a JSON body.")
+
+        const name = str(input.name)
+        const stage = str(input.stage)
+        const email = str(input.email).toLowerCase()
+        const password = typeof input.password === "string" ? input.password : ""
+
+        if (name.length < 2) return fail(400, "Enter your child's name.")
+        if (!STAGES.some((s) => s.id === stage)) return fail(400, "Choose the stage your child is working at.")
+
+        // An email is optional here: without one the child cannot sign in and the parent manages them.
+        if (email) {
+          if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return fail(400, "Please enter a valid email address.")
+          if (db.query("SELECT 1 as ok FROM users WHERE email = ?").get(email))
+            return fail(409, "That email already has an account.")
+          if (password.length < 8) return fail(400, "Give your child a password of at least 8 characters.")
+        }
+
+        const child = db
+          .query(
+            "INSERT INTO users (name, email, password, role, parent_id, stage) VALUES (?, ?, ?, 'student', ?, ?) RETURNING id",
+          )
+          .get(name, email || null, email ? await hash(password) : null, auth.user.id, stage) as { id: number }
+
+        // The one tutor picks up every child as a student of theirs.
+        const tutor = theTutor()
+        if (tutor)
+          db.query("INSERT OR IGNORE INTO teacher_students (teacher_id, student_id) VALUES (?, ?)").run(
+            tutor.id,
+            child.id,
+          )
+
+        return json({ id: child.id }, { status: 201 })
+      },
+    },
+
+    "/api/parent/lessons": {
+      POST: async (request) => {
+        const auth = require_(request, "parent")
+        if (auth.error) return auth.error
+        const input = await body(request)
+        if (!input) return fail(400, "Expected a JSON body.")
+
+        const childId = Number(input.childId)
+        const child = db.query("SELECT id FROM users WHERE id = ? AND parent_id = ?").get(childId, auth.user.id)
+        if (!child) return fail(403, "That is not one of your children.")
+
+        const course = db.query("SELECT id FROM courses WHERE slug = ?").get(str(input.course)) as { id: number } | null
+        if (!course) return fail(404, "Course not found.")
+        if (!db.query("SELECT 1 as ok FROM enrolments WHERE user_id = ? AND course_id = ?").get(childId, course.id))
+          return fail(400, "Your child is not on that course yet — the tutor adds courses.")
+
+        const startsAt = str(input.startsAt)
+        const when = new Date(startsAt)
+        if (isNaN(when.getTime())) return fail(400, "Choose a date and time for the lesson.")
+        if (when.getTime() < Date.now()) return fail(400, "That time has already passed.")
+
+        const minutes = Number(input.minutes) || 60
+        if (minutes < 15 || minutes > 240) return fail(400, "A lesson runs between 15 and 240 minutes.")
+
+        // The booking has to sit inside one of the hours the tutor released that weekday.
+        const weekday = (when.getDay() + 6) % 7
+        const start = `${String(when.getHours()).padStart(2, "0")}:${String(when.getMinutes()).padStart(2, "0")}`
+        const endMinutes = when.getHours() * 60 + when.getMinutes() + minutes
+        const end = `${String(Math.floor(endMinutes / 60)).padStart(2, "0")}:${String(endMinutes % 60).padStart(2, "0")}`
+
+        const slot = db
+          .query(
+            `SELECT id FROM availability
+             WHERE weekday = ? AND starts <= ? AND ends >= ? AND (subject = 'Any' OR subject = (SELECT subject FROM courses WHERE id = ?))`,
+          )
+          .get(weekday, start, end, course.id)
+        if (!slot) return fail(409, "That time is outside the hours the tutor has released for this subject.")
+
+        const clash = db
+          .query(
+            `SELECT id FROM lessons
+             WHERE datetime(starts_at) < datetime(?, '+' || ? || ' minutes')
+               AND datetime(starts_at, '+' || minutes || ' minutes') > datetime(?)`,
+          )
+          .get(startsAt, minutes, startsAt)
+        if (clash) return fail(409, "The tutor already has a lesson booked then. Please pick another time.")
+
+        const tutor = theTutor()
+        if (!tutor) return fail(409, "There is no tutor account to book with yet.")
+
+        const id = db
+          .query(
+            "INSERT INTO lessons (student_id, teacher_id, course_id, starts_at, minutes, join_url, note) VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING id",
+          )
+          .get(childId, tutor.id, course.id, startsAt, minutes, tutorJoinUrl(), str(input.note).slice(0, 120)) as {
+          id: number
+        }
+        return json({ id: id.id }, { status: 201 })
+      },
+      DELETE: async (request) => {
+        const auth = require_(request, "parent")
+        if (auth.error) return auth.error
+        const input = await body(request)
+        const removed = db
+          .query(
+            "DELETE FROM lessons WHERE id = ? AND student_id IN (SELECT id FROM users WHERE parent_id = ?) RETURNING id",
+          )
+          .get(Number(input?.id), auth.user.id)
+        if (!removed) return fail(404, "That lesson is not one of your child's.")
+        return json({ ok: true })
       },
     },
 
@@ -652,6 +814,49 @@ export const server = Bun.serve({
         if (!removed) return fail(404, "That session is not one of yours.")
         return json({ ok: true })
       },
+    },
+
+    "/api/me/account": (request) => {
+      const auth = require_(request)
+      if (auth.error) return auth.error
+
+      const forIds =
+        auth.user.role === "parent"
+          ? (db.query("SELECT id FROM users WHERE parent_id = ?").all(auth.user.id) as { id: number }[]).map(
+              (row) => row.id,
+            )
+          : [auth.user.id]
+
+      return json({
+        user: publicUser(auth.user),
+        children:
+          auth.user.role === "parent"
+            ? db
+                .query("SELECT id, name, email, stage FROM users WHERE parent_id = ? ORDER BY name")
+                .all(auth.user.id)
+                .map((row) => {
+                  const child = row as { id: number; name: string; email: string | null; stage: string | null }
+                  return { ...child, stageLabel: STAGES.find((s) => s.id === child.stage)?.label ?? null }
+                })
+            : [],
+        past: forIds.length
+          ? db
+              .query(
+                `SELECT lessons.id, lessons.starts_at, lessons.minutes, lessons.note,
+                        courses.title as course, students.name as student
+                 FROM lessons
+                 JOIN courses ON courses.id = lessons.course_id
+                 JOIN users students ON students.id = lessons.student_id
+                 WHERE lessons.student_id IN (${forIds.map(() => "?").join(",")})
+                   AND datetime(lessons.starts_at, '+' || lessons.minutes || ' minutes') < datetime('now')
+                 ORDER BY lessons.starts_at DESC LIMIT 20`,
+              )
+              .all(...forIds)
+          : [],
+        reviews: db
+          .query("SELECT id, rating, title, body, created_at FROM reviews WHERE user_id = ? ORDER BY created_at DESC")
+          .all(auth.user.id),
+      })
     },
 
     "/api/me/progress": (request) => {

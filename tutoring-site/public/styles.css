@@ -1141,3 +1141,87 @@ table.students th {
 .chip-x:hover {
   opacity: 1;
 }
+
+/* ---- account and parents ------------------------------------------------ */
+.who {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  color: var(--muted);
+  font-size: 0.85rem;
+  padding: 4px 8px 4px 4px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+}
+.who:hover {
+  border-color: var(--border);
+  color: var(--text);
+  background: var(--surface-2);
+}
+.who strong {
+  color: var(--text);
+}
+.who-mark {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--accent-text);
+  font-weight: 700;
+  font-size: 0.8rem;
+}
+@media (max-width: 640px) {
+  .who-text {
+    display: none;
+  }
+}
+.child-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.child-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  background: var(--surface-2);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+.child-block {
+  border-top: 1px solid var(--border);
+  padding-top: 24px;
+}
+.child-block:first-of-type {
+  border-top: 0;
+  padding-top: 0;
+}
+.section-label {
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--muted);
+  margin: 22px 0 10px;
+}
+.slot-help {
+  margin-top: 14px;
+}
+.slot-help > summary {
+  cursor: pointer;
+  font-size: 0.87rem;
+  color: var(--accent);
+}
+.own-reviews {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+  font-size: 0.9rem;
+}

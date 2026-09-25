@@ -63,10 +63,22 @@ who holds the account once it is claimed.
 **Public pages** — the Subjects tab (levels and released time slots), a page per course
 listing every topic it covers, and a reviews page with the overall average rating.
 
-**Sign in** — a sign-in section with tabs for signing in and creating an account, hashed with bcrypt
-via `Bun.password` and an httpOnly session cookie that expires after 30 days. An account is either a
-_student_ (a student or their parent) or a _tutor_, and signing in lands on the dashboard for that
-role.
+**Sign in** — the site opens on a role chooser: student, parent or tutor. Each gets its own sign-in
+page, with account creation for students and parents, bcrypt via `Bun.password`, and an httpOnly
+session cookie that lasts 30 days.
+
+**Parents** — a parent sets their children up from account settings: a name, a stage, and optionally
+an email and password. Leave those blank and the child is a record the parent manages with no
+sign-in of their own; fill them in and the child can sign in too. Every child is picked up
+automatically as a student of the one tutor. From their dashboard a parent sees each child's courses,
+next lessons and progress, and **books lessons** — the booking must sit inside the hours the tutor
+released for that subject, must not clash with another lesson, and lands with the tutor's own meeting
+room as its joining link.
+
+**Account settings** (`#/account`, reached by clicking your name in the header) — change your name,
+change your password (the current one is required), read the lessons you have had, manage your
+children if you are a parent, and leave a review. There is no reviews tab: reviews show on the
+Subjects page and on each course's own page.
 
 **Account rules** — every account needs a valid, unique email address; sign-up is refused without
 one. Only one tutor account can exist: once it is claimed, `POST /api/auth/register` refuses a second
@@ -81,7 +93,7 @@ link on screen — set `TUTORING_MAIL` once you wire up real email and it stops 
 **Student dashboard** (`#/dashboard`) — three sections and nothing else: the courses they are
 currently taking, with a progress ring each; their next sessions, each with a Zoom joining link; and
 their progress, topic by topic with the tutor's notes. Students cannot add courses or sessions —
-both belong to the tutor.
+those belong to the tutor, and a parent books on their child's behalf.
 
 **Tutor dashboard** (`#/dashboard`) — tiles for students, topics ticked in the last seven days,
 students under 25% covered and the hours released each week; the diary of upcoming sessions; each
@@ -140,6 +152,10 @@ overall. Reviews show on the reviews page and on the relevant course page.
 | `GET`    | `/api/site`                 | Anyone                                       |
 | `PUT`    | `/api/site`                 | Tutor                                        |
 | `GET`    | `/api/dashboard`            | Signed in, shaped by role                    |
+| `GET`    | `/api/me/account`           | Signed in                                    |
+| `POST`   | `/api/parent/children`      | Parent                                       |
+| `POST`   | `/api/parent/lessons`       | Parent, own children, inside released hours  |
+| `DELETE` | `/api/parent/lessons`       | Parent, own children                         |
 | `POST`   | `/api/teacher/enrolments`   | Tutor, own students                          |
 | `DELETE` | `/api/teacher/enrolments`   | Tutor, own students                          |
 | `POST`   | `/api/teacher/lessons`      | Tutor, own students                          |
