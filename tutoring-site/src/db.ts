@@ -47,7 +47,8 @@ db.exec(`
     summary TEXT NOT NULL,
     description TEXT NOT NULL,
     price_pence INTEGER NOT NULL,
-    session_length TEXT NOT NULL
+    session_length TEXT NOT NULL,
+    exam_boards TEXT NOT NULL DEFAULT ''
   );
 
   CREATE TABLE IF NOT EXISTS topics (
@@ -92,6 +93,11 @@ db.exec(`
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
 
+  CREATE TABLE IF NOT EXISTS settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+  );
+
   CREATE TABLE IF NOT EXISTS saturday_classes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     slug TEXT NOT NULL UNIQUE,
@@ -118,3 +124,10 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS reviews_course ON reviews(course_id, created_at DESC);
   CREATE INDEX IF NOT EXISTS sessions_user ON sessions(user_id);
 `)
+
+export const DEFAULT_SITE_NAME = "Bridgewell Tutoring"
+
+export function siteName() {
+  const row = db.query("SELECT value FROM settings WHERE key = 'site_name'").get() as { value: string } | null
+  return row?.value || DEFAULT_SITE_NAME
+}

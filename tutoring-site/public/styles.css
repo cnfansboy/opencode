@@ -533,3 +533,268 @@ table.students th {
 .class-card .btn {
   margin-top: 8px;
 }
+
+/* ---- sign in ---------------------------------------------------------- */
+.auth {
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  margin-top: 8px;
+}
+.auth-brand {
+  background: linear-gradient(160deg, #10263a, #1d4560 70%);
+  color: #eaf2f8;
+  padding: clamp(24px, 4vw, 40px);
+  display: grid;
+  align-content: center;
+  gap: 14px;
+}
+.auth-eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #8fc4e4;
+  margin: 0;
+}
+.auth-brand h2 {
+  color: #fff;
+  font-size: clamp(1.6rem, 3vw, 2.1rem);
+  margin: 0;
+}
+.auth-brand p {
+  color: #c7dced;
+  margin: 0;
+}
+.auth-points {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.auth-points li {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  color: #eaf2f8;
+  font-size: 0.93rem;
+}
+.auth-points li::before {
+  content: "✓";
+  color: #6fe0ad;
+  font-weight: 700;
+}
+.auth-card {
+  background: var(--surface);
+  padding: clamp(24px, 4vw, 36px);
+}
+.auth-tabs {
+  display: flex;
+  gap: 4px;
+  background: var(--surface-2);
+  border-radius: 10px;
+  padding: 4px;
+  margin-bottom: 22px;
+}
+.auth-tabs button {
+  flex: 1;
+  appearance: none;
+  border: 0;
+  background: none;
+  font: 600 0.9rem/1 inherit;
+  color: var(--muted);
+  padding: 9px 10px;
+  border-radius: 7px;
+  cursor: pointer;
+}
+.auth-tabs button[aria-selected="true"] {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 1px 2px rgba(20, 30, 50, 0.1);
+}
+.btn.block {
+  width: 100%;
+}
+.auth-swap {
+  margin: 14px 0 0;
+  text-align: center;
+}
+@media (max-width: 720px) {
+  .auth {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---- dashboards -------------------------------------------------------- */
+.dash-head {
+  display: flex;
+  gap: 16px;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+.dash-head h1 {
+  margin: 0 0 4px;
+}
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--accent);
+  margin: 0 0 2px;
+}
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 14px;
+  margin-bottom: 40px;
+}
+.tile {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px;
+  display: grid;
+  gap: 2px;
+  align-content: start;
+}
+.tile-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+.tile strong {
+  font-size: 1.9rem;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+.tile strong.tile-small {
+  font-size: 1.3rem;
+}
+.tile .of {
+  font-size: 1rem;
+  color: var(--muted);
+  font-weight: 500;
+}
+.grid.two {
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+.ring {
+  width: 64px;
+  height: 64px;
+  flex: 0 0 64px;
+}
+.ring-track {
+  fill: none;
+  stroke: var(--surface-2);
+  stroke-width: 7;
+}
+.ring-value {
+  fill: none;
+  stroke-width: 7;
+  stroke-linecap: round;
+  transform: rotate(-90deg);
+  transform-origin: 50% 50%;
+  transition: stroke-dashoffset 0.4s ease;
+}
+.ring-text {
+  font-size: 15px;
+  font-weight: 700;
+  text-anchor: middle;
+  fill: var(--text);
+  font-family: inherit;
+}
+.subject-maths .ring-value {
+  stroke: #2f6fb0;
+}
+.subject-science .ring-value {
+  stroke: #1d7a54;
+}
+
+.course-tile {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
+.course-tile-top {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+.course-tile h3 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+.course-tile.subject-maths {
+  border-top: 3px solid #2f6fb0;
+}
+.course-tile.subject-science {
+  border-top: 3px solid #1d7a54;
+}
+
+.student-card {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 12px;
+}
+.student-main {
+  flex: 1 1 240px;
+}
+.student-main h3 {
+  margin: 0 0 2px;
+  font-size: 1.05rem;
+}
+.student-main p {
+  margin: 0;
+}
+
+.feed {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.feed li {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+.feed li > div {
+  display: grid;
+  gap: 2px;
+}
+.feed-tick {
+  color: var(--good);
+  font-weight: 700;
+}
+.feed-time {
+  font-weight: 700;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+.note-line {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-style: italic;
+}

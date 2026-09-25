@@ -11,6 +11,7 @@ const COURSES = [
       "Small-group and one-to-one sessions that rebuild number confidence from the ground up. We work through the KS2 national curriculum at the pace the child needs, with plenty of practical apparatus and low-stakes practice.",
     price_pence: 2800,
     session_length: "45 minutes, weekly",
+    exam_boards: "National curriculum",
     topics: [
       "Place value to 1,000,000",
       "Addition and subtraction (column method)",
@@ -37,6 +38,7 @@ const COURSES = [
       "The KS3 years are where gaps quietly open up before GCSE. This course covers the full Year 7-9 programme of study, with diagnostic checks each half term so we can go back over anything that has not stuck.",
     price_pence: 3200,
     session_length: "1 hour, weekly",
+    exam_boards: "National curriculum",
     topics: [
       "Negative numbers and order of operations",
       "Prime factors, HCF and LCM",
@@ -63,6 +65,7 @@ const COURSES = [
       "A single course covering all three sciences at KS3, with an emphasis on working scientifically: variables, fair tests, graphs and conclusions. Ideal preparation for setting decisions at the end of Year 9.",
     price_pence: 3200,
     session_length: "1 hour, weekly",
+    exam_boards: "National curriculum",
     topics: [
       "Cells and organisation",
       "Body systems: digestion and circulation",
@@ -89,6 +92,7 @@ const COURSES = [
       "Complete Higher tier coverage across all exam boards, including the topics that decide grades 7-9: surds, algebraic fractions, circle theorems, vectors and iterative methods. Past paper questions every session.",
     price_pence: 3800,
     session_length: "1 hour, weekly",
+    exam_boards: "AQA · Edexcel · OCR",
     topics: [
       "Surds and indices",
       "Algebraic fractions",
@@ -118,6 +122,7 @@ const COURSES = [
       "Covers the combined science specification including all required practicals and the maths skills that appear in the papers. We rotate across the three sciences so nothing is left until the last term.",
     price_pence: 3800,
     session_length: "1 hour, weekly",
+    exam_boards: "AQA · Edexcel · OCR Gateway",
     topics: [
       "Cell biology and transport",
       "Infection and response",
@@ -147,6 +152,7 @@ const COURSES = [
       "Year 12 and Year 13 content taught alongside school, with a focus on the proof and modelling skills that students find hardest in the transition from GCSE. Includes support for the large data set.",
     price_pence: 4500,
     session_length: "1 hour, weekly",
+    exam_boards: "AQA · Edexcel · OCR · MEI",
     topics: [
       "Proof: deduction, exhaustion and counter-example",
       "Algebraic methods and partial fractions",
@@ -279,7 +285,7 @@ export function seed() {
   if ((db.query("SELECT COUNT(*) as n FROM courses").get() as { n: number }).n > 0) return
 
   const insertCourse = db.prepare(
-    "INSERT INTO courses (slug, title, subject, stage, summary, description, price_pence, session_length) VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING id",
+    "INSERT INTO courses (slug, title, subject, stage, summary, description, price_pence, session_length, exam_boards) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id",
   )
   const insertTopic = db.prepare("INSERT INTO topics (course_id, title, position) VALUES (?, ?, ?)")
 
@@ -295,6 +301,7 @@ export function seed() {
           course.description,
           course.price_pence,
           course.session_length,
+          course.exam_boards,
         ) as { id: number }
       ).id
       course.topics.forEach((title, index) => insertTopic.run(id, title, index + 1))

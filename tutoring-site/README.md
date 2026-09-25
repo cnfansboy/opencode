@@ -50,23 +50,24 @@ the Saturday timetable and the seeded reviews all follow that rule, and a test e
 **Public pages** — a home page, a course catalogue filterable by stage, subject and free text, a page
 per course listing every topic it covers, and a reviews page with the overall average rating.
 
-**Accounts** — email and password sign-up, hashed with bcrypt via `Bun.password`, with an httpOnly
-session cookie that expires after 30 days. An account is either a _student_ (a student or their
-parent) or a _tutor_.
+**Sign in** — a sign-in section with tabs for signing in and creating an account, hashed with bcrypt
+via `Bun.password` and an httpOnly session cookie that expires after 30 days. An account is either a
+_student_ (a student or their parent) or a _tutor_, and signing in lands on the dashboard for that
+role.
 
-**Student area** (`#/account`)
+**Student dashboard** (`#/dashboard`) — a greeting, tiles for courses, topics covered, topics marked
+secure and the next Saturday class, a progress ring per course coloured by subject, and a feed of the
+topics the tutor most recently ticked off with their session notes. `#/account` behind it is where
+the student sets their stage, adds or removes courses, and reads the full topic list for each one.
 
-- Set the student's stage: KS2, KS3 (secondary), GCSE or A Level.
-- Add the courses they are interested in, from the catalogue or from any course page.
-- See topic-by-topic progress for each of those courses: what has been covered, what is marked
-  secure, which tutor ticked it, when, and any note they left.
+**Tutor dashboard** (`#/dashboard`) — tiles for students, topics ticked in the last seven days,
+students under 25% covered and the tutor's own Saturday class; each student with a progress ring and
+a link into their tracker, where every topic is marked _not covered yet_, _covered_ or _secure_ with
+an optional session note. The student sees the same tracker in their own account immediately. The
+dashboard also holds the form to add a student by their registered email, and the site settings.
 
-**Tutor area** (`#/teaching`)
-
-- Add a student by the email address they registered with.
-- See every student with their stage and overall topics-covered count.
-- Open a student's tracker and mark each topic _not covered yet_, _covered_ or _secure_, with an
-  optional session note. The student sees the same tracker in their own account immediately.
+**Website name** — a tutor renames the site from their dashboard. The name is stored in `settings`
+and drives the header, the brand initial, the footer and the browser tab.
 
 **Saturday classes** — a Saturday timetable of small-group classes grouped by start time, showing the
 tutor, room, price and how many places are still free. Students book or cancel a place, the count
@@ -80,6 +81,7 @@ overall. Reviews show on the reviews page and on the relevant course page.
 
 | Table              | Holds                                                               |
 | ------------------ | ------------------------------------------------------------------- |
+| `settings`         | Site-wide settings, currently the website name                      |
 | `users`            | Name, email, bcrypt password, role (`student` / `teacher`), stage   |
 | `saturday_classes` | Timetabled class: time, tutor, room, capacity and price             |
 | `class_bookings`   | Which student holds a place in which Saturday class                 |
@@ -95,6 +97,9 @@ overall. Reviews show on the reviews page and on the relevant course page.
 
 | Method   | Path                        | Who                                       |
 | -------- | --------------------------- | ----------------------------------------- |
+| `GET`    | `/api/site`                 | Anyone                                    |
+| `PUT`    | `/api/site`                 | Tutor                                     |
+| `GET`    | `/api/dashboard`            | Signed in, shaped by role                 |
 | `GET`    | `/api/stages`               | Anyone                                    |
 | `GET`    | `/api/courses`              | Anyone (`?stage=&subject=&q=`)            |
 | `GET`    | `/api/courses/:slug`        | Anyone                                    |

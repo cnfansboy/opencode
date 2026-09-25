@@ -298,6 +298,52 @@ test("a full class is refused", async () => {
   ).toBe(0)
 })
 
+test("the site name is readable by anyone and only a teacher may change it", async () => {
+  expect((await call(anonymous, "/api/site")).body.name).toBe("Bridgewell Tutoring")
+
+  expect((await call(anonymous, "/api/site", { method: "PUT", body: JSON.stringify({ name: "Anyone" }) })).status).toBe(
+    401,
+  )
+  expect(
+    (await call(student, "/api/site", { method: "PUT", body: JSON.stringify({ name: "A Student" }) })).status,
+  ).toBe(403)
+  expect((await call(teacher, "/api/site", { method: "PUT", body: JSON.stringify({ name: "x" }) })).status).toBe(400)
+
+  expect(
+    (await call(teacher, "/api/site", { method: "PUT", body: JSON.stringify({ name: "Northgate Tuition" }) })).status,
+  ).toBe(200)
+  expect((await call(anonymous, "/api/site")).body.name).toBe("Northgate Tuition")
+
+  await call(teacher, "/api/site", { method: "PUT", body: JSON.stringify({ name: "Bridgewell Tutoring" }) })
+})
+
+test("each role gets its own dashboard", async () => {
+  expect((await call(anonymous, "/api/dashboard")).status).toBe(401)
+
+  const learner = await call(student, "/api/dashboard")
+  expect(learner.body.role).toBe("student")
+  expect(learner.body.user.name).toBe("Test Student")
+  expect(learner.body.courses.length).toBeGreaterThan(0)
+  expect(learner.body.totals.total).toBeGreaterThan(0)
+  expect(learner.body.recent[0].topic).toBeTruthy()
+  expect(learner.body.recent[0].teacher).toBe("Test Tutor")
+  expect(learner.body.students).toBeUndefined()
+
+  const tutor = await call(teacher, "/api/dashboard")
+  expect(tutor.body.role).toBe("teacher")
+  expect(tutor.body.students.map((s: { name: string }) => s.name)).toContain("Test Student")
+  expect(tutor.body.ticksThisWeek).toBeGreaterThan(0)
+  expect(tutor.body.students[0].counts.percent).toBeGreaterThanOrEqual(0)
+  expect(tutor.body.courses).toBeUndefined()
+})
+
+test("courses carry the exam boards they follow", async () => {
+  const { courses } = (await call(anonymous, "/api/courses")).body
+  const gcseMaths = courses.find((c: { slug: string }) => c.slug === "gcse-maths-higher")
+  expect(gcseMaths.exam_boards).toContain("AQA")
+  expect(courses.every((c: { exam_boards: string }) => c.exam_boards.length > 0)).toBe(true)
+})
+
 test("signing out invalidates the session", async () => {
   const session = { ...student }
   await call(session, "/api/auth/logout", { method: "POST" })

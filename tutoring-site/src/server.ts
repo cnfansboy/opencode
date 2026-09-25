@@ -1,5 +1,5 @@
 import path from "node:path"
-import { db, PROGRESS_STATUS, STAGES, type ProgressStatus } from "./db"
+import { db, DEFAULT_SITE_NAME, PROGRESS_STATUS, siteName, STAGES, type ProgressStatus } from "./db"
 import { seed } from "./seed"
 import { clearCookie, currentUser, hash, login, logout, readCookie, sessionCookie, verify, type User } from "./auth"
 
@@ -150,6 +150,105 @@ export const server = Bun.serve({
             )
             .all(course.id),
         },
+      })
+    },
+
+    "/api/site": {
+      GET: () => json({ name: siteName(), defaultName: DEFAULT_SITE_NAME }),
+      PUT: async (request) => {
+        const auth = require_(request, "teacher")
+        if (auth.error) return auth.error
+        const input = await body(request)
+        const name = str(input?.name)
+        if (name.length < 2 || name.length > 40) return fail(400, "The site name must be between 2 and 40 characters.")
+        db.query(
+          "INSERT INTO settings (key, value) VALUES ('site_name', ?) ON CONFLICT (key) DO UPDATE SET value = excluded.value",
+        ).run(name)
+        return json({ name })
+      },
+    },
+
+    "/api/dashboard": (request) => {
+      const auth = require_(request)
+      if (auth.error) return auth.error
+
+      const classes = db
+        .query(
+          `SELECT saturday_classes.slug, saturday_classes.title, saturday_classes.starts, saturday_classes.ends,
+                  saturday_classes.room, saturday_classes.tutor
+           FROM class_bookings JOIN saturday_classes ON saturday_classes.id = class_bookings.class_id
+           WHERE class_bookings.user_id = ? ORDER BY saturday_classes.starts`,
+        )
+        .all(auth.user.id)
+
+      if (auth.user.role === "student") {
+        const courses = courseProgress(auth.user.id)
+        return json({
+          role: "student",
+          user: publicUser(auth.user),
+          courses,
+          classes,
+          totals: courses.reduce(
+            (sum, course) => ({
+              total: sum.total + course.counts.total,
+              covered: sum.covered + course.counts.covered,
+              secure: sum.secure + course.counts.secure,
+            }),
+            { total: 0, covered: 0, secure: 0 },
+          ),
+          recent: db
+            .query(
+              `SELECT topics.title as topic, courses.title as course, progress.status, progress.note, progress.updated_at,
+                      users.name as teacher
+               FROM progress
+               JOIN topics ON topics.id = progress.topic_id
+               JOIN courses ON courses.id = topics.course_id
+               LEFT JOIN users ON users.id = progress.teacher_id
+               WHERE progress.student_id = ? AND progress.status != 'not_started'
+               ORDER BY progress.updated_at DESC LIMIT 6`,
+            )
+            .all(auth.user.id),
+          teachers: db
+            .query(
+              "SELECT users.id, users.name FROM teacher_students JOIN users ON users.id = teacher_students.teacher_id WHERE teacher_students.student_id = ?",
+            )
+            .all(auth.user.id),
+        })
+      }
+
+      const students = db
+        .query(
+          `SELECT users.id, users.name, users.email, users.stage
+           FROM teacher_students JOIN users ON users.id = teacher_students.student_id
+           WHERE teacher_students.teacher_id = ? ORDER BY users.name`,
+        )
+        .all(auth.user.id) as { id: number; name: string; email: string; stage: string | null }[]
+
+      const detailed = students.map((student) => {
+        const courses = courseProgress(student.id)
+        const total = courses.reduce((sum, course) => sum + course.counts.total, 0)
+        const covered = courses.reduce((sum, course) => sum + course.counts.covered, 0)
+        return {
+          ...student,
+          stageLabel: STAGES.find((s) => s.id === student.stage)?.label ?? null,
+          courses: courses.map((course) => ({ slug: course.slug, title: course.title, counts: course.counts })),
+          counts: { total, covered, percent: total ? Math.round((covered / total) * 100) : 0 },
+        }
+      })
+
+      return json({
+        role: "teacher",
+        user: publicUser(auth.user),
+        students: detailed,
+        classes,
+        ticksThisWeek: (
+          db
+            .query(
+              "SELECT COUNT(*) as n FROM progress WHERE teacher_id = ? AND status != 'not_started' AND updated_at >= datetime('now', '-7 days')",
+            )
+            .get(auth.user.id) as { n: number }
+        ).n,
+        needsAttention: detailed.filter((student) => student.counts.total === 0 || student.counts.percent < 25).length,
       })
     },
 
