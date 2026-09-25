@@ -362,27 +362,54 @@ test("availability rejects bad times, overlaps and other tutors' slots", async (
     ).status,
   ).toBe(201)
 
-  const other: { cookie?: string } = {}
-  await call(other, "/api/auth/register", {
+  // A student cannot remove the tutor's slots.
+  expect(
+    (await call(student, "/api/availability", { method: "DELETE", body: JSON.stringify({ id: first.body.id }) }))
+      .status,
+  ).toBe(403)
+})
+
+test("only one tutor account can exist, and every account needs an email", async () => {
+  const second = await call({}, "/api/auth/register", {
     method: "POST",
     body: JSON.stringify({
-      name: "Other Tutor",
-      email: "other-tutor@test.local",
+      name: "Second Tutor",
+      email: "second-tutor@test.local",
       password: "password123",
       role: "teacher",
     }),
   })
-  expect(
-    (await call(other, "/api/availability", { method: "DELETE", body: JSON.stringify({ id: first.body.id }) })).status,
-  ).toBe(404)
-  expect(
-    (
-      await call(other, "/api/availability", {
-        method: "POST",
-        body: JSON.stringify({ weekday: 3, starts: "16:00", ends: "18:00" }),
-      })
-    ).status,
-  ).toBe(201)
+  expect(second.status).toBe(409)
+  expect(second.body.error).toContain("already has a tutor account")
+
+  // The refused tutor has no account at all.
+  const login = await call({}, "/api/auth/login", {
+    method: "POST",
+    body: JSON.stringify({ email: "second-tutor@test.local", password: "password123" }),
+  })
+  expect(login.status).toBe(401)
+
+  // Students are still free to sign up.
+  const pupil = await call({}, "/api/auth/register", {
+    method: "POST",
+    body: JSON.stringify({
+      name: "Second Pupil",
+      email: "second-pupil@test.local",
+      password: "password123",
+      role: "student",
+      stage: "ks3",
+    }),
+  })
+  expect(pupil.status).toBe(201)
+
+  for (const email of ["", "   ", "not-an-email"]) {
+    const missing = await call({}, "/api/auth/register", {
+      method: "POST",
+      body: JSON.stringify({ name: "No Email", email, password: "password123", role: "student", stage: "ks3" }),
+    })
+    expect(missing.status).toBe(400)
+    expect(missing.body.error.toLowerCase()).toContain("email")
+  }
 })
 
 test("signing out invalidates the session", async () => {

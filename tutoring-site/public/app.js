@@ -427,7 +427,11 @@ async function signIn(mode) {
                 ? `<div class="field"><label for="name">Full name</label><input id="name" name="name" required autocomplete="name" /></div>`
                 : ""
             }
-            <div class="field"><label for="email">Email</label><input id="email" name="email" type="email" required autocomplete="email" /></div>
+            <div class="field">
+              <label for="email">Email address${creating ? " (required)" : ""}</label>
+              <input id="email" name="email" type="email" required autocomplete="email" />
+              ${creating ? `<p class="small muted" style="margin:6px 0 0">Every account needs one — your tutor adds you to their list by email.</p>` : ""}
+            </div>
             <div class="field">
               <label for="password">Password</label>
               <input id="password" name="password" type="password" required ${creating ? 'minlength="8"' : ""} autocomplete="${creating ? "new-password" : "current-password"}" />
@@ -438,8 +442,9 @@ async function signIn(mode) {
                 ? `<div class="field"><label for="role">I am</label>
                     <select id="role" name="role">
                       <option value="student">A student or parent</option>
-                      <option value="teacher">The tutor at ${esc(state.site.name)}</option>
-                    </select></div>
+                      ${state.site.tutor ? "" : `<option value="teacher">The tutor at ${esc(state.site.name)}</option>`}
+                    </select>
+                    ${state.site.tutor ? `<p class="small muted" style="margin:6px 0 0">${esc(state.site.tutor.name)} holds the tutor account for this site.</p>` : ""}</div>
                   <div class="field" id="stage-field"><label for="stage">Student stage</label>
                     <select id="stage" name="stage">${state.stages.map((stage) => `<option value="${stage.id}">${esc(stage.label)}</option>`).join("")}</select></div>`
                 : ""

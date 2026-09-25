@@ -1124,6 +1124,20 @@
     margin-left: auto;
   }
 
+  .role-taken {
+    opacity: 0.72;
+    cursor: default;
+    border-style: dashed;
+  }
+  .role-taken:hover {
+    border-color: var(--rule);
+    background: var(--sunk);
+  }
+  #signin-form {
+    display: grid;
+    gap: 14px;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     * {
       transition: none !important;
@@ -1211,6 +1225,8 @@
     openCourse: null,
     shared: false,
     account: null,
+    accounts: new Map(),
+    email: "",
     site: { name: "Bridgewell Tutoring" },
   }
 
@@ -1358,15 +1374,25 @@
     await write(() => state.db.collection("reviews").add(row), "Thank you — your review is published")
   }
 
-  async function chooseRole(role) {
+  async function chooseRole(role, email) {
     if (!state.uid) return flash("This page could not identify your account.")
+
+    const address = String(email || "").trim()
+    if (!address) return flash("An email address is required to create an account.")
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(address)) return flash("Please enter a valid email address.")
+    if (role === "tutor" && tutorTaken()) return flash(`${tutorHolder()} already holds the tutor account.`)
+
+    state.email = address
     state.account = { role, at: new Date().toISOString() }
+    state.accounts.set(state.uid, state.account)
     writeSignedOut(false)
     if (role === "student" && !state.students.get(state.uid))
       state.students.set(state.uid, { stage: "", courses: [], progress: {} })
     render()
     flash(role === "tutor" ? "Signed in as a tutor" : "Signed in as a student")
     await write(() => state.db.doc("accounts/" + state.uid).set(state.account))
+    // The address itself stays in the viewer's own private subtree.
+    await write(() => state.db.doc("data/users/" + state.uid + "/profile").set({ email: address }))
     if (role === "student") await write(() => state.db.doc("students/" + state.uid).set(state.students.get(state.uid)))
   }
 
@@ -1636,6 +1662,16 @@
     </svg>`
   }
 
+  const tutorAccount = () => [...state.accounts.entries()].find(([, doc]) => doc && doc.role === "tutor")
+  const tutorTaken = () => {
+    const held = tutorAccount()
+    return !!held && held[0] !== state.uid
+  }
+  const tutorHolder = () => {
+    const held = tutorAccount()
+    return held ? nameFor(held[0], state.students.get(held[0]) || state.slots.get(held[0])) : "Someone"
+  }
+
   function renderSignIn() {
     const name = (state.me && state.me.name) || ""
     return `
@@ -1658,18 +1694,37 @@
                    You are signed in as <strong>${esc(name || "your account")}</strong>. Choose how you use
                    ${esc(state.site.name)} and your dashboard is built for that role.
                  </p>
-                 <div class="role-picker">
-                   <button class="role" data-role="student">
-                     <span class="role-icon" aria-hidden="true">✎</span>
-                     <strong>I'm a student or parent</strong>
-                     <span class="muted">Pick your courses, set your stage and follow the topics your tutor has covered.</span>
-                   </button>
-                   <button class="role" data-role="tutor">
-                     <span class="role-icon" aria-hidden="true">✓</span>
-                     <strong>I'm the tutor</strong>
-                     <span class="muted">See every student, tick off the topics you cover and leave session notes.</span>
-                   </button>
-                 </div>
+                 <form id="signin-form">
+                   <div>
+                     <label for="account-email">Email address (required)</label>
+                     <input id="account-email" type="email" required autocomplete="email"
+                       value="${esc(state.email || (state.me && state.me.email) || "")}"
+                       placeholder="you@example.com" />
+                     <p class="muted" style="font-size:0.8rem;margin-top:5px">
+                       Every account needs one. Yours is stored privately — no other viewer of this page can read it.
+                     </p>
+                   </div>
+                   <div class="role-picker">
+                     <button class="role" type="submit" data-role="student">
+                       <span class="role-icon" aria-hidden="true">✎</span>
+                       <strong>I'm a student or parent</strong>
+                       <span class="muted">Pick your courses, set your stage and follow the topics your tutor has covered.</span>
+                     </button>
+                     ${
+                       tutorTaken()
+                         ? `<div class="role role-taken">
+                             <span class="role-icon" aria-hidden="true">✓</span>
+                             <strong>The tutor account is taken</strong>
+                             <span class="muted">${esc(tutorHolder())} already holds it. Only one person tutors here.</span>
+                           </div>`
+                         : `<button class="role" type="submit" data-role="tutor">
+                             <span class="role-icon" aria-hidden="true">✓</span>
+                             <strong>I'm the tutor</strong>
+                             <span class="muted">See every student, tick off the topics you cover and leave session notes.</span>
+                           </button>`
+                     }
+                   </div>
+                 </form>
                  <p class="muted" style="font-size:0.8rem">
                    The deployed site signs in with an email and password. Here your claude.ai account is the sign-in,
                    so there is no password to keep.
@@ -1692,7 +1747,7 @@
       <div>
         <p class="eyebrow">${GREETING()}</p>
         <h1>${esc(title)}</h1>
-        <p class="muted">${sub}</p>
+        <p class="muted">${sub}${state.email ? " · " + esc(state.email) : ""}</p>
       </div>
       <div class="rowline">${action || ""}<button class="btn tiny" id="sign-out">Sign out</button></div>
     </header>`
@@ -2021,8 +2076,13 @@
         })
       }
 
-    for (const node of panel.querySelectorAll("[data-role]"))
-      node.onclick = () => chooseRole(node.dataset.role)
+    const signInForm = panel.querySelector("#signin-form")
+    if (signInForm)
+      for (const node of signInForm.querySelectorAll("button[data-role]"))
+        node.onclick = (event) => {
+          event.preventDefault()
+          chooseRole(node.dataset.role, panel.querySelector("#account-email").value)
+        }
 
     const signOut = panel.querySelector("#sign-out")
     if (signOut)
@@ -2030,6 +2090,7 @@
         state.account = null
         state.openStudent = null
         state.openCourse = null
+        state.email = ""
         writeSignedOut(true)
         render()
         flash("Signed out")
@@ -2206,9 +2267,20 @@
       }
     }, onError)
 
+    db.collection("accounts").onSnapshot((snap) => {
+      state.accounts = new Map(snap.docs.map((doc) => [doc.id, doc.data()]))
+      render()
+      syncProfiles()
+    }, onError)
+
     if (state.uid) {
-      const account = await db.doc("accounts/" + state.uid).get()
-      state.account = account.exists && !readSignedOut() ? account.data() : null
+      const [account, profile] = await Promise.all([
+        db.doc("accounts/" + state.uid).get(),
+        db.doc("data/users/" + state.uid + "/profile").get(),
+      ])
+      state.email = (profile.exists && profile.data().email) || ""
+      // An account without a stored email predates the email requirement: ask again.
+      state.account = account.exists && state.email && !readSignedOut() ? account.data() : null
       render()
     }
 

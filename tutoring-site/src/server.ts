@@ -390,10 +390,14 @@ export const server = Bun.serve({
         const stage = str(input.stage)
 
         if (name.length < 2) return fail(400, "Please enter your name.")
+        if (!email) return fail(400, "An email address is required to create an account.")
         if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return fail(400, "Please enter a valid email address.")
         if (password.length < 8) return fail(400, "Passwords must be at least 8 characters.")
         if (role !== "student" && role !== "teacher") return fail(400, "Choose whether you are a student or a teacher.")
         if (role === "student" && !STAGES.some((s) => s.id === stage)) return fail(400, "Choose the student's stage.")
+        // One person tutors here, so the tutor account can only be claimed once.
+        if (role === "teacher" && theTutor())
+          return fail(409, `${siteName()} already has a tutor account. Ask them to add you as a student instead.`)
         if (db.query("SELECT 1 as ok FROM users WHERE email = ?").get(email))
           return fail(409, "That email already has an account.")
 

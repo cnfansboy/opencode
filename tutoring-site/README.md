@@ -20,8 +20,9 @@ areas behind three tabs: Subjects, Reviews and a Dashboard. The Dashboard tab is
 sign-in section: pick student or tutor and it renders that role's dashboard, matching the app's. A
 tutor can rename the site from there, stored in `settings/site` and applied for every viewer.
 
-Two differences are forced by the medium: there is no email/password sign-up — the claude.ai account
-opening the page is the sign-in, and the role choice is what it stores — and state lives in the
+Two differences are forced by the medium: there is no password — the claude.ai account opening the
+page authenticates you, and signing in stores your email address and role (the email goes in your own
+private subtree, which no other viewer can read) — and state lives in the
 artifact's shared document store rather than SQLite, so courses, bookings, reviews, topic ticks and
 the site name are shared live between everyone who opens it. The example students and reviews are
 seeded demo data and are labelled as such.
@@ -58,6 +59,10 @@ listing every topic it covers, and a reviews page with the overall average ratin
 via `Bun.password` and an httpOnly session cookie that expires after 30 days. An account is either a
 _student_ (a student or their parent) or a _tutor_, and signing in lands on the dashboard for that
 role.
+
+**Account rules** — every account needs a valid, unique email address; sign-up is refused without
+one. Only one tutor account can exist: once it is claimed, `POST /api/auth/register` refuses a second
+tutor with a 409 and the sign-up form stops offering the role, naming whoever holds it.
 
 **Student dashboard** (`#/dashboard`) — a greeting, tiles for courses, topics covered, topics marked
 secure and their tutor's next published slot, a progress ring per course coloured by subject, and a feed of the
