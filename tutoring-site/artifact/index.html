@@ -670,6 +670,282 @@
     display: none;
   }
 
+  /* sign in + dashboards ------------------------------------------------- */
+  .auth {
+    display: grid;
+    grid-template-columns: 1.05fr 1fr;
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+  .auth-brand {
+    background: linear-gradient(155deg, #3a1216, #6d2229 75%);
+    color: #f7ece9;
+    padding: clamp(22px, 4vw, 38px);
+    display: grid;
+    align-content: center;
+    gap: 12px;
+  }
+  .auth-eyebrow {
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #e2a7a4;
+  }
+  .auth-brand h2 {
+    color: #fff;
+    font-size: clamp(1.5rem, 3vw, 2rem);
+  }
+  .auth-brand p {
+    color: #e8d3d0;
+    font-size: 0.94rem;
+  }
+  .auth-points {
+    list-style: none;
+    margin: 6px 0 0;
+    padding: 0;
+    display: grid;
+    gap: 9px;
+  }
+  .auth-points li {
+    display: flex;
+    gap: 9px;
+    font-size: 0.9rem;
+  }
+  .auth-points li::before {
+    content: "✓";
+    color: #8fd9b4;
+    font-weight: 700;
+  }
+  .auth-card {
+    background: var(--card);
+    padding: clamp(22px, 4vw, 34px);
+    display: grid;
+    gap: 14px;
+    align-content: start;
+  }
+  .role-picker {
+    display: grid;
+    gap: 10px;
+  }
+  .role {
+    text-align: left;
+    display: grid;
+    gap: 3px;
+    padding: 14px 16px;
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    background: var(--sunk);
+    cursor: pointer;
+    font: inherit;
+    color: var(--ink);
+  }
+  .role:hover {
+    border-color: var(--accent);
+    background: var(--accent-wash);
+  }
+  .role strong {
+    font-size: 1rem;
+  }
+  .role .muted {
+    color: var(--muted);
+    font-size: 0.86rem;
+  }
+  .role-icon {
+    font-family: var(--mono);
+    color: var(--accent);
+    font-weight: 700;
+  }
+  @media (max-width: 720px) {
+    .auth {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .dash-head {
+    display: flex;
+    gap: 14px;
+    align-items: flex-end;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    margin-bottom: 22px;
+  }
+  .dash-head h1 {
+    margin: 0 0 3px;
+  }
+  .eyebrow {
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--accent);
+  }
+  .tiles {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    margin-bottom: 34px;
+  }
+  .tile {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: 14px 16px;
+    display: grid;
+    gap: 1px;
+    align-content: start;
+  }
+  .tile-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+  }
+  .tile strong {
+    font-family: var(--display);
+    font-size: 1.9rem;
+    line-height: 1.1;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+  }
+  .tile strong.small-figure {
+    font-family: var(--mono);
+    font-size: 1.25rem;
+  }
+  .tile .of {
+    font-size: 0.95rem;
+    color: var(--muted);
+  }
+  .tile .muted {
+    color: var(--muted);
+    font-size: 0.8rem;
+  }
+
+  .ring {
+    width: 58px;
+    height: 58px;
+    flex: 0 0 58px;
+  }
+  .ring-track {
+    fill: none;
+    stroke: var(--sunk);
+    stroke-width: 7;
+  }
+  .ring-value {
+    fill: none;
+    stroke-width: 7;
+    stroke-linecap: round;
+    transform: rotate(-90deg);
+    transform-origin: 50% 50%;
+    transition: stroke-dashoffset 0.4s ease;
+  }
+  .ring-text {
+    font-size: 15px;
+    font-weight: 700;
+    text-anchor: middle;
+    fill: var(--ink);
+    font-family: var(--body);
+  }
+  .s-maths .ring-value {
+    stroke: #3f6fae;
+  }
+  .s-science .ring-value {
+    stroke: var(--covered);
+  }
+
+  .dash-grid {
+    display: grid;
+    gap: 14px;
+    grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+  }
+  .dash-card {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-top-width: 3px;
+    border-radius: 8px;
+    padding: 16px;
+    display: grid;
+    gap: 10px;
+    align-content: start;
+    box-shadow: var(--shadow);
+  }
+  .dash-card.s-maths {
+    border-top-color: #3f6fae;
+  }
+  .dash-card.s-science {
+    border-top-color: var(--covered);
+  }
+  .dash-card-top {
+    display: flex;
+    gap: 13px;
+    align-items: center;
+  }
+  .dash-card h3 {
+    font-size: 1.02rem;
+  }
+  .dash-card .tracker {
+    margin: 0;
+  }
+
+  .student-card {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    flex-wrap: wrap;
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 10px;
+  }
+  .student-main {
+    flex: 1 1 230px;
+    display: grid;
+    gap: 2px;
+  }
+  .student-main h3 {
+    font-size: 1.02rem;
+  }
+
+  .feed {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 9px;
+  }
+  .feed li {
+    display: flex;
+    gap: 13px;
+    align-items: flex-start;
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: 12px 14px;
+  }
+  .feed li > div {
+    display: grid;
+    gap: 1px;
+  }
+  .feed-tick {
+    color: var(--covered);
+    font-weight: 700;
+  }
+  .feed-time {
+    font-family: var(--mono);
+    font-weight: 500;
+    color: var(--accent);
+  }
+  .note-line {
+    color: var(--muted);
+    font-style: italic;
+    font-size: 0.87rem;
+    margin-top: 3px;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     * {
       transition: none !important;
@@ -701,7 +977,7 @@
 <header class="masthead">
   <div class="shell">
     <div class="masthead-row">
-      <div class="mark"><span class="crest" aria-hidden="true">B</span> Bridgewell Tutoring</div>
+      <div class="mark"><span class="crest" aria-hidden="true" id="crest">B</span> <span id="brand-name">Bridgewell Tutoring</span></div>
       <div class="viewer" id="viewer"><span>Loading your account…</span></div>
     </div>
   </div>
@@ -710,8 +986,7 @@
       <button class="tab" role="tab" id="tab-courses" aria-controls="panel-courses" aria-selected="true" data-tab="courses">Courses</button>
       <button class="tab" role="tab" id="tab-saturday" aria-controls="panel-saturday" aria-selected="false" data-tab="saturday">Saturday classes</button>
       <button class="tab" role="tab" id="tab-reviews" aria-controls="panel-reviews" aria-selected="false" data-tab="reviews">Reviews</button>
-      <button class="tab" role="tab" id="tab-learning" aria-controls="panel-learning" aria-selected="false" data-tab="learning">My learning</button>
-      <button class="tab" role="tab" id="tab-tutor" aria-controls="panel-tutor" aria-selected="false" data-tab="tutor">Tutor view</button>
+      <button class="tab" role="tab" id="tab-dashboard" aria-controls="panel-dashboard" aria-selected="false" data-tab="dashboard">Dashboard</button>
     </div>
   </div>
 </header>
@@ -720,12 +995,11 @@
   <section id="panel-courses" role="tabpanel" aria-labelledby="tab-courses"></section>
   <section id="panel-saturday" role="tabpanel" aria-labelledby="tab-saturday" hidden></section>
   <section id="panel-reviews" role="tabpanel" aria-labelledby="tab-reviews" hidden></section>
-  <section id="panel-learning" role="tabpanel" aria-labelledby="tab-learning" hidden></section>
-  <section id="panel-tutor" role="tabpanel" aria-labelledby="tab-tutor" hidden></section>
+  <section id="panel-dashboard" role="tabpanel" aria-labelledby="tab-dashboard" hidden></section>
 </main>
 
 <footer class="foot shell">
-  <p><strong>Bridgewell Tutoring</strong> — maths to A Level and science to GCSE, online and at the centre.</p>
+  <p><strong id="foot-name">Bridgewell Tutoring</strong> — maths to A Level and science to GCSE, online and at the centre.</p>
   <p id="foot-note">
     Interactive demo. Courses you add, Saturday bookings, reviews and topic ticks are shared with everyone who opens
     this page.
@@ -735,7 +1009,7 @@
 <div id="flash" role="status" aria-live="polite"></div>
 
 <script>
-  const CATALOGUE = {"courses":[{"slug":"ks2-maths-foundations","title":"KS2 Maths Foundations","subject":"Maths","stage":"ks2","summary":"Number confidence, times tables and problem solving for Years 3-6.","description":"Small-group and one-to-one sessions that rebuild number confidence from the ground up. We work through the KS2 national curriculum at the pace the child needs, with plenty of practical apparatus and low-stakes practice.","price":2800,"length":"45 minutes, weekly","topics":["Place value to 1,000,000","Addition and subtraction (column method)","Times tables to 12x12","Short and long multiplication","Short and long division","Fractions: equivalence and simplifying","Adding and subtracting fractions","Decimals and percentages","Measurement: length, mass and capacity","Perimeter, area and volume","Angles and 2D shape properties","Reading and drawing charts","Multi-step word problems"]},{"slug":"ks3-maths-bridge","title":"KS3 Maths (Years 7-9)","subject":"Maths","stage":"ks3","summary":"Bridging primary arithmetic into algebra, ratio and geometry.","description":"The KS3 years are where gaps quietly open up before GCSE. This course covers the full Year 7-9 programme of study, with diagnostic checks each half term so we can go back over anything that has not stuck.","price":3200,"length":"1 hour, weekly","topics":["Negative numbers and order of operations","Prime factors, HCF and LCM","Introduction to algebraic notation","Solving linear equations","Expanding and factorising","Sequences and the nth term","Ratio and proportion","Percentages: increase, decrease and reverse","Straight line graphs","Angles in parallel lines and polygons","Transformations","Averages and data handling","Probability basics"]},{"slug":"ks3-science","title":"KS3 Science (Years 7-9)","subject":"Science","stage":"ks3","summary":"Biology, chemistry and physics fundamentals with practical investigation skills.","description":"A single course covering all three sciences at KS3, with an emphasis on working scientifically: variables, fair tests, graphs and conclusions. Ideal preparation for setting decisions at the end of Year 9.","price":3200,"length":"1 hour, weekly","topics":["Cells and organisation","Body systems: digestion and circulation","Reproduction and inheritance","Photosynthesis and ecosystems","Particle model and states of matter","Atoms, elements and compounds","Chemical reactions and word equations","Acids and alkalis","Forces and motion","Energy stores and transfers","Electricity and circuits","Light and sound waves","Working scientifically: variables and graphs"]},{"slug":"gcse-combined-science","title":"GCSE Combined Science (Trilogy)","subject":"Science","stage":"gcse","summary":"Biology, chemistry and physics content plus the required practicals.","description":"Covers the combined science specification including all required practicals and the maths skills that appear in the papers. We rotate across the three sciences so nothing is left until the last term.","price":3800,"length":"1 hour, weekly","topics":["Cell biology and transport","Infection and response","Bioenergetics","Homeostasis and the nervous system","Inheritance, variation and evolution","Atomic structure and the periodic table","Bonding, structure and properties","Quantitative chemistry","Chemical and energy changes","Rates of reaction and organic chemistry","Energy and efficiency","Electricity","Particle model and atomic structure","Forces and motion","Waves and electromagnetism","Required practicals and working scientifically"]},{"slug":"gcse-maths-higher","title":"GCSE Maths (Higher Tier)","subject":"Maths","stage":"gcse","summary":"Full Higher tier coverage with exam technique for grades 6-9.","description":"Complete Higher tier coverage across all exam boards, including the topics that decide grades 7-9: surds, algebraic fractions, circle theorems, vectors and iterative methods. Past paper questions every session.","price":3800,"length":"1 hour, weekly","topics":["Surds and indices","Algebraic fractions","Quadratics: factorising, formula, completing the square","Simultaneous equations (linear and quadratic)","Inequalities and regions","Functions and inverse functions","Iteration and numerical methods","Circle theorems","Trigonometry: SOHCAHTOA","Sine and cosine rules","Vectors and geometric proof","Similarity and congruence","Histograms and cumulative frequency","Probability trees and conditional probability","Direct and inverse proportion","Transformations of graphs"]},{"slug":"alevel-maths","title":"A Level Maths","subject":"Maths","stage":"alevel","summary":"Pure, statistics and mechanics across Years 12 and 13.","description":"Year 12 and Year 13 content taught alongside school, with a focus on the proof and modelling skills that students find hardest in the transition from GCSE. Includes support for the large data set.","price":4500,"length":"1 hour, weekly","topics":["Proof: deduction, exhaustion and counter-example","Algebraic methods and partial fractions","Binomial expansion","Coordinate geometry and circles","Trigonometric identities and equations","Differentiation from first principles","Chain, product and quotient rules","Integration and areas under curves","Integration by parts and substitution","Exponentials and logarithms","Parametric equations","Numerical methods","Vectors in 2D and 3D","Statistical sampling and the large data set","Probability distributions (binomial and normal)","Hypothesis testing","Kinematics and constant acceleration","Newton's laws and connected particles","Moments"]}],"classes":[{"slug":"sat-ks2-maths-booster","title":"KS2 Maths Booster","subject":"Maths","stage":"ks2","starts":"09:00","ends":"10:00","tutor":"Ms Rowan Blake","room":"Room 1","capacity":8,"price":1800,"description":"Arithmetic fluency and a weekly problem-solving challenge. Groups of no more than eight, split by year group."},{"slug":"sat-gcse-maths-clinic","title":"GCSE Maths Higher Clinic","subject":"Maths","stage":"gcse","starts":"09:00","ends":"10:30","tutor":"Mr Idris Bello","room":"Room 2","capacity":10,"price":2500,"description":"Bring the questions you got stuck on that week. We work them through on the board, then drill the same idea on fresh questions."},{"slug":"sat-gcse-science-lab","title":"GCSE Science Practical Lab","subject":"Science","stage":"gcse","starts":"10:30","ends":"12:00","tutor":"Dr Nina Shah","room":"Laboratory","capacity":12,"price":3000,"description":"The required practicals, actually carried out rather than described, with the exam questions that come from each one."},{"slug":"sat-ks3-maths","title":"KS3 Maths and Problem Solving","subject":"Maths","stage":"ks3","starts":"11:00","ends":"12:00","tutor":"Mr Idris Bello","room":"Room 2","capacity":10,"price":2000,"description":"Keeps Year 7 to 9 ahead of the school scheme of work, with UKMT junior challenge questions once a month."},{"slug":"sat-alevel-maths","title":"A Level Maths Workshop","subject":"Maths","stage":"alevel","starts":"12:00","ends":"13:30","tutor":"Ms Rowan Blake","room":"Room 3","capacity":8,"price":3200,"description":"Pure, statistics and mechanics on a rotation, pitched at the step up from GCSE in Year 12 and revision in Year 13."}]}
+  const CATALOGUE = {"courses":[{"slug":"ks2-maths-foundations","title":"KS2 Maths Foundations","subject":"Maths","stage":"ks2","summary":"Number confidence, times tables and problem solving for Years 3-6.","description":"Small-group and one-to-one sessions that rebuild number confidence from the ground up. We work through the KS2 national curriculum at the pace the child needs, with plenty of practical apparatus and low-stakes practice.","price":2800,"length":"45 minutes, weekly","boards":"National curriculum","topics":["Place value to 1,000,000","Addition and subtraction (column method)","Times tables to 12x12","Short and long multiplication","Short and long division","Fractions: equivalence and simplifying","Adding and subtracting fractions","Decimals and percentages","Measurement: length, mass and capacity","Perimeter, area and volume","Angles and 2D shape properties","Reading and drawing charts","Multi-step word problems"]},{"slug":"ks3-maths-bridge","title":"KS3 Maths (Years 7-9)","subject":"Maths","stage":"ks3","summary":"Bridging primary arithmetic into algebra, ratio and geometry.","description":"The KS3 years are where gaps quietly open up before GCSE. This course covers the full Year 7-9 programme of study, with diagnostic checks each half term so we can go back over anything that has not stuck.","price":3200,"length":"1 hour, weekly","boards":"National curriculum","topics":["Negative numbers and order of operations","Prime factors, HCF and LCM","Introduction to algebraic notation","Solving linear equations","Expanding and factorising","Sequences and the nth term","Ratio and proportion","Percentages: increase, decrease and reverse","Straight line graphs","Angles in parallel lines and polygons","Transformations","Averages and data handling","Probability basics"]},{"slug":"ks3-science","title":"KS3 Science (Years 7-9)","subject":"Science","stage":"ks3","summary":"Biology, chemistry and physics fundamentals with practical investigation skills.","description":"A single course covering all three sciences at KS3, with an emphasis on working scientifically: variables, fair tests, graphs and conclusions. Ideal preparation for setting decisions at the end of Year 9.","price":3200,"length":"1 hour, weekly","boards":"National curriculum","topics":["Cells and organisation","Body systems: digestion and circulation","Reproduction and inheritance","Photosynthesis and ecosystems","Particle model and states of matter","Atoms, elements and compounds","Chemical reactions and word equations","Acids and alkalis","Forces and motion","Energy stores and transfers","Electricity and circuits","Light and sound waves","Working scientifically: variables and graphs"]},{"slug":"gcse-combined-science","title":"GCSE Combined Science (Trilogy)","subject":"Science","stage":"gcse","summary":"Biology, chemistry and physics content plus the required practicals.","description":"Covers the combined science specification including all required practicals and the maths skills that appear in the papers. We rotate across the three sciences so nothing is left until the last term.","price":3800,"length":"1 hour, weekly","boards":"AQA · Edexcel · OCR Gateway","topics":["Cell biology and transport","Infection and response","Bioenergetics","Homeostasis and the nervous system","Inheritance, variation and evolution","Atomic structure and the periodic table","Bonding, structure and properties","Quantitative chemistry","Chemical and energy changes","Rates of reaction and organic chemistry","Energy and efficiency","Electricity","Particle model and atomic structure","Forces and motion","Waves and electromagnetism","Required practicals and working scientifically"]},{"slug":"gcse-maths-higher","title":"GCSE Maths (Higher Tier)","subject":"Maths","stage":"gcse","summary":"Full Higher tier coverage with exam technique for grades 6-9.","description":"Complete Higher tier coverage across all exam boards, including the topics that decide grades 7-9: surds, algebraic fractions, circle theorems, vectors and iterative methods. Past paper questions every session.","price":3800,"length":"1 hour, weekly","boards":"AQA · Edexcel · OCR","topics":["Surds and indices","Algebraic fractions","Quadratics: factorising, formula, completing the square","Simultaneous equations (linear and quadratic)","Inequalities and regions","Functions and inverse functions","Iteration and numerical methods","Circle theorems","Trigonometry: SOHCAHTOA","Sine and cosine rules","Vectors and geometric proof","Similarity and congruence","Histograms and cumulative frequency","Probability trees and conditional probability","Direct and inverse proportion","Transformations of graphs"]},{"slug":"alevel-maths","title":"A Level Maths","subject":"Maths","stage":"alevel","summary":"Pure, statistics and mechanics across Years 12 and 13.","description":"Year 12 and Year 13 content taught alongside school, with a focus on the proof and modelling skills that students find hardest in the transition from GCSE. Includes support for the large data set.","price":4500,"length":"1 hour, weekly","boards":"AQA · Edexcel · OCR · MEI","topics":["Proof: deduction, exhaustion and counter-example","Algebraic methods and partial fractions","Binomial expansion","Coordinate geometry and circles","Trigonometric identities and equations","Differentiation from first principles","Chain, product and quotient rules","Integration and areas under curves","Integration by parts and substitution","Exponentials and logarithms","Parametric equations","Numerical methods","Vectors in 2D and 3D","Statistical sampling and the large data set","Probability distributions (binomial and normal)","Hypothesis testing","Kinematics and constant acceleration","Newton's laws and connected particles","Moments"]}],"classes":[{"slug":"sat-ks2-maths-booster","title":"KS2 Maths Booster","subject":"Maths","stage":"ks2","starts":"09:00","ends":"10:00","tutor":"Ms Rowan Blake","room":"Room 1","capacity":8,"price":1800,"description":"Arithmetic fluency and a weekly problem-solving challenge. Groups of no more than eight, split by year group."},{"slug":"sat-gcse-maths-clinic","title":"GCSE Maths Higher Clinic","subject":"Maths","stage":"gcse","starts":"09:00","ends":"10:30","tutor":"Mr Idris Bello","room":"Room 2","capacity":10,"price":2500,"description":"Bring the questions you got stuck on that week. We work them through on the board, then drill the same idea on fresh questions."},{"slug":"sat-gcse-science-lab","title":"GCSE Science Practical Lab","subject":"Science","stage":"gcse","starts":"10:30","ends":"12:00","tutor":"Dr Nina Shah","room":"Laboratory","capacity":12,"price":3000,"description":"The required practicals, actually carried out rather than described, with the exam questions that come from each one."},{"slug":"sat-ks3-maths","title":"KS3 Maths and Problem Solving","subject":"Maths","stage":"ks3","starts":"11:00","ends":"12:00","tutor":"Mr Idris Bello","room":"Room 2","capacity":10,"price":2000,"description":"Keeps Year 7 to 9 ahead of the school scheme of work, with UKMT junior challenge questions once a month."},{"slug":"sat-alevel-maths","title":"A Level Maths Workshop","subject":"Maths","stage":"alevel","starts":"12:00","ends":"13:30","tutor":"Ms Rowan Blake","room":"Room 3","capacity":8,"price":3200,"description":"Pure, statistics and mechanics on a rotation, pitched at the step up from GCSE in Year 12 and revision in Year 13."}]}
   const STAGES = [
     { id: "ks2", label: "KS2 (Primary, Years 3-6)", short: "KS2" },
     { id: "ks3", label: "KS3 (Secondary, Years 7-9)", short: "KS3" },
@@ -758,7 +1032,24 @@
     profiles: {},
     filters: { stage: "", subject: "", q: "" },
     openStudent: null,
+    openCourse: null,
     shared: false,
+    account: null,
+    site: { name: "Bridgewell Tutoring" },
+  }
+
+  const SIGNED_OUT = "bridgewell:signed-out"
+  const readSignedOut = () => {
+    try {
+      return localStorage.getItem(SIGNED_OUT) === "1"
+    } catch {
+      return false
+    }
+  }
+  const writeSignedOut = (value) => {
+    try {
+      value ? localStorage.setItem(SIGNED_OUT, "1") : localStorage.removeItem(SIGNED_OUT)
+    } catch {}
   }
 
   const esc = (value) =>
@@ -880,6 +1171,25 @@
     await write(() => state.db.collection("reviews").add(row), "Thank you — your review is published")
   }
 
+  async function chooseRole(role) {
+    if (!state.uid) return flash("This page could not identify your account.")
+    state.account = { role, at: new Date().toISOString() }
+    writeSignedOut(false)
+    if (role === "student" && !state.students.get(state.uid))
+      state.students.set(state.uid, { stage: "", courses: [], progress: {} })
+    render()
+    flash(role === "tutor" ? "Signed in as a tutor" : "Signed in as a student")
+    await write(() => state.db.doc("accounts/" + state.uid).set(state.account))
+    if (role === "student") await write(() => state.db.doc("students/" + state.uid).set(state.students.get(state.uid)))
+  }
+
+  async function renameSite(name) {
+    state.site = { name }
+    applySite()
+    render()
+    await write(() => state.db.doc("settings/site").set({ name }), "Website name updated")
+  }
+
   async function write(run, message) {
     if (!state.db) return
     try {
@@ -951,6 +1261,7 @@
                       <span class="chip stage">${esc(stageLabel(course.stage))}</span>
                       <span class="chip">${esc(course.subject)}</span>
                       <span class="chip">${course.topics.length} topics</span>
+                      <span class="chip">${esc(course.boards)}</span>
                       ${held ? '<span class="chip good">In my courses</span>' : ""}
                     </div>
                     <p style="color:var(--muted);font-size:0.92rem">${esc(course.summary)}</p>
@@ -959,9 +1270,13 @@
                     <p style="font-size:0.93rem">${esc(course.description)}</p>
                     <ul class="topic-grid">${course.topics.map((t) => `<li>${esc(t)}</li>`).join("")}</ul>
                     <div>
-                      <button class="btn ${held ? "" : "primary"}" data-course-toggle="${esc(course.slug)}">
-                        ${held ? "Remove from my courses" : "Add to my courses"}
-                      </button>
+                      ${
+                        state.account && state.account.role === "student"
+                          ? `<button class="btn ${held ? "" : "primary"}" data-course-toggle="${esc(course.slug)}">
+                              ${held ? "Remove from my courses" : "Add to my courses"}
+                            </button>`
+                          : `<span class="meta">Sign in as a student on the Dashboard tab to add this course.</span>`
+                      }
                     </div>
                   </div>
                 </details>`
@@ -1014,9 +1329,13 @@
                           </span>
                           <span class="chip ${spaces ? "good" : "warn"}">${spaces ? spaces + " free" : "Full"}</span>
                         </div>
-                        <button class="btn ${booked ? "" : "primary"}" data-book="${esc(item.slug)}" ${spaces || booked ? "" : "disabled"}>
-                          ${booked ? "Cancel my place" : spaces ? "Book a place" : "Class full"}
-                        </button>
+                        ${
+                          state.account && state.account.role === "student"
+                            ? `<button class="btn ${booked ? "" : "primary"}" data-book="${esc(item.slug)}" ${spaces || booked ? "" : "disabled"}>
+                                ${booked ? "Cancel my place" : spaces ? "Book a place" : "Class full"}
+                              </button>`
+                            : `<span class="meta">${spaces ? spaces + " places free" : "Full"}</span>`
+                        }
                       </div>
                     </article>`
                   })
@@ -1069,7 +1388,7 @@
           </div>
           <div class="rowline">
             <button class="btn primary" type="submit">Publish review</button>
-            <span class="meta">${state.uid ? "Posting as " + esc(state.me && state.me.name ? state.me.name : "you") : "Sign in to post"}</span>
+            <span class="meta">${state.uid ? "Posting as " + esc((state.me && state.me.name) || "you") : "Sign in to post"}</span>
           </div>
         </form>
       </section>
@@ -1142,35 +1461,127 @@
     </details>`
   }
 
-  function renderLearning() {
+  const GREETING = () => {
+    const hour = new Date().getHours()
+    return hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening"
+  }
+
+  const subjectClass = (subject) => (subject === "Maths" ? "s-maths" : "s-science")
+
+  function ring(percent, subject) {
+    const circumference = 2 * Math.PI * 26
+    return `<svg class="ring ${subjectClass(subject)}" viewBox="0 0 64 64" role="img" aria-label="${percent}% covered">
+      <circle class="ring-track" cx="32" cy="32" r="26" />
+      <circle class="ring-value" cx="32" cy="32" r="26" stroke-dasharray="${circumference}"
+        stroke-dashoffset="${circumference * (1 - percent / 100)}" />
+      <text x="32" y="33" class="ring-text">${percent}%</text>
+    </svg>`
+  }
+
+  function renderSignIn() {
+    const name = (state.me && state.me.name) || ""
+    return `
+      <div class="auth">
+        <aside class="auth-brand">
+          <p class="auth-eyebrow">${esc(state.site.name)}</p>
+          <h2>Every topic, tracked.</h2>
+          <p>Maths from KS2 to A Level and science up to GCSE, taught weekly and ticked off topic by topic so you always know where you are.</p>
+          <ul class="auth-points">
+            <li>See exactly what your tutor has covered</li>
+            <li>Follow the AQA, Edexcel or OCR specification</li>
+            <li>Book a Saturday class at the centre</li>
+          </ul>
+        </aside>
+        <div class="auth-card">
+          <h2>Sign in</h2>
+          ${
+            state.uid
+              ? `<p class="muted" style="font-size:0.92rem">
+                   You are signed in as <strong>${esc(name || "your account")}</strong>. Choose how you use
+                   ${esc(state.site.name)} and your dashboard is built for that role.
+                 </p>
+                 <div class="role-picker">
+                   <button class="role" data-role="student">
+                     <span class="role-icon" aria-hidden="true">✎</span>
+                     <strong>I'm a student or parent</strong>
+                     <span class="muted">Pick your courses, set your stage and follow the topics your tutor has covered.</span>
+                   </button>
+                   <button class="role" data-role="tutor">
+                     <span class="role-icon" aria-hidden="true">✓</span>
+                     <strong>I'm a tutor</strong>
+                     <span class="muted">See every student, tick off the topics you cover and leave session notes.</span>
+                   </button>
+                 </div>
+                 <p class="muted" style="font-size:0.8rem">
+                   The deployed site signs in with an email and password. Here your claude.ai account is the sign-in,
+                   so there is no password to keep.
+                 </p>`
+              : `<p class="muted">This page could not identify your account, so there is nothing to sign in to. The
+                   catalogue, the timetable and the reviews all still work.</p>`
+          }
+        </div>
+      </div>`
+  }
+
+  function renderDashboard() {
+    if (!state.account || !state.account.role) return renderSignIn()
+    if (state.account.role === "tutor") return state.openStudent ? renderTracker() : renderTutorDash()
+    return renderStudentDash()
+  }
+
+  function dashHead(title, sub, action) {
+    return `<header class="dash-head">
+      <div>
+        <p class="eyebrow">${GREETING()}</p>
+        <h1>${esc(title)}</h1>
+        <p class="muted">${sub}</p>
+      </div>
+      <div class="rowline">${action || ""}<button class="btn tiny" id="sign-out">Sign out</button></div>
+    </header>`
+  }
+
+  function renderStudentDash() {
     const doc = myDoc()
     const mine = myCourses()
     const totals = mine.reduce(
       (sum, slug) => {
         const c = counts(doc, slug)
-        return { total: sum.total + c.total, covered: sum.covered + c.covered }
+        return { total: sum.total + c.total, covered: sum.covered + c.covered, secure: sum.secure + c.secure }
       },
-      { total: 0, covered: 0 },
+      { total: 0, covered: 0, secure: 0 },
     )
+    const percent = totals.total ? Math.round((totals.covered / totals.total) * 100) : 0
     const booked = myBookings()
+      .map((slug) => CATALOGUE.classes.find((c) => c.slug === slug))
+      .filter(Boolean)
+      .sort((a, b) => a.starts.localeCompare(b.starts))
+
+    const progress = (doc && doc.progress) || {}
+    const recent = Object.entries(progress)
+      .filter(([, row]) => row.status !== "not_started")
+      .sort((a, b) => String(b[1].at || "").localeCompare(String(a[1].at || "")))
+      .slice(0, 6)
+      .map(([k, row]) => {
+        const [slug, index] = k.split(":")
+        const course = courseBySlug(slug)
+        return { course, topic: course ? course.topics[Number(index)] : "", row }
+      })
+      .filter((item) => item.course && item.topic)
 
     return `
-      <div class="panel-head">
-        <h1>My learning</h1>
-        <p>
-          Your stage, the courses you are interested in, and every topic your tutor has ticked off. On the live site
-          this sits behind an email and password account; here it belongs to whoever is signed in to view the page.
-        </p>
+      ${dashHead((state.me && state.me.name) || "Your learning", `${esc(doc && doc.stage ? stageLabel(doc.stage) : "No stage set")} · student`, "")}
+
+      <div class="tiles">
+        <div class="tile"><span class="tile-label">Courses</span><strong>${mine.length}</strong><span class="muted">on your plan</span></div>
+        <div class="tile"><span class="tile-label">Topics covered</span><strong>${totals.covered}<span class="of">/${totals.total}</span></strong><span class="muted">${percent}% of your courses</span></div>
+        <div class="tile"><span class="tile-label">Marked secure</span><strong>${totals.secure}</strong><span class="muted">ready for the exam</span></div>
+        <div class="tile"><span class="tile-label">Next Saturday</span><strong class="small-figure">${booked[0] ? esc(booked[0].starts) : "—"}</strong><span class="muted">${booked[0] ? esc(booked[0].title) : "No class booked"}</span></div>
       </div>
-      ${
-        state.uid
-          ? ""
-          : `<div class="note" style="margin-bottom:20px">You are viewing as a guest, so nothing you change here is saved.</div>`
-      }
+
       <section>
-        <div class="filters" style="margin-bottom:24px">
+        <div class="filters">
           <div>
-            <label for="my-stage">Student stage</label>
+            <label for="my-stage">Your stage</label>
             <select id="my-stage">
               <option value="">Choose a stage…</option>
               ${STAGES.map((s) => `<option value="${s.id}" ${doc && doc.stage === s.id ? "selected" : ""}>${esc(s.label)}</option>`).join("")}
@@ -1182,79 +1593,158 @@
               <option value="">Choose a course…</option>
               ${sortedCourses
                 .filter((c) => !mine.includes(c.slug))
-                .map((c) => `<option value="${esc(c.slug)}">${esc(c.title)} — ${esc((STAGES.find((s) => s.id === c.stage) || {}).short || "")}</option>`)
+                .map((c) => `<option value="${esc(c.slug)}">${esc(c.title)}</option>`)
                 .join("")}
             </select>
           </div>
-          <div>
-            <label>Saturday classes</label>
-            <p class="meta" style="padding-top:8px">
-              ${booked.length ? esc(booked.map((slug) => (CATALOGUE.classes.find((c) => c.slug === slug) || {}).title).join(", ")) : "No places booked"}
-            </p>
-          </div>
         </div>
       </section>
+
       <section>
-        <div class="tracker-head" style="margin-bottom:14px">
-          <h2>Topic progress</h2>
-          <span class="meta">${totals.covered} of ${totals.total} topics covered</span>
-        </div>
+        <h2>Your courses</h2>
         ${
           mine.length
-            ? mine.map((slug) => trackerMarkup(doc, slug, false)).join("")
-            : `<div class="empty">No courses yet. Add one above, or open the Courses tab to browse what we teach.</div>`
+            ? `<div class="dash-grid">${mine
+                .map((slug) => {
+                  const course = courseBySlug(slug)
+                  const c = counts(doc, slug)
+                  return `<article class="dash-card ${subjectClass(course.subject)}">
+                    <div class="dash-card-top">
+                      ${ring(c.percent, course.subject)}
+                      <div>
+                        <h3>${esc(course.title)}</h3>
+                        <p class="meta">${esc(stageLabel(course.stage))} · ${esc(course.boards)}</p>
+                      </div>
+                    </div>
+                    <p class="muted" style="font-size:0.88rem">${c.covered} of ${c.total} topics covered · ${c.secure} secure</p>
+                    <div class="rowline">
+                      <button class="btn tiny" data-show-topics="${esc(slug)}">${state.openCourse === slug ? "Hide topics" : "Show topics"}</button>
+                      <button class="btn tiny" data-drop="${esc(slug)}">Remove</button>
+                    </div>
+                    ${state.openCourse === slug ? trackerMarkup(doc, slug, false) : ""}
+                  </article>`
+                })
+                .join("")}</div>`
+            : `<div class="empty">No courses yet. Add one above, or open the Courses tab to see what we teach.</div>`
         }
+      </section>
+
+      <section>
+        <h2>Recent sessions</h2>
+        ${
+          recent.length
+            ? `<ul class="feed">${recent
+                .map(
+                  (item) => `<li>
+                    <span class="feed-tick">${item.row.status === "secure" ? "✔✔" : "✔"}</span>
+                    <div>
+                      <strong>${esc(item.topic)}</strong>
+                      <span class="meta">${esc(item.course.title)} · ${esc(when(item.row.at))}</span>
+                      ${item.row.note ? `<p class="note-line">“${esc(item.row.note)}”</p>` : ""}
+                    </div>
+                  </li>`,
+                )
+                .join("")}</ul>`
+            : `<div class="empty">Nothing ticked off yet — your tutor updates this after each session.</div>`
+        }
+      </section>
+
+      ${
+        booked.length
+          ? `<section>
+              <h2>Your Saturday classes</h2>
+              <ul class="feed">${booked
+                .map(
+                  (item) => `<li><span class="feed-time">${esc(item.starts)}</span>
+                    <div><strong>${esc(item.title)}</strong><span class="meta">${esc(item.room)} · ${esc(item.tutor)} · until ${esc(item.ends)}</span></div></li>`,
+                )
+                .join("")}</ul>
+            </section>`
+          : ""
+      }`
+  }
+
+  function renderTutorDash() {
+    const rows = [...state.students.entries()].filter(([, doc]) => (doc.courses || []).length || doc.demoName)
+    const week = Date.now() - 7 * 24 * 60 * 60 * 1000
+    const ticks = rows.reduce(
+      (sum, [, doc]) =>
+        sum +
+        Object.values(doc.progress || {}).filter(
+          (row) => row.status !== "not_started" && Date.parse(row.at || "") >= week,
+        ).length,
+      0,
+    )
+    const behind = rows.filter(([, doc]) => {
+      const total = (doc.courses || []).reduce((n, slug) => n + counts(doc, slug).total, 0)
+      const covered = (doc.courses || []).reduce((n, slug) => n + counts(doc, slug).covered, 0)
+      return !total || covered / total < 0.25
+    }).length
+
+    return `
+      ${dashHead((state.me && state.me.name) || "Your students", `${rows.length} student${rows.length === 1 ? "" : "s"} · tutor`, "")}
+
+      <div class="tiles">
+        <div class="tile"><span class="tile-label">Students</span><strong>${rows.length}</strong><span class="muted">you tutor</span></div>
+        <div class="tile"><span class="tile-label">Topics ticked</span><strong>${ticks}</strong><span class="muted">in the last 7 days</span></div>
+        <div class="tile"><span class="tile-label">Needs attention</span><strong>${behind}</strong><span class="muted">under 25% covered</span></div>
+        <div class="tile"><span class="tile-label">Courses taught</span><strong>${CATALOGUE.courses.length}</strong><span class="muted">maths and science</span></div>
+      </div>
+
+      <section>
+        <h2>Your students</h2>
+        ${
+          rows.length
+            ? rows
+                .map(([id, doc]) => {
+                  const total = (doc.courses || []).reduce((n, slug) => n + counts(doc, slug).total, 0)
+                  const covered = (doc.courses || []).reduce((n, slug) => n + counts(doc, slug).covered, 0)
+                  const percent = total ? Math.round((covered / total) * 100) : 0
+                  const subject = (doc.courses || [])[0] ? (courseBySlug(doc.courses[0]) || {}).subject : "Maths"
+                  return `<article class="student-card">
+                    ${ring(percent, subject)}
+                    <div class="student-main">
+                      <h3>${esc(nameFor(id, doc))}${id === state.uid ? " (you)" : ""}</h3>
+                      <p class="meta">${esc(doc.stage ? stageLabel(doc.stage) : "No stage set")} · ${covered}/${total} topics</p>
+                      <p class="muted" style="font-size:0.85rem">${(doc.courses || []).length ? (doc.courses || []).map((slug) => esc((courseBySlug(slug) || {}).title || slug)).join(" · ") : "No courses chosen yet"}</p>
+                    </div>
+                    <button class="btn" data-open-student="${esc(id)}">Open tracker</button>
+                  </article>`
+                })
+                .join("")
+            : `<div class="empty">No students yet. Anyone who signs in as a student and picks a course appears here.</div>`
+        }
+      </section>
+
+      <section>
+        <div class="form-card">
+          <h2>Site settings</h2>
+          <p class="muted" style="font-size:0.9rem">The name shown in the header, the footer and the browser tab, for everyone who opens this page.</p>
+          <form id="site-form">
+            <div>
+              <label for="site-name">Website name</label>
+              <input id="site-name" value="${esc(state.site.name)}" maxlength="40" required />
+            </div>
+            <div class="rowline"><button class="btn primary" type="submit">Save name</button></div>
+          </form>
+        </div>
       </section>`
   }
 
-  function renderTutor() {
-    const rows = [...state.students.entries()].filter(([, doc]) => (doc.courses || []).length || doc.demoName)
-    const open = state.openStudent && state.students.get(state.openStudent)
-
-    if (open) {
-      const courses = open.courses || []
-      return `
-        <div class="panel-head">
-          <button class="btn tiny" id="back-to-students">← All students</button>
-          <h1>${esc(nameFor(state.openStudent, open))}</h1>
-          <p>${esc(open.stage ? stageLabel(open.stage) : "No stage set")} · tick a topic as you cover it and the student sees it in their own account straight away.</p>
-        </div>
-        ${
-          courses.length
-            ? courses.map((slug) => trackerMarkup(open, slug, state.writable !== false)).join("")
-            : `<div class="empty">This student has not added any courses yet.</div>`
-        }`
-    }
-
+  function renderTracker() {
+    const open = state.students.get(state.openStudent)
+    if (!open) return renderTutorDash()
+    const courses = open.courses || []
     return `
       <div class="panel-head">
-        <h1>Tutor view</h1>
-        <p>
-          Every student using this page, with how much of their courses has been covered. Open one to tick off topics
-          and leave a session note. On the live site this area is limited to tutor accounts and to their own students.
-        </p>
+        <button class="btn tiny" id="back-to-students">← All students</button>
+        <h1>${esc(nameFor(state.openStudent, open))}</h1>
+        <p>${esc(open.stage ? stageLabel(open.stage) : "No stage set")} · tick a topic as you cover it and the student sees it in their own dashboard straight away.</p>
       </div>
       ${
-        rows.length
-          ? rows
-              .map(([id, doc]) => {
-                const total = (doc.courses || []).reduce((sum, slug) => sum + counts(doc, slug).total, 0)
-                const covered = (doc.courses || []).reduce((sum, slug) => sum + counts(doc, slug).covered, 0)
-                const percent = total ? Math.round((covered / total) * 100) : 0
-                return `<div class="student-row">
-                  <div class="who">
-                    <span class="name">${esc(nameFor(id, doc))}${id === state.uid ? " (you)" : ""}</span>
-                    <span class="meta">${esc(doc.stage ? stageLabel(doc.stage) : "No stage set")} · ${(doc.courses || []).length} course${(doc.courses || []).length === 1 ? "" : "s"}</span>
-                  </div>
-                  <div class="rowline">
-                    <span class="meta">${covered}/${total} topics</span>
-                    <span class="bar" style="width:110px"><span style="width:${percent}%"></span></span>
-                    <button class="btn tiny" data-open-student="${esc(id)}">Open tracker</button>
-                  </div>
-                </div>`
-              })
-              .join("")
-          : `<div class="empty">No students yet. Add a course under “My learning” and you will appear here.</div>`
+        courses.length
+          ? courses.map((slug) => trackerMarkup(open, slug, state.writable !== false)).join("")
+          : `<div class="empty">This student has not added any courses yet.</div>`
       }`
   }
 
@@ -1264,8 +1754,14 @@
     courses: renderCourses,
     saturday: renderSaturday,
     reviews: renderReviews,
-    learning: renderLearning,
-    tutor: renderTutor,
+    dashboard: renderDashboard,
+  }
+
+  function applySite() {
+    document.title = state.site.name
+    document.getElementById("brand-name").textContent = state.site.name
+    document.getElementById("foot-name").textContent = state.site.name
+    document.getElementById("crest").textContent = state.site.name.trim().charAt(0).toUpperCase()
   }
 
   function render() {
@@ -1304,6 +1800,41 @@
       }
 
     for (const node of panel.querySelectorAll("[data-book]")) node.onclick = () => toggleBooking(node.dataset.book)
+
+    for (const node of panel.querySelectorAll("[data-role]"))
+      node.onclick = () => chooseRole(node.dataset.role)
+
+    const signOut = panel.querySelector("#sign-out")
+    if (signOut)
+      signOut.onclick = () => {
+        state.account = null
+        state.openStudent = null
+        state.openCourse = null
+        writeSignedOut(true)
+        render()
+        flash("Signed out")
+      }
+
+    for (const node of panel.querySelectorAll("[data-show-topics]"))
+      node.onclick = () => {
+        state.openCourse = state.openCourse === node.dataset.showTopics ? null : node.dataset.showTopics
+        render()
+      }
+
+    for (const node of panel.querySelectorAll("[data-drop]"))
+      node.onclick = () => {
+        saveStudent({ courses: myCourses().filter((slug) => slug !== node.dataset.drop) })
+        flash("Course removed")
+      }
+
+    const siteForm = panel.querySelector("#site-form")
+    if (siteForm)
+      siteForm.onsubmit = (event) => {
+        event.preventDefault()
+        const name = panel.querySelector("#site-name").value.trim()
+        if (name.length < 2 || name.length > 40) return flash("The site name must be between 2 and 40 characters.")
+        renameSite(name)
+      }
 
     for (const node of panel.querySelectorAll("[data-open-student]"))
       node.onclick = () => {
@@ -1371,7 +1902,7 @@
   for (const tab of document.querySelectorAll(".tab")) {
     tab.onclick = () => {
       state.tab = tab.dataset.tab
-      if (state.tab !== "tutor") state.openStudent = null
+      if (state.tab !== "dashboard") state.openStudent = null
       render()
     }
     tab.onkeydown = (event) => {
@@ -1445,8 +1976,27 @@
     state.shared = true
     const onError = () => flash("Live updates stopped. Reload the page to reconnect.")
 
+    db.doc("settings/site").onSnapshot((snap) => {
+      const stored = snap.exists ? snap.data() : null
+      if (stored && stored.name) {
+        state.site = { name: String(stored.name) }
+        applySite()
+        render()
+      }
+    }, onError)
+
+    if (state.uid) {
+      const account = await db.doc("accounts/" + state.uid).get()
+      state.account = account.exists && !readSignedOut() ? account.data() : null
+      render()
+    }
+
     db.collection("students").onSnapshot((snap) => {
-      state.students = new Map(snap.docs.map((doc) => [doc.id, doc.data()]))
+      const incoming = new Map(snap.docs.map((doc) => [doc.id, doc.data()]))
+      // Keep an unsaved local record for a student who has only just signed in.
+      if (state.uid && state.students.has(state.uid) && !incoming.has(state.uid))
+        incoming.set(state.uid, state.students.get(state.uid))
+      state.students = incoming
       render()
       syncProfiles()
     }, onError)

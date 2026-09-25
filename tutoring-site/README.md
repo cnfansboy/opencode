@@ -16,11 +16,15 @@ be opened in a browser without running the server:
 **https://claude.ai/artifact/R57eMvR7XczEfHpdRGGJSB**
 
 It carries the same catalogue (`artifact/catalogue.json`, exported from this app's API) and the same
-five areas, with two differences forced by the medium: there is no email/password sign-up — the
-viewer is identified by the claude.ai account opening the page — and state lives in the artifact's
-shared document store rather than SQLite, so courses, bookings, reviews and topic ticks are shared
-live between everyone who opens it. The example students and reviews in it are seeded demo data and
-are labelled as such.
+areas behind four tabs: Courses, Saturday classes, Reviews and a Dashboard. The Dashboard tab is the
+sign-in section: pick student or tutor and it renders that role's dashboard, matching the app's. A
+tutor can rename the site from there, stored in `settings/site` and applied for every viewer.
+
+Two differences are forced by the medium: there is no email/password sign-up — the claude.ai account
+opening the page is the sign-in, and the role choice is what it stores — and state lives in the
+artifact's shared document store rather than SQLite, so courses, bookings, reviews, topic ticks and
+the site name are shared live between everyone who opens it. The example students and reviews are
+seeded demo data and are labelled as such.
 
 ## Running it
 
