@@ -216,8 +216,10 @@ test("reviews require sign-in and show up in the list", async () => {
   expect(list.body.reviews[0].author_name).toBe("Test Student")
 })
 
-test("the site name is readable by anyone and only a teacher may change it", async () => {
-  expect((await call(anonymous, "/api/site")).body.name).toBe("Bridgewell Tutoring")
+test("the site names the one tutor, and only a teacher may rename the site", async () => {
+  const site = (await call(anonymous, "/api/site")).body
+  expect(site.name).toBe("Bridgewell Tutoring")
+  expect(site.tutor.name).toBe("Test Tutor")
 
   expect((await call(anonymous, "/api/site", { method: "PUT", body: JSON.stringify({ name: "Anyone" }) })).status).toBe(
     401,
@@ -284,7 +286,13 @@ test("a tutor publishes weekly availability that everyone can read", async () =>
 
   const added = await call(teacher, "/api/availability", {
     method: "POST",
-    body: JSON.stringify({ weekday: 1, starts: "16:00", ends: "18:00", note: "After school, online" }),
+    body: JSON.stringify({
+      weekday: 1,
+      starts: "16:00",
+      ends: "18:00",
+      subject: "Maths",
+      note: "After school, online",
+    }),
   })
   expect(added.status).toBe(201)
 
@@ -293,7 +301,21 @@ test("a tutor publishes weekly availability that everyone can read", async () =>
   )
   expect(published.teacher).toBe("Test Tutor")
   expect(published.weekday).toBe(1)
+  expect(published.subject).toBe("Maths")
   expect(published.note).toBe("After school, online")
+
+  // A slot released for a subject we do not teach is refused; "Any subject" is allowed.
+  const latin = await call(teacher, "/api/availability", {
+    method: "POST",
+    body: JSON.stringify({ weekday: 6, starts: "10:00", ends: "11:00", subject: "Latin" }),
+  })
+  expect(latin.status).toBe(400)
+  const anySlot = await call(teacher, "/api/availability", {
+    method: "POST",
+    body: JSON.stringify({ weekday: 6, starts: "10:00", ends: "11:00", subject: "Any" }),
+  })
+  expect(anySlot.status).toBe(201)
+  await call(teacher, "/api/availability", { method: "DELETE", body: JSON.stringify({ id: anySlot.body.id }) })
 
   // The tutor's own hours reach their dashboard, and their students' dashboards.
   const tutorDash = await call(teacher, "/api/dashboard")

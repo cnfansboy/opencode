@@ -1,5 +1,5 @@
 import path from "node:path"
-import { db, DEFAULT_SITE_NAME, PROGRESS_STATUS, siteName, STAGES, WEEKDAYS, type ProgressStatus } from "./db"
+import { db, DEFAULT_SITE_NAME, PROGRESS_STATUS, siteName, STAGES, theTutor, WEEKDAYS, type ProgressStatus } from "./db"
 import { seed } from "./seed"
 import { clearCookie, currentUser, hash, login, logout, readCookie, sessionCookie, verify, type User } from "./auth"
 
@@ -154,7 +154,7 @@ export const server = Bun.serve({
     },
 
     "/api/site": {
-      GET: () => json({ name: siteName(), defaultName: DEFAULT_SITE_NAME }),
+      GET: () => json({ name: siteName(), defaultName: DEFAULT_SITE_NAME, tutor: theTutor() }),
       PUT: async (request) => {
         const auth = require_(request, "teacher")
         if (auth.error) return auth.error
@@ -175,7 +175,7 @@ export const server = Bun.serve({
       const slots = db
         .query(
           `SELECT availability.id, availability.weekday, availability.starts, availability.ends, availability.note,
-                  users.name as teacher
+                  availability.subject, users.name as teacher
            FROM availability JOIN users ON users.id = availability.teacher_id
            WHERE availability.teacher_id = ? ORDER BY availability.weekday, availability.starts`,
         )
@@ -189,7 +189,8 @@ export const server = Bun.serve({
           courses,
           tutorHours: db
             .query(
-              `SELECT availability.weekday, availability.starts, availability.ends, users.name as teacher
+              `SELECT availability.weekday, availability.starts, availability.ends, availability.subject,
+                      users.name as teacher
                FROM availability JOIN users ON users.id = availability.teacher_id
                JOIN teacher_students ON teacher_students.teacher_id = availability.teacher_id
                WHERE teacher_students.student_id = ? ORDER BY availability.weekday, availability.starts`,
@@ -279,9 +280,9 @@ export const server = Bun.serve({
           slots: db
             .query(
               `SELECT availability.id, availability.weekday, availability.starts, availability.ends, availability.note,
-                      availability.teacher_id, users.name as teacher
+                      availability.subject, availability.teacher_id, users.name as teacher
                FROM availability JOIN users ON users.id = availability.teacher_id
-               ORDER BY availability.weekday, availability.starts, users.name`,
+               ORDER BY availability.weekday, availability.starts`,
             )
             .all(),
         }),
@@ -295,6 +296,13 @@ export const server = Bun.serve({
         const starts = str(input.starts)
         const ends = str(input.ends)
         const note = str(input.note).slice(0, 120)
+        const subject = str(input.subject) || "Any"
+        const subjects = ["Any"].concat(
+          (db.query("SELECT DISTINCT subject FROM courses ORDER BY subject").all() as { subject: string }[]).map(
+            (row) => row.subject,
+          ),
+        )
+        if (!subjects.includes(subject)) return fail(400, "Choose a subject these hours are for.")
         const time = /^([01]\d|2[0-3]):[0-5]\d$/
 
         if (!WEEKDAYS.some((day) => day.id === weekday)) return fail(400, "Choose a day of the week.")
@@ -310,9 +318,9 @@ export const server = Bun.serve({
 
         const id = db
           .query(
-            "INSERT INTO availability (teacher_id, weekday, starts, ends, note) VALUES (?, ?, ?, ?, ?) RETURNING id",
+            "INSERT INTO availability (teacher_id, weekday, starts, ends, subject, note) VALUES (?, ?, ?, ?, ?, ?) RETURNING id",
           )
-          .get(auth.user.id, weekday, starts, ends, note) as { id: number }
+          .get(auth.user.id, weekday, starts, ends, subject, note) as { id: number }
         return json({ id: id.id }, { status: 201 })
       },
       DELETE: async (request) => {

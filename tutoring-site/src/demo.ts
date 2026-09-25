@@ -54,25 +54,23 @@ for (const topic of topics)
     teacher,
   )
 
-// The demo tutor publishes the hours they are free each week.
-for (const [weekday, starts, ends, note] of [
-  [0, "16:00", "18:30", "After school, online"],
-  [2, "16:00", "19:00", "After school, online or at the centre"],
-  [4, "15:30", "17:30", "After school, online"],
-  [5, "09:00", "13:00", "At the centre"],
+// The one tutor releases the hours they are free each week, by subject.
+for (const [weekday, starts, ends, subject, note] of [
+  [0, "16:00", "18:30", "Maths", "After school, online"],
+  [1, "16:00", "18:00", "Science", "After school, online"],
+  [2, "16:00", "19:00", "Maths", "Online or at the centre"],
+  [3, "16:30", "18:30", "Science", "At the centre"],
+  [4, "15:30", "17:30", "Any", "After school, online"],
+  [5, "09:00", "13:00", "Any", "At the centre"],
 ] as const)
   if (
     !db
       .query("SELECT 1 as ok FROM availability WHERE teacher_id = ? AND weekday = ? AND starts = ?")
       .get(teacher, weekday, starts)
   )
-    db.query("INSERT INTO availability (teacher_id, weekday, starts, ends, note) VALUES (?, ?, ?, ?, ?)").run(
-      teacher,
-      weekday,
-      starts,
-      ends,
-      note,
-    )
+    db.query(
+      "INSERT INTO availability (teacher_id, weekday, starts, ends, subject, note) VALUES (?, ?, ?, ?, ?, ?)",
+    ).run(teacher, weekday, starts, ends, subject, note)
 
 console.log(`Demo accounts ready (password: ${PASSWORD})`)
 for (const account of accounts) console.log(`  ${account.role.padEnd(7)} ${account.email}`)

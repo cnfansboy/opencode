@@ -16,7 +16,7 @@ be opened in a browser without running the server:
 **https://claude.ai/artifact/R57eMvR7XczEfHpdRGGJSB**
 
 It carries the same catalogue (`artifact/catalogue.json`, exported from this app's API) and the same
-areas behind four tabs: Subjects, Availability, Reviews and a Dashboard. The Dashboard tab is the
+areas behind three tabs: Subjects, Reviews and a Dashboard. The Dashboard tab is the
 sign-in section: pick student or tutor and it renders that role's dashboard, matching the app's. A
 tutor can rename the site from there, stored in `settings/site` and applied for every viewer.
 
@@ -51,8 +51,8 @@ Demo accounts created by `bun run demo`, all with the password `demopass123`:
 **What is taught** — maths at KS2, KS3, GCSE and A Level, and science at KS3 and GCSE. The catalogue,
 and the seeded reviews follow that rule, and a test enforces it.
 
-**Public pages** — a home page, the Subjects tab, a page per course listing every topic it covers, the
-Availability week, and a reviews page with the overall average rating.
+**Public pages** — a home page, the Subjects tab (levels and released time slots), a page per course
+listing every topic it covers, and a reviews page with the overall average rating.
 
 **Sign in** — a sign-in section with tabs for signing in and creating an account, hashed with bcrypt
 via `Bun.password` and an httpOnly session cookie that expires after 30 days. An account is either a
@@ -65,22 +65,24 @@ topics the tutor most recently ticked off with their session notes. `#/account` 
 the student sets their stage, adds or removes courses, and reads the full topic list for each one.
 
 **Tutor dashboard** (`#/dashboard`) — tiles for students, topics ticked in the last seven days,
-students under 25% covered and the hours the tutor publishes each week; each student with a progress ring and
+students under 25% covered and the hours released each week; each student with a progress ring and
 a link into their tracker, where every topic is marked _not covered yet_, _covered_ or _secure_ with
 an optional session note. The student sees the same tracker in their own account immediately. The
-dashboard also holds the form to add a student by their registered email, and the site settings.
+dashboard also holds the form to add a student by their registered email, the time-slot release form,
+and the site settings.
 
 **Website name** — a tutor renames the site from their dashboard. The name is stored in `settings`
 and drives the header, the brand initial, the footer and the browser tab.
 
-**Subjects** (`#/subjects`) — one tab for everything taught: a block per subject showing the levels it
-runs to, and a level per course that opens to its summary, session length and exam boards. A student
-adds a course to their plan from here, and a compact week strip shows when tutors are free.
+**Subjects** (`#/subjects`) — one tab for everything taught. Open a subject to see the levels it runs
+to — each level opens to its summary, session length and exam boards — and the time slots released
+for that subject. A slot released for "Any subject" shows under every subject. A student adds a
+course to their plan from here.
 
-**Availability** (`#/availability`) — the week as seven columns, each holding the hours tutors have
-published. A signed-in tutor publishes their own (day, from, until and an optional note) and removes
-them again; overlapping hours on the same day are refused, as are malformed or backwards times. A
-tutor can only delete their own slots. Their students see those hours on their dashboard.
+**Time slots** — one person tutors here, and they release their week from their dashboard: day, from,
+until, which subject it is for, and an optional note. Overlapping hours on the same day are refused,
+as are malformed or backwards times and a subject that is not taught. Slots appear under their
+subject on the Subjects tab and on that tutor's students' dashboards.
 
 **Reviews** — any signed-in account can leave a review of a specific course or of the service
 overall. Reviews show on the reviews page and on the relevant course page.
@@ -102,32 +104,32 @@ overall. Reviews show on the reviews page and on the relevant course page.
 
 ## API
 
-| Method   | Path                        | Who                                       |
-| -------- | --------------------------- | ----------------------------------------- |
-| `GET`    | `/api/site`                 | Anyone                                    |
-| `PUT`    | `/api/site`                 | Tutor                                     |
-| `GET`    | `/api/dashboard`            | Signed in, shaped by role                 |
-| `GET`    | `/api/stages`               | Anyone                                    |
-| `GET`    | `/api/courses`              | Anyone (`?stage=&subject=&q=`)            |
-| `GET`    | `/api/courses/:slug`        | Anyone                                    |
-| `GET`    | `/api/availability`         | Anyone                                    |
-| `POST`   | `/api/availability`         | Tutor, refused when it overlaps           |
-| `DELETE` | `/api/availability`         | Tutor, own slots only                     |
-| `GET`    | `/api/reviews`              | Anyone (`?course=slug`)                   |
-| `POST`   | `/api/reviews`              | Signed in                                 |
-| `POST`   | `/api/auth/register`        | Anyone                                    |
-| `POST`   | `/api/auth/login`           | Anyone                                    |
-| `POST`   | `/api/auth/logout`          | Signed in                                 |
-| `GET`    | `/api/me`                   | Anyone (`user` is `null` when signed out) |
-| `PATCH`  | `/api/me`                   | Signed in                                 |
-| `POST`   | `/api/me/interests`         | Student                                   |
-| `DELETE` | `/api/me/interests`         | Student                                   |
-| `GET`    | `/api/me/progress`          | Student                                   |
-| `GET`    | `/api/teacher/students`     | Tutor                                     |
-| `POST`   | `/api/teacher/students`     | Tutor                                     |
-| `GET`    | `/api/teacher/students/:id` | Tutor, own students only                  |
-| `DELETE` | `/api/teacher/students/:id` | Tutor                                     |
-| `PUT`    | `/api/teacher/progress`     | Tutor, own students only                  |
+| Method   | Path                        | Who                                          |
+| -------- | --------------------------- | -------------------------------------------- |
+| `GET`    | `/api/site`                 | Anyone                                       |
+| `PUT`    | `/api/site`                 | Tutor                                        |
+| `GET`    | `/api/dashboard`            | Signed in, shaped by role                    |
+| `GET`    | `/api/stages`               | Anyone                                       |
+| `GET`    | `/api/courses`              | Anyone (`?stage=&subject=&q=`)               |
+| `GET`    | `/api/courses/:slug`        | Anyone                                       |
+| `GET`    | `/api/availability`         | Anyone                                       |
+| `POST`   | `/api/availability`         | Tutor; refused on overlap or unknown subject |
+| `DELETE` | `/api/availability`         | Tutor, own slots only                        |
+| `GET`    | `/api/reviews`              | Anyone (`?course=slug`)                      |
+| `POST`   | `/api/reviews`              | Signed in                                    |
+| `POST`   | `/api/auth/register`        | Anyone                                       |
+| `POST`   | `/api/auth/login`           | Anyone                                       |
+| `POST`   | `/api/auth/logout`          | Signed in                                    |
+| `GET`    | `/api/me`                   | Anyone (`user` is `null` when signed out)    |
+| `PATCH`  | `/api/me`                   | Signed in                                    |
+| `POST`   | `/api/me/interests`         | Student                                      |
+| `DELETE` | `/api/me/interests`         | Student                                      |
+| `GET`    | `/api/me/progress`          | Student                                      |
+| `GET`    | `/api/teacher/students`     | Tutor                                        |
+| `POST`   | `/api/teacher/students`     | Tutor                                        |
+| `GET`    | `/api/teacher/students/:id` | Tutor, own students only                     |
+| `DELETE` | `/api/teacher/students/:id` | Tutor                                        |
+| `PUT`    | `/api/teacher/progress`     | Tutor, own students only                     |
 
 Every write checks the session and the role server-side; a tutor can only read or change progress
 for a student on their own list.

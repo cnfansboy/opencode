@@ -2,7 +2,13 @@ const main = document.getElementById("main")
 const account = document.getElementById("nav-account")
 const toast = document.getElementById("toast")
 
-const state = { user: null, interests: [], stages: [], subjects: [], site: { name: "Bridgewell Tutoring" } }
+const state = {
+  user: null,
+  interests: [],
+  stages: [],
+  subjects: [],
+  site: { name: "Bridgewell Tutoring", tutor: null },
+}
 
 const esc = (value) =>
   String(value ?? "").replace(
@@ -152,14 +158,15 @@ const courseCard = (course) => `
 
 async function subjects() {
   if (!state.stages.length) Object.assign(state, await api("/stages"))
-  const [{ courses: list }, { slots, weekdays }] = await Promise.all([api("/courses"), api("/availability")])
+  const [{ courses: list }, { slots }] = await Promise.all([api("/courses"), api("/availability")])
 
-  const bySubject = state.subjects
+  const groups = state.subjects
     .map((subject) => ({
       subject,
       courses: list
         .filter((course) => course.subject === subject)
         .sort((a, b) => STAGE_RANK[a.stage] - STAGE_RANK[b.stage]),
+      slots: slots.filter((slot) => slot.subject === subject || slot.subject === "Any"),
     }))
     .filter((group) => group.courses.length)
 
@@ -169,64 +176,73 @@ async function subjects() {
         <div>
           <p class="eyebrow">What we teach</p>
           <h1>Subjects</h1>
-          <p class="muted">Every subject we tutor and the levels we take it to. Open a level to see the topics it covers.</p>
+          <p class="muted">
+            Open a subject to see the levels it runs to and the time slots ${esc(tutorName())} has released for it.
+          </p>
         </div>
       </header>
 
-      ${bySubject
+      ${groups
         .map(
-          (group) => `<section class="block subject-block ${subjectClass(group.subject)}">
-            <div class="subject-head">
-              <h2>${esc(group.subject)}</h2>
-              <div class="level-chips">
-                ${group.courses.map((course) => `<span class="chip level">${esc((state.stages.find((s) => s.id === course.stage) || {}).short || course.stage)}</span>`).join("")}
+          (group, index) => `<details class="subject-block ${subjectClass(group.subject)}" ${index === 0 ? "open" : ""}>
+            <summary>
+              <div class="subject-head">
+                <h2>${esc(group.subject)}</h2>
+                <div class="level-chips">
+                  ${group.courses.map((course) => `<span class="chip level">${esc(levelShort(course.stage))}</span>`).join("")}
+                  <span class="chip slots-count">${group.slots.length} slot${group.slots.length === 1 ? "" : "s"} free</span>
+                </div>
               </div>
-            </div>
-            <p class="muted small">Taught from ${esc(levelShort(group.courses[0].stage))} to ${esc(levelShort(group.courses[group.courses.length - 1].stage))}.</p>
-            <div class="levels">
-              ${group.courses
-                .map(
-                  (course) => `<details class="level-card">
-                    <summary>
-                      <span class="level-name">
-                        <strong>${esc(levelShort(course.stage))}</strong>
-                        <span class="muted small">${esc(course.title)}</span>
-                      </span>
-                      <span class="level-meta">${course.topic_count} topics · ${money(course.price_pence)}</span>
-                    </summary>
-                    <div class="level-body">
-                      <p class="small">${esc(course.summary)}</p>
-                      <p class="small muted">${esc(course.session_length)} · ${esc(course.exam_boards)}</p>
-                      <div class="rowline">
-                        <a class="btn small" href="#/subjects/${esc(course.slug)}">Topics and reviews</a>
-                        ${state.user?.role === "student" ? `<button class="btn small ${state.interests.some((i) => i.slug === course.slug) ? "" : "primary"}" data-add="${esc(course.slug)}">${state.interests.some((i) => i.slug === course.slug) ? "✓ On my plan" : "Add to my plan"}</button>` : ""}
+            </summary>
+
+            <div class="subject-body">
+              <h3 class="section-label">Levels</h3>
+              <div class="levels">
+                ${group.courses
+                  .map(
+                    (course) => `<details class="level-card">
+                      <summary>
+                        <span class="level-name">
+                          <strong>${esc(levelShort(course.stage))}</strong>
+                          <span class="muted small">${esc(course.title)}</span>
+                        </span>
+                        <span class="level-meta">${course.topic_count} topics · ${money(course.price_pence)}</span>
+                      </summary>
+                      <div class="level-body">
+                        <p class="small">${esc(course.summary)}</p>
+                        <p class="small muted">${esc(course.session_length)} · ${esc(course.exam_boards)}</p>
+                        <div class="rowline">
+                          <a class="btn small" href="#/subjects/${esc(course.slug)}">Topics and reviews</a>
+                          ${state.user?.role === "student" ? `<button class="btn small ${state.interests.some((i) => i.slug === course.slug) ? "" : "primary"}" data-add="${esc(course.slug)}">${state.interests.some((i) => i.slug === course.slug) ? "✓ On my plan" : "Add to my plan"}</button>` : ""}
+                        </div>
                       </div>
-                    </div>
-                  </details>`,
-                )
-                .join("")}
+                    </details>`,
+                  )
+                  .join("")}
+              </div>
+
+              <h3 class="section-label">Time slots released for ${esc(group.subject)}</h3>
+              ${
+                group.slots.length
+                  ? `<ul class="slot-list">${group.slots
+                      .map(
+                        (slot) => `<li class="slot-row">
+                          <span class="slot-day">${esc(WEEKDAY_NAMES[slot.weekday])}</span>
+                          <span class="slot-time">${esc(slot.starts)}–${esc(slot.ends)}</span>
+                          <span class="slot-detail">
+                            ${slot.subject === "Any" ? `<span class="chip">Any subject</span>` : ""}
+                            ${slot.note ? esc(slot.note) : ""}
+                          </span>
+                        </li>`,
+                      )
+                      .join("")}</ul>
+                     <p class="small muted">Sessions run with ${esc(tutorName())}. Get in touch to take one of these slots.</p>`
+                  : `<div class="empty">No slots released for ${esc(group.subject)} yet.</div>`
+              }
             </div>
-          </section>`,
+          </details>`,
         )
         .join("")}
-
-      <section class="block">
-        <div class="row between"><h2>When our tutors are free</h2><a href="#/availability">Full week →</a></div>
-        <p class="muted">Sessions are booked into the hours each tutor publishes${state.user?.role === "teacher" ? `, including <a href="#/availability">your own</a>` : ""}.</p>
-        ${
-          slots.length
-            ? `<div class="week-strip">${weekdays
-                .map((day) => {
-                  const items = slots.filter((slot) => slot.weekday === day.id)
-                  return `<div class="strip-day ${items.length ? "" : "strip-empty"}">
-                    <span class="strip-name">${esc(day.short)}</span>
-                    ${items.length ? items.map((slot) => `<span class="strip-time">${esc(slot.starts)}–${esc(slot.ends)}</span>`).join("") : `<span class="strip-time">—</span>`}
-                  </div>`
-                })
-                .join("")}</div>`
-            : `<div class="empty">No tutor hours published yet.</div>`
-        }
-      </section>
     </div>`
 
   for (const button of document.querySelectorAll("[data-add]"))
@@ -237,96 +253,6 @@ async function subjects() {
       await refreshUser()
       notify(held ? "Removed from your plan" : "Added to your plan")
       subjects()
-    }
-}
-
-async function availability() {
-  const [{ slots, weekdays }, site] = await Promise.all([api("/availability"), Promise.resolve(state.site)])
-  const isTeacher = state.user?.role === "teacher"
-  const mine = slots.filter((slot) => slot.teacher_id === state.user?.id)
-
-  main.innerHTML = `
-    <div class="wrap">
-      <header class="dash-head">
-        <div>
-          <p class="eyebrow">Tutor hours</p>
-          <h1>Availability</h1>
-          <p class="muted">The hours each tutor has published this week. ${isTeacher ? "Add your own below — students and parents see them straight away." : `Get in touch to book one of these slots at ${esc(site.name)}.`}</p>
-        </div>
-      </header>
-
-      <div class="week">
-        ${weekdays
-          .map((day) => {
-            const items = slots.filter((slot) => slot.weekday === day.id)
-            return `<div class="day ${items.length ? "" : "day-empty"}">
-              <h3>${esc(day.label)}</h3>
-              ${
-                items.length
-                  ? items
-                      .map(
-                        (slot) => `<div class="slot ${slot.teacher_id === state.user?.id ? "slot-mine" : ""}">
-                          <span class="slot-time">${esc(slot.starts)}–${esc(slot.ends)}</span>
-                          <span class="slot-who">${esc(slot.teacher)}</span>
-                          ${slot.note ? `<span class="slot-note">${esc(slot.note)}</span>` : ""}
-                          ${slot.teacher_id === state.user?.id ? `<button class="btn small ghost" data-drop-slot="${slot.id}" aria-label="Remove this slot">Remove</button>` : ""}
-                        </div>`,
-                      )
-                      .join("")
-                  : `<p class="small muted">No hours published</p>`
-              }
-            </div>`
-          })
-          .join("")}
-      </div>
-
-      ${
-        isTeacher
-          ? `<section class="block card" style="max-width:640px">
-              <h2>Publish your hours</h2>
-              <p class="small muted">You have ${mine.length} slot${mine.length === 1 ? "" : "s"} published. Overlapping hours on the same day are refused.</p>
-              <form id="slot-form">
-                <div class="field-row">
-                  <div><label for="weekday">Day</label>
-                    <select id="weekday">${weekdays.map((day) => `<option value="${day.id}">${esc(day.label)}</option>`).join("")}</select></div>
-                  <div><label for="starts">From</label><input id="starts" type="time" value="16:00" required /></div>
-                  <div><label for="ends">Until</label><input id="ends" type="time" value="18:00" required /></div>
-                </div>
-                <div class="field"><label for="note">Note (optional)</label><input id="note" maxlength="120" placeholder="Online, or at the centre" /></div>
-                <button class="btn primary" type="submit">Publish these hours</button>
-              </form>
-              <div id="slot-error"></div>
-            </section>`
-          : ""
-      }
-    </div>`
-
-  for (const button of document.querySelectorAll("[data-drop-slot]"))
-    button.onclick = async () => {
-      await api("/availability", { method: "DELETE", body: { id: Number(button.dataset.dropSlot) } })
-      notify("Slot removed")
-      availability()
-    }
-
-  const form = document.getElementById("slot-form")
-  if (form)
-    form.onsubmit = async (event) => {
-      event.preventDefault()
-      try {
-        await api("/availability", {
-          method: "POST",
-          body: {
-            weekday: Number(document.getElementById("weekday").value),
-            starts: document.getElementById("starts").value,
-            ends: document.getElementById("ends").value,
-            note: document.getElementById("note").value,
-          },
-        })
-        notify("Hours published")
-        availability()
-      } catch (error) {
-        document.getElementById("slot-error").innerHTML = `<div class="error">${esc(error.message)}</div>`
-      }
     }
 }
 
@@ -447,6 +373,8 @@ async function reviews() {
 
 const WEEKDAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 
+const tutorName = () => state.site.tutor?.name || "your tutor"
+
 const STAGE_RANK = { ks2: 1, ks3: 2, gcse: 3, alevel: 4 }
 const levelShort = (stage) => (state.stages.find((s) => s.id === stage) || {}).short || stage
 
@@ -484,7 +412,7 @@ async function signIn(mode) {
           <ul class="auth-points">
             <li>See exactly what your tutor has covered</li>
             <li>Follow the AQA, Edexcel or OCR specification</li>
-            <li>Book into the hours your tutor publishes</li>
+            <li>Book into the slots your tutor releases</li>
           </ul>
         </aside>
         <div class="auth-card">
@@ -510,7 +438,7 @@ async function signIn(mode) {
                 ? `<div class="field"><label for="role">I am</label>
                     <select id="role" name="role">
                       <option value="student">A student or parent</option>
-                      <option value="teacher">A tutor at ${esc(state.site.name)}</option>
+                      <option value="teacher">The tutor at ${esc(state.site.name)}</option>
                     </select></div>
                   <div class="field" id="stage-field"><label for="stage">Student stage</label>
                     <select id="stage" name="stage">${state.stages.map((stage) => `<option value="${stage.id}">${esc(stage.label)}</option>`).join("")}</select></div>`
@@ -552,6 +480,7 @@ async function signIn(mode) {
 
 async function dashboard() {
   if (!state.user) return go("/signin")
+  if (!state.stages.length) Object.assign(state, await api("/stages"))
   const data = await api("/dashboard")
   if (data.role === "student") return studentDashboard(data)
   return teacherDashboard(data)
@@ -567,7 +496,7 @@ function studentDashboard(data) {
         <div>
           <p class="eyebrow">${GREETING()}</p>
           <h1>${esc(data.user.name)}</h1>
-          <p class="muted">${esc(data.user.stageLabel ?? "No stage set")}${data.teachers.length ? ` · Tutor: ${data.teachers.map((t) => esc(t.name)).join(", ")}` : ""}</p>
+          <p class="muted">${esc(data.user.stageLabel ?? "No stage set")}${data.teachers.length ? ` · Tutor: ${esc(data.teachers[0].name)}` : ""}</p>
         </div>
         <a class="btn" href="#/subjects">Browse subjects</a>
       </header>
@@ -576,7 +505,7 @@ function studentDashboard(data) {
         <div class="tile"><span class="tile-label">Courses</span><strong>${data.courses.length}</strong><span class="muted small">on your plan</span></div>
         <div class="tile"><span class="tile-label">Topics covered</span><strong>${data.totals.covered}<span class="of">/${data.totals.total}</span></strong><span class="muted small">${percent}% of your courses</span></div>
         <div class="tile"><span class="tile-label">Marked secure</span><strong>${data.totals.secure}</strong><span class="muted small">ready for the exam</span></div>
-        <div class="tile"><span class="tile-label">Next tutor slot</span><strong class="tile-small">${next ? esc(next.day) : "—"}</strong><span class="muted small">${next ? `${esc(next.starts)}–${esc(next.ends)} · ${esc(next.teacher)}` : "No hours published"}</span></div>
+        <div class="tile"><span class="tile-label">Next tutor slot</span><strong class="tile-small">${next ? esc(next.day) : "—"}</strong><span class="muted small">${next ? `${esc(next.starts)}–${esc(next.ends)} · ${esc(next.subject === "Any" ? "Any subject" : next.subject)}` : "No hours released"}</span></div>
       </div>
 
       <section class="block">
@@ -625,11 +554,11 @@ function studentDashboard(data) {
       ${
         (data.tutorHours || []).length
           ? `<section class="block">
-              <div class="row between"><h2>When your tutor is free</h2><a href="#/availability">Full week →</a></div>
+              <div class="row between"><h2>When your tutor is free</h2><a href="#/subjects">By subject →</a></div>
               <ul class="feed">${data.tutorHours
                 .map(
                   (slot) => `<li><span class="feed-time">${esc(WEEKDAY_NAMES[slot.weekday])}</span>
-                    <div><strong>${esc(slot.starts)}–${esc(slot.ends)}</strong><span class="small muted">${esc(slot.teacher)}</span></div></li>`,
+                    <div><strong>${esc(slot.starts)}–${esc(slot.ends)}</strong><span class="small muted">${esc(slot.subject === "Any" ? "Any subject" : slot.subject)}${slot.note ? ` · ${esc(slot.note)}` : ""}</span></div></li>`,
                 )
                 .join("")}</ul>
             </section>`
@@ -647,14 +576,14 @@ function teacherDashboard(data) {
           <h1>${esc(data.user.name)}</h1>
           <p class="muted">${data.students.length} student${data.students.length === 1 ? "" : "s"} on your list</p>
         </div>
-        <a class="btn" href="#/availability">My availability</a>
+        <a class="btn" href="#/subjects">Subjects</a>
       </header>
 
       <div class="tiles">
         <div class="tile"><span class="tile-label">Students</span><strong>${data.students.length}</strong><span class="muted small">you tutor</span></div>
         <div class="tile"><span class="tile-label">Topics ticked</span><strong>${data.ticksThisWeek}</strong><span class="muted small">in the last 7 days</span></div>
         <div class="tile"><span class="tile-label">Needs attention</span><strong>${data.needsAttention}</strong><span class="muted small">under 25% covered</span></div>
-        <div class="tile"><span class="tile-label">Hours published</span><strong>${data.weeklyHours}</strong><span class="muted small">across ${data.slots.length} slot${data.slots.length === 1 ? "" : "s"} a week</span></div>
+        <div class="tile"><span class="tile-label">Hours published</span><strong>${data.weeklyHours}</strong><span class="muted small">across ${data.slots.length} slot${data.slots.length === 1 ? "" : "s"} released</span></div>
       </div>
 
       <section class="block">
@@ -689,6 +618,42 @@ function teacherDashboard(data) {
           <div id="add-error"></div>
         </div>
         <div class="card">
+          <h3>Release time slots</h3>
+          <p class="small muted">Students see these under the subject you choose. Overlapping hours on the same day are refused.</p>
+          <form id="slot-form">
+            <div class="field-row">
+              <div><label for="weekday">Day</label>
+                <select id="weekday">${WEEKDAY_NAMES.map((day, index) => `<option value="${index}">${day}</option>`).join("")}</select></div>
+              <div><label for="slot-subject">Subject</label>
+                <select id="slot-subject">
+                  <option value="Any">Any subject</option>
+                  ${state.subjects.map((subject) => `<option value="${esc(subject)}">${esc(subject)}</option>`).join("")}
+                </select></div>
+            </div>
+            <div class="field-row">
+              <div><label for="starts">From</label><input id="starts" type="time" value="16:00" required /></div>
+              <div><label for="ends">Until</label><input id="ends" type="time" value="18:00" required /></div>
+            </div>
+            <div class="field"><label for="slot-note">Note (optional)</label><input id="slot-note" maxlength="120" placeholder="Online, or at the centre" /></div>
+            <button class="btn primary" type="submit">Release these hours</button>
+          </form>
+          <div id="slot-error"></div>
+          ${
+            data.slots.length
+              ? `<ul class="slot-list tight">${data.slots
+                  .map(
+                    (slot) => `<li class="slot-row">
+                      <span class="slot-day">${esc(WEEKDAY_NAMES[slot.weekday])}</span>
+                      <span class="slot-time">${esc(slot.starts)}–${esc(slot.ends)}</span>
+                      <span class="slot-detail"><span class="chip">${esc(slot.subject === "Any" ? "Any subject" : slot.subject)}</span>${slot.note ? " " + esc(slot.note) : ""}</span>
+                      <button class="btn small ghost" data-drop-slot="${slot.id}">Remove</button>
+                    </li>`,
+                  )
+                  .join("")}</ul>`
+              : `<p class="small muted">No hours released yet.</p>`
+          }
+        </div>
+        <div class="card">
           <h3>Site settings</h3>
           <p class="small muted">The name shown in the header, the footer and the browser tab.</p>
           <form id="site-form">
@@ -710,6 +675,33 @@ function teacherDashboard(data) {
       document.getElementById("add-error").innerHTML = `<div class="error">${esc(error.message)}</div>`
     }
   }
+
+  document.getElementById("slot-form").onsubmit = async (event) => {
+    event.preventDefault()
+    try {
+      await api("/availability", {
+        method: "POST",
+        body: {
+          weekday: Number(document.getElementById("weekday").value),
+          subject: document.getElementById("slot-subject").value,
+          starts: document.getElementById("starts").value,
+          ends: document.getElementById("ends").value,
+          note: document.getElementById("slot-note").value,
+        },
+      })
+      notify("Hours released")
+      dashboard()
+    } catch (error) {
+      document.getElementById("slot-error").innerHTML = `<div class="error">${esc(error.message)}</div>`
+    }
+  }
+
+  for (const button of document.querySelectorAll("[data-drop-slot]"))
+    button.onclick = async () => {
+      await api("/availability", { method: "DELETE", body: { id: Number(button.dataset.dropSlot) } })
+      notify("Slot removed")
+      dashboard()
+    }
 
   document.getElementById("site-form").onsubmit = async (event) => {
     event.preventDefault()
@@ -753,7 +745,7 @@ async function studentArea() {
             <label for="stage">Current stage</label>
             <select id="stage">${state.stages.map((stage) => `<option value="${stage.id}" ${state.user.stage === stage.id ? "selected" : ""}>${esc(stage.label)}</option>`).join("")}</select>
           </div>
-          ${me.teachers.length ? `<p class="small muted">Your tutors: ${me.teachers.map((teacher) => esc(teacher.name)).join(", ")}</p>` : `<p class="small muted">No tutor linked yet — your tutor adds you using ${esc(state.user.email)}.</p>`}
+          ${me.teachers.length ? `<p class="small muted">Your tutor: ${esc(me.teachers[0].name)}</p>` : `<p class="small muted">No tutor linked yet — your tutor adds you using ${esc(state.user.email)}.</p>`}
         </div>
         <div class="card">
           <h3>Add a course</h3>
@@ -771,7 +763,7 @@ async function studentArea() {
                 .join("")}
             </select>
           </div>
-          <p class="small muted"><a href="#/availability">See when tutors are free</a> this week.</p>
+          <p class="small muted"><a href="#/subjects">See the slots released</a> for each subject.</p>
         </div>
       </section>
 
@@ -919,7 +911,7 @@ async function render() {
     if (!parts.length) await home()
     else if ((parts[0] === "subjects" || parts[0] === "courses") && parts[1]) await courseDetail(parts[1])
     else if (parts[0] === "subjects" || parts[0] === "courses") await subjects()
-    else if (parts[0] === "availability" || parts[0] === "saturday") await availability()
+    else if (parts[0] === "availability" || parts[0] === "saturday") return go("/subjects")
     else if (parts[0] === "reviews") await reviews()
     else if (parts[0] === "signin" || parts[0] === "login") await signIn("login")
     else if (parts[0] === "signup" || parts[0] === "register") await signIn("register")

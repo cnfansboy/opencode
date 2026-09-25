@@ -514,14 +514,6 @@ table.students th {
   color: var(--muted);
 }
 
-.slot {
-  font-size: 1.1rem;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0.02em;
-  border-bottom: 1px solid var(--border);
-  padding-bottom: 6px;
-  margin-bottom: 16px;
-}
 .class-card .spaces {
   color: var(--good);
   font-weight: 600;
@@ -801,6 +793,7 @@ table.students th {
 
 /* ---- subjects ---------------------------------------------------------- */
 .subject-block {
+  position: relative;
   background: var(--surface);
   border: 1px solid var(--border);
   border-left-width: 4px;
@@ -814,6 +807,86 @@ table.students th {
 .subject-block.subject-science {
   border-left-color: #1d7a54;
 }
+.subject-block > summary {
+  cursor: pointer;
+  list-style: none;
+}
+.subject-block > summary::-webkit-details-marker {
+  display: none;
+}
+.subject-block > summary::after {
+  content: "▾";
+  color: var(--accent);
+  font-size: 0.85rem;
+  position: absolute;
+  right: 20px;
+  top: 22px;
+  transition: transform 0.2s ease;
+}
+.subject-block[open] > summary::after {
+  transform: rotate(180deg);
+  display: inline-block;
+}
+.subject-body {
+  margin-top: 16px;
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+}
+.section-label {
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--muted);
+  margin: 0 0 10px;
+}
+.subject-body .section-label + .levels + .section-label {
+  margin-top: 22px;
+}
+.chip.slots-count {
+  background: var(--good-soft);
+  color: var(--good);
+}
+.slot-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+.slot-list.tight {
+  margin-top: 14px;
+}
+.slot-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  background: var(--surface-2);
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: 0.92rem;
+}
+.slot-day {
+  font-weight: 700;
+  min-width: 82px;
+}
+.slot-row .slot-time {
+  font-variant-numeric: tabular-nums;
+  min-width: 108px;
+}
+.slot-detail {
+  color: var(--muted);
+  font-size: 0.86rem;
+  flex: 1 1 auto;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.slot-row .btn {
+  margin-left: auto;
+}
+
 .subject-head {
   display: flex;
   gap: 12px;
@@ -828,6 +901,7 @@ table.students th {
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
+  padding-right: 22px;
 }
 .chip.level {
   display: inline-block;
@@ -883,59 +957,9 @@ table.students th {
 }
 
 /* ---- availability ------------------------------------------------------ */
-.week {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 12px;
-  margin-bottom: 32px;
-}
-.day {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 14px;
-  display: grid;
-  gap: 8px;
-  align-content: start;
-}
-.day h3 {
-  margin: 0;
-  font-size: 0.82rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--muted);
-}
-.day-empty {
-  background: transparent;
-  border-style: dashed;
-}
-.slot {
-  background: var(--surface-2);
-  border-radius: 8px;
-  padding: 9px 10px;
-  display: grid;
-  gap: 2px;
-}
-.slot-mine {
-  background: var(--good-soft);
-  border: 1px solid var(--good);
-}
 .slot-time {
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-}
-.slot-who {
-  font-size: 0.85rem;
-  color: var(--muted);
-}
-.slot-note {
-  font-size: 0.78rem;
-  color: var(--muted);
-  font-style: italic;
-}
-.slot .btn {
-  margin-top: 4px;
-  justify-self: start;
 }
 
 .level-card > summary::after {
@@ -949,43 +973,4 @@ table.students th {
 .level-card[open] > summary::after {
   transform: rotate(180deg);
   display: inline-block;
-}
-.week {
-  grid-template-columns: repeat(auto-fit, minmax(172px, 1fr));
-}
-.slot-time {
-  white-space: nowrap;
-  font-size: 0.95rem;
-}
-.week-strip {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
-  gap: 8px;
-  margin-top: 12px;
-}
-.strip-day {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 10px;
-  display: grid;
-  gap: 3px;
-  text-align: center;
-}
-.strip-day.strip-empty {
-  border-style: dashed;
-  background: transparent;
-  color: var(--muted);
-}
-.strip-name {
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--muted);
-}
-.strip-time {
-  font-size: 0.82rem;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
 }

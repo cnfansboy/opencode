@@ -106,6 +106,7 @@ db.exec(`
     weekday INTEGER NOT NULL CHECK (weekday BETWEEN 0 AND 6),
     starts TEXT NOT NULL,
     ends TEXT NOT NULL,
+    subject TEXT NOT NULL DEFAULT 'Any',
     note TEXT NOT NULL DEFAULT '',
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
@@ -131,4 +132,12 @@ export const DEFAULT_SITE_NAME = "Bridgewell Tutoring"
 export function siteName() {
   const row = db.query("SELECT value FROM settings WHERE key = 'site_name'").get() as { value: string } | null
   return row?.value || DEFAULT_SITE_NAME
+}
+
+// One person tutors here: the first tutor account is the tutor whose name the site shows.
+export function theTutor() {
+  return (db.query("SELECT id, name FROM users WHERE role = 'teacher' ORDER BY id LIMIT 1").get() ?? null) as {
+    id: number
+    name: string
+  } | null
 }
