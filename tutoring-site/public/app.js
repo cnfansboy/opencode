@@ -62,12 +62,12 @@ async function refreshUser() {
 
 function renderAccountNav() {
   if (!state.user) {
-    account.innerHTML = `<a href="#/signin">Sign in</a><a class="btn primary small" href="#/signup">Create account</a>`
+    account.innerHTML = `<a class="btn primary small" href="#/">Sign in</a>`
     return
   }
   account.innerHTML = `
-    <a href="#/dashboard">Dashboard</a>
     ${state.user.role === "student" ? '<a href="#/account">My courses</a>' : ""}
+    <span class="who small muted">${esc(state.user.name)}</span>
     <button class="btn ghost small" id="logout">Sign out</button>`
   document.getElementById("logout").onclick = async () => {
     await api("/auth/logout", { method: "POST" })
@@ -88,73 +88,6 @@ function loading() {
 }
 
 /* ---------- views ---------- */
-
-async function home() {
-  const [{ courses }, { reviews, summary }] = await Promise.all([api("/courses"), api("/reviews")])
-  const featured = [...courses]
-    .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0) || b.review_count - a.review_count)
-    .slice(0, 3)
-  main.innerHTML = `
-    <div class="wrap">
-      <div class="hero">
-        <h1>Tutoring that shows its working</h1>
-        <p class="lead">
-          Specialist maths tuition from KS2 through to A Level, and science up to GCSE. Every family gets an account
-          with a shared topic tracker, so you can see exactly which topics your tutor has covered and which are still
-          to come.
-        </p>
-        <div class="row">
-          <a class="btn primary" href="#/subjects">Browse courses</a>
-          <a class="btn" href="#/reviews">Read reviews</a>
-        </div>
-        <div class="stats">
-          <div class="stat"><strong>${courses.length}</strong><span class="muted">courses offered</span></div>
-          <div class="stat"><strong>Maths &amp; science</strong><span class="muted">KS2 to A Level</span></div>
-          <div class="stat"><strong>${summary.average ?? "—"} / 5</strong><span class="muted">from ${summary.count} reviews</span></div>
-        </div>
-      </div>
-
-      <section class="block">
-        <h2>How it works</h2>
-        <div class="grid">
-          <div class="card"><h3>1. Choose your courses</h3><p class="muted">Create an account, tell us the student's stage, and pick the courses you are interested in.</p></div>
-          <div class="card"><h3>2. Meet your tutor</h3><p class="muted">Weekly sessions online or in person, planned around the exam board your school follows.</p></div>
-          <div class="card"><h3>3. Follow the progress</h3><p class="muted">After each session the tutor ticks off the topics covered, so nothing quietly gets missed.</p></div>
-        </div>
-      </section>
-
-      <section class="block">
-        <div class="row between"><h2>Popular courses</h2><a href="#/subjects">See all ${courses.length} →</a></div>
-        <div class="grid">${featured.map(courseCard).join("")}</div>
-      </section>
-
-      <section class="block">
-        <div class="row between"><h2>What families say</h2><a href="#/reviews">All reviews →</a></div>
-        <div class="grid">
-          ${reviews
-            .slice(0, 3)
-            .map(
-              (review) => `<div class="card">
-                ${stars(review.rating)}
-                <h3>${esc(review.title)}</h3>
-                <p class="muted">${esc(review.body)}</p>
-                <p class="small muted">${esc(review.author_name)}${review.course_title ? ` · ${esc(review.course_title)}` : ""}</p>
-              </div>`,
-            )
-            .join("")}
-        </div>
-      </section>
-    </div>`
-}
-
-const courseCard = (course) => `
-  <article class="card">
-    <div class="row"><span class="tag stage">${esc(course.stageLabel ?? course.stage)}</span><span class="tag">${esc(course.subject)}</span></div>
-    <h3 style="margin-top:10px"><a href="#/courses/${esc(course.slug)}">${esc(course.title)}</a></h3>
-    <p class="muted">${esc(course.summary)}</p>
-    <p class="small muted">${course.topic_count} topics · ${money(course.price_pence)} per session · ${esc(course.session_length)}</p>
-    ${course.rating ? `<p class="small">${stars(course.rating)} ${course.rating} (${course.review_count})</p>` : `<p class="small muted">No reviews yet</p>`}
-  </article>`
 
 async function subjects() {
   if (!state.stages.length) Object.assign(state, await api("/stages"))
@@ -398,11 +331,23 @@ function ring(percent, subject) {
   </svg>`
 }
 
-async function signIn(mode) {
-  const creating = mode === "register"
-  if (creating && !state.stages.length) Object.assign(state, await api("/stages"))
+const ROLE_COPY = {
+  student: {
+    title: "Student sign in",
+    blurb: "For students and parents following their topics.",
+    label: "I'm a student or parent",
+    detail: "Pick your courses, set your stage and follow every topic your tutor has covered.",
+  },
+  tutor: {
+    title: "Tutor sign in",
+    blurb: "For the one person tutoring here.",
+    label: "I'm the tutor",
+    detail: "See every student, tick off the topics you cover and release the hours you are free.",
+  },
+}
 
-  main.innerHTML = `
+function authShell(inner) {
+  return `
     <div class="wrap">
       <div class="auth">
         <aside class="auth-brand">
@@ -415,65 +360,90 @@ async function signIn(mode) {
             <li>Book into the slots your tutor releases</li>
           </ul>
         </aside>
-        <div class="auth-card">
-          <div class="auth-tabs" role="tablist">
-            <button role="tab" aria-selected="${!creating}" data-mode="login">Sign in</button>
-            <button role="tab" aria-selected="${creating}" data-mode="register">Create account</button>
-          </div>
-          <form id="form">
-            <div id="error"></div>
-            ${
-              creating
-                ? `<div class="field"><label for="name">Full name</label><input id="name" name="name" required autocomplete="name" /></div>`
-                : ""
-            }
-            <div class="field">
-              <label for="email">Email address${creating ? " (required)" : ""}</label>
-              <input id="email" name="email" type="email" required autocomplete="email" />
-              ${creating ? `<p class="small muted" style="margin:6px 0 0">Every account needs one — your tutor adds you to their list by email.</p>` : ""}
-            </div>
-            <div class="field">
-              <label for="password">Password</label>
-              <input id="password" name="password" type="password" required ${creating ? 'minlength="8"' : ""} autocomplete="${creating ? "new-password" : "current-password"}" />
-              ${creating ? `<p class="small muted" style="margin:6px 0 0">At least 8 characters.</p>` : ""}
-            </div>
-            ${
-              creating
-                ? `<div class="field"><label for="role">I am</label>
-                    <select id="role" name="role">
-                      <option value="student">A student or parent</option>
-                      ${state.site.tutor ? "" : `<option value="teacher">The tutor at ${esc(state.site.name)}</option>`}
-                    </select>
-                    ${state.site.tutor ? `<p class="small muted" style="margin:6px 0 0">${esc(state.site.tutor.name)} holds the tutor account for this site.</p>` : ""}</div>
-                  <div class="field" id="stage-field"><label for="stage">Student stage</label>
-                    <select id="stage" name="stage">${state.stages.map((stage) => `<option value="${stage.id}">${esc(stage.label)}</option>`).join("")}</select></div>`
-                : ""
-            }
-            <button class="btn primary block" type="submit">${creating ? "Create account" : "Sign in"}</button>
-          </form>
-          <p class="small muted auth-swap">
-            ${creating ? `Already have an account? <a href="#/signin">Sign in</a>.` : `New here? <a href="#/signup">Create an account</a>.`}
-          </p>
-        </div>
+        <div class="auth-card">${inner}</div>
       </div>
     </div>`
+}
 
-  for (const tab of document.querySelectorAll("[data-mode]"))
-    tab.onclick = () => go(tab.dataset.mode === "register" ? "/signup" : "/signin")
+function roleChooser() {
+  main.innerHTML = authShell(`
+    <h1 class="auth-title">Sign in</h1>
+    <p class="muted">Who is signing in?</p>
+    <div class="role-picker">
+      ${["student", "tutor"]
+        .map(
+          (role) => `<button class="role" data-role="${role}">
+            <span class="role-icon" aria-hidden="true">${role === "student" ? "✎" : "✓"}</span>
+            <strong>${esc(ROLE_COPY[role].label)}</strong>
+            <span class="muted">${esc(ROLE_COPY[role].detail)}</span>
+          </button>`,
+        )
+        .join("")}
+    </div>
+    <p class="small muted auth-swap">New here? Choose “student or parent” — you can create an account on the next step.</p>`)
+
+  for (const button of document.querySelectorAll("[data-role]"))
+    button.onclick = () => go(`/signin/${button.dataset.role}`)
+}
+
+async function signIn(role, mode) {
+  if (!ROLE_COPY[role]) return go("/")
+  const creating = mode === "register"
+  if (creating && !state.stages.length) Object.assign(state, await api("/stages"))
+
+  // The tutor account can only be claimed once.
+  if (creating && role === "tutor" && state.site.tutor) return go("/signin/tutor")
+
+  main.innerHTML = authShell(`
+    <p class="small"><a href="#/">← Not you?</a></p>
+    <h1 class="auth-title">${creating ? "Create your account" : ROLE_COPY[role].title}</h1>
+    <p class="muted">${creating ? "You need an email address — it is how your tutor adds you to their list." : ROLE_COPY[role].blurb}</p>
+    <form id="form">
+      <div id="error"></div>
+      ${creating ? `<div class="field"><label for="name">Full name</label><input id="name" name="name" required autocomplete="name" /></div>` : ""}
+      <div class="field">
+        <label for="email">Email address</label>
+        <input id="email" name="email" type="email" required autocomplete="email" />
+      </div>
+      <div class="field">
+        <div class="label-row">
+          <label for="password">Password</label>
+          ${creating ? "" : `<a class="small" href="#/forgot">Forgotten your password?</a>`}
+        </div>
+        <input id="password" name="password" type="password" required ${creating ? 'minlength="8"' : ""} autocomplete="${creating ? "new-password" : "current-password"}" />
+        ${creating ? `<p class="small muted" style="margin:6px 0 0">At least 8 characters.</p>` : ""}
+      </div>
+      ${
+        creating && role === "student"
+          ? `<div class="field"><label for="stage">Student stage</label>
+              <select id="stage" name="stage">${state.stages.map((stage) => `<option value="${stage.id}">${esc(stage.label)}</option>`).join("")}</select></div>`
+          : ""
+      }
+      <button class="btn primary block" type="submit">${creating ? "Create account" : "Sign in"}</button>
+    </form>
+    <p class="small muted auth-swap">
+      ${
+        creating
+          ? `Already have an account? <a href="#/signin/${role}">Sign in</a>.`
+          : role === "student"
+            ? `New here? <a href="#/signup/student">Create an account</a>.`
+            : state.site.tutor
+              ? `${esc(state.site.tutor.name)} holds the tutor account for this site.`
+              : `Setting up? <a href="#/signup/tutor">Claim the tutor account</a>.`
+      }
+    </p>`)
 
   const form = document.getElementById("form")
-  if (creating)
-    form.role.onchange = () => {
-      document.getElementById("stage-field").hidden = form.role.value === "teacher"
-    }
-
   form.onsubmit = async (event) => {
     event.preventDefault()
+    const payload = Object.fromEntries(new FormData(form))
     try {
       await api(creating ? "/auth/register" : "/auth/login", {
         method: "POST",
-        body: Object.fromEntries(new FormData(form)),
+        body: creating ? { ...payload, role: role === "tutor" ? "teacher" : "student" } : payload,
       })
+      state.site = await api("/site")
+      applySite()
       await refreshUser()
       notify(`${GREETING()}, ${state.user.name}`)
       go("/dashboard")
@@ -483,8 +453,78 @@ async function signIn(mode) {
   }
 }
 
+function forgotPassword() {
+  main.innerHTML = authShell(`
+    <p class="small"><a href="#/">← Back to sign in</a></p>
+    <h1 class="auth-title">Forgotten your password?</h1>
+    <p class="muted">Enter the email address on your account and we will send a link to set a new one.</p>
+    <form id="form">
+      <div id="error"></div>
+      <div class="field"><label for="email">Email address</label><input id="email" name="email" type="email" required autocomplete="email" /></div>
+      <button class="btn primary block" type="submit">Email me a link</button>
+    </form>
+    <div id="sent"></div>`)
+
+  const form = document.getElementById("form")
+  form.onsubmit = async (event) => {
+    event.preventDefault()
+    try {
+      const answer = await api("/auth/forgot", { method: "POST", body: { email: form.email.value } })
+      form.hidden = true
+      document.getElementById("sent").innerHTML = `
+        <div class="sent-note">
+          <p><strong>Check your inbox.</strong> ${esc(answer.message)}</p>
+          <p class="small muted">The link works once and expires in an hour.</p>
+        </div>
+        ${
+          answer.demoToken
+            ? `<div class="demo-note">
+                <p class="small"><strong>Demo site:</strong> no email is actually sent, so here is the link that would have been in it.</p>
+                <a class="btn small" href="#/reset/${esc(answer.demoToken)}">Set a new password</a>
+              </div>`
+            : ""
+        }
+        <p class="small muted auth-swap"><a href="#/">Back to sign in</a></p>`
+    } catch (error) {
+      document.getElementById("error").innerHTML = `<div class="error">${esc(error.message)}</div>`
+    }
+  }
+}
+
+function resetPassword(token) {
+  main.innerHTML = authShell(`
+    <h1 class="auth-title">Set a new password</h1>
+    <p class="muted">Choose a password you have not used here before. Signing in elsewhere ends when you save it.</p>
+    <form id="form">
+      <div id="error"></div>
+      <div class="field">
+        <label for="password">New password</label>
+        <input id="password" name="password" type="password" required minlength="8" autocomplete="new-password" />
+        <p class="small muted" style="margin:6px 0 0">At least 8 characters.</p>
+      </div>
+      <div class="field"><label for="confirm">Confirm password</label><input id="confirm" name="confirm" type="password" required autocomplete="new-password" /></div>
+      <button class="btn primary block" type="submit">Save and sign in</button>
+    </form>
+    <p class="small muted auth-swap"><a href="#/forgot">Request a new link</a></p>`)
+
+  const form = document.getElementById("form")
+  form.onsubmit = async (event) => {
+    event.preventDefault()
+    if (form.password.value !== form.confirm.value)
+      return (document.getElementById("error").innerHTML = `<div class="error">Those passwords do not match.</div>`)
+    try {
+      await api("/auth/reset", { method: "POST", body: { token, password: form.password.value } })
+      await refreshUser()
+      notify("Password updated")
+      go("/dashboard")
+    } catch (error) {
+      document.getElementById("error").innerHTML = `<div class="error">${esc(error.message)}</div>`
+    }
+  }
+}
+
 async function dashboard() {
-  if (!state.user) return go("/signin")
+  if (!state.user) return go("/")
   if (!state.stages.length) Object.assign(state, await api("/stages"))
   const data = await api("/dashboard")
   if (data.role === "student") return studentDashboard(data)
@@ -721,7 +761,7 @@ function teacherDashboard(data) {
 }
 
 async function studentArea() {
-  if (!state.user) return go("/signin")
+  if (!state.user) return go("/")
   if (state.user.role !== "student") return go("/dashboard")
   if (!state.stages.length) Object.assign(state, await api("/stages"))
 
@@ -913,13 +953,17 @@ async function render() {
   loading()
 
   try {
-    if (!parts.length) await home()
+    if (!parts.length) state.user ? await dashboard() : roleChooser()
     else if ((parts[0] === "subjects" || parts[0] === "courses") && parts[1]) await courseDetail(parts[1])
     else if (parts[0] === "subjects" || parts[0] === "courses") await subjects()
     else if (parts[0] === "availability" || parts[0] === "saturday") return go("/subjects")
     else if (parts[0] === "reviews") await reviews()
-    else if (parts[0] === "signin" || parts[0] === "login") await signIn("login")
-    else if (parts[0] === "signup" || parts[0] === "register") await signIn("register")
+    else if (parts[0] === "forgot") forgotPassword()
+    else if (parts[0] === "reset" && parts[1]) resetPassword(parts[1])
+    else if (parts[0] === "signin" && parts[1]) await signIn(parts[1], "login")
+    else if (parts[0] === "signup" && parts[1]) await signIn(parts[1], "register")
+    else if (parts[0] === "signin" || parts[0] === "login" || parts[0] === "signup" || parts[0] === "register")
+      roleChooser()
     else if (parts[0] === "dashboard") await dashboard()
     else if (parts[0] === "account") await studentArea()
     else if (parts[0] === "teaching" && parts[1]) await studentTracker(parts[1])

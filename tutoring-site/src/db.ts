@@ -100,6 +100,13 @@ db.exec(`
 
 
 
+  CREATE TABLE IF NOT EXISTS password_resets (
+    token_hash TEXT PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    expires_at TEXT NOT NULL,
+    used_at TEXT
+  );
+
   CREATE TABLE IF NOT EXISTS availability (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     teacher_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,

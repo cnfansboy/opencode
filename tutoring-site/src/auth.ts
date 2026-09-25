@@ -64,3 +64,33 @@ export function sessionCookie(token: string) {
 export function clearCookie() {
   return `${COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`
 }
+
+const RESET_MINUTES = 60
+
+export function createReset(userId: number) {
+  const token = crypto.randomUUID().replaceAll("-", "") + crypto.randomUUID().replaceAll("-", "")
+  db.query("DELETE FROM password_resets WHERE user_id = ? AND used_at IS NULL").run(userId)
+  db.query("INSERT INTO password_resets (token_hash, user_id, expires_at) VALUES (?, ?, datetime('now', ?))").run(
+    hashToken(token),
+    userId,
+    `+${RESET_MINUTES} minutes`,
+  )
+  return token
+}
+
+export function useReset(token: string) {
+  const row = db
+    .query(
+      "SELECT user_id FROM password_resets WHERE token_hash = ? AND used_at IS NULL AND expires_at > datetime('now')",
+    )
+    .get(hashToken(token)) as { user_id: number } | null
+  if (!row) return undefined
+
+  db.query("UPDATE password_resets SET used_at = datetime('now') WHERE token_hash = ?").run(hashToken(token))
+  return row.user_id
+}
+
+// Reset tokens are stored hashed, so a leaked database cannot be used to take an account over.
+function hashToken(token: string) {
+  return new Bun.CryptoHasher("sha256").update(token).digest("hex")
+}

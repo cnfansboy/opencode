@@ -1,7 +1,19 @@
 import path from "node:path"
 import { db, DEFAULT_SITE_NAME, PROGRESS_STATUS, siteName, STAGES, theTutor, WEEKDAYS, type ProgressStatus } from "./db"
 import { seed } from "./seed"
-import { clearCookie, currentUser, hash, login, logout, readCookie, sessionCookie, verify, type User } from "./auth"
+import {
+  clearCookie,
+  createReset,
+  currentUser,
+  hash,
+  login,
+  logout,
+  readCookie,
+  sessionCookie,
+  useReset,
+  verify,
+  type User,
+} from "./auth"
 
 seed()
 
@@ -423,6 +435,45 @@ export const server = Bun.serve({
         if (!row || !(await verify(password, row.password))) return fail(401, "Email or password is incorrect.")
 
         return json({ user: publicUser(row) }, { headers: { "Set-Cookie": sessionCookie(login(row.id)) } })
+      },
+    },
+
+    "/api/auth/forgot": {
+      POST: async (request) => {
+        const input = await body(request)
+        const email = str(input?.email).toLowerCase()
+        if (!email) return fail(400, "Enter the email address on your account.")
+
+        const user = db.query("SELECT id FROM users WHERE email = ?").get(email) as { id: number } | null
+        // Always answer the same way, so this cannot be used to discover who has an account.
+        const answer: Record<string, unknown> = {
+          ok: true,
+          message: `If ${email} has an account, a link to set a new password is on its way.`,
+        }
+
+        // With no mailer configured the link has nowhere to go, so the demo shows it instead.
+        if (user && !process.env.TUTORING_MAIL) answer.demoToken = createReset(user.id)
+        else if (user) createReset(user.id)
+
+        return json(answer)
+      },
+    },
+
+    "/api/auth/reset": {
+      POST: async (request) => {
+        const input = await body(request)
+        const token = str(input?.token)
+        const password = typeof input?.password === "string" ? input.password : ""
+        if (password.length < 8) return fail(400, "Passwords must be at least 8 characters.")
+
+        const userId = useReset(token)
+        if (!userId) return fail(400, "That link has expired or has already been used. Please request another.")
+
+        db.query("UPDATE users SET password = ? WHERE id = ?").run(await hash(password), userId)
+        // Anyone already signed in with the old password is signed out.
+        db.query("DELETE FROM sessions WHERE user_id = ?").run(userId)
+
+        return json({ ok: true }, { headers: { "Set-Cookie": sessionCookie(login(userId)) } })
       },
     },
 

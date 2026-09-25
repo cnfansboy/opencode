@@ -974,3 +974,75 @@ table.students th {
   transform: rotate(180deg);
   display: inline-block;
 }
+
+/* ---- auth pages -------------------------------------------------------- */
+.auth-title {
+  font-size: clamp(1.5rem, 3vw, 1.9rem);
+  margin: 4px 0 6px;
+}
+.auth-card > p.muted {
+  margin-bottom: 20px;
+}
+.label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+.label-row label {
+  margin-bottom: 0;
+}
+.role-picker {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.role {
+  appearance: none;
+  text-align: left;
+  display: grid;
+  gap: 4px;
+  padding: 16px 18px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-2);
+  cursor: pointer;
+  font: inherit;
+  color: var(--text);
+}
+.role:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.role strong {
+  font-size: 1.02rem;
+}
+.role .muted {
+  font-size: 0.87rem;
+}
+.role-icon {
+  color: var(--accent);
+  font-weight: 700;
+}
+.sent-note {
+  background: var(--good-soft);
+  border: 1px solid var(--good);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+}
+.sent-note p {
+  margin: 0 0 4px;
+}
+.demo-note {
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  background: var(--surface-2);
+}
+.demo-note p {
+  margin: 0 0 10px;
+}
+.who {
+  font-weight: 600;
+}

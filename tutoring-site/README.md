@@ -52,7 +52,11 @@ Demo accounts created by `bun run demo`, all with the password `demopass123`:
 **What is taught** — maths at KS2, KS3, GCSE and A Level, and science at KS3 and GCSE. The catalogue,
 and the seeded reviews follow that rule, and a test enforces it.
 
-**Public pages** — a home page, the Subjects tab (levels and released time slots), a page per course
+**Landing** — the site opens on the sign-in gate: choose whether you are a student or the tutor, and
+you get that role's sign-in page. Students can create an account from there; the tutor's page says
+who holds the account once it is claimed.
+
+**Public pages** — the Subjects tab (levels and released time slots), a page per course
 listing every topic it covers, and a reviews page with the overall average rating.
 
 **Sign in** — a sign-in section with tabs for signing in and creating an account, hashed with bcrypt
@@ -63,6 +67,12 @@ role.
 **Account rules** — every account needs a valid, unique email address; sign-up is refused without
 one. Only one tutor account can exist: once it is claimed, `POST /api/auth/register` refuses a second
 tutor with a 409 and the sign-up form stops offering the role, naming whoever holds it.
+
+**Forgotten password** — asking for a link always answers the same way, so the endpoint cannot be
+used to discover who has an account. A real request stores a single-use token, hashed with SHA-256
+and valid for an hour; setting a new password consumes the token and ends every session opened with
+the old one. With no mailer configured the response also returns the token so the demo can show the
+link on screen — set `TUTORING_MAIL` once you wire up real email and it stops being returned.
 
 **Student dashboard** (`#/dashboard`) — a greeting, tiles for courses, topics covered, topics marked
 secure and their tutor's next published slot, a progress ring per course coloured by subject, and a feed of the
@@ -97,6 +107,7 @@ overall. Reviews show on the reviews page and on the relevant course page.
 | Table              | Holds                                                               |
 | ------------------ | ------------------------------------------------------------------- |
 | `settings`         | Site-wide settings, currently the website name                      |
+| `password_resets`  | Hashed single-use reset tokens with an expiry                       |
 | `users`            | Name, email, bcrypt password, role (`student` / `teacher`), stage   |
 | `saturday_classes` | Timetabled class: time, tutor, room, capacity and price             |
 | `sessions`         | Session cookie tokens and their expiry                              |
@@ -124,6 +135,8 @@ overall. Reviews show on the reviews page and on the relevant course page.
 | `POST`   | `/api/reviews`              | Signed in                                    |
 | `POST`   | `/api/auth/register`        | Anyone                                       |
 | `POST`   | `/api/auth/login`           | Anyone                                       |
+| `POST`   | `/api/auth/forgot`          | Anyone; always answers the same              |
+| `POST`   | `/api/auth/reset`           | Anyone holding a valid token                 |
 | `POST`   | `/api/auth/logout`          | Signed in                                    |
 | `GET`    | `/api/me`                   | Anyone (`user` is `null` when signed out)    |
 | `PATCH`  | `/api/me`                   | Signed in                                    |
@@ -143,7 +156,8 @@ for a student on their own list.
 
 This is a working demo, not a production deployment. At minimum you would want: HTTPS with the
 `Secure` cookie flag, rate limiting on the auth and review endpoints, email verification and a
-password reset flow, moderation of reviews before they publish, a parent/child account distinction
+a real mailer behind the reset flow (with `TUTORING_MAIL` set so the token stops coming back in the
+response), moderation of reviews before they publish, a parent/child account distinction
 if parents rather than students hold the login, and a backup routine for the SQLite file.
 
 ## Layout

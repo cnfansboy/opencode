@@ -412,6 +412,77 @@ test("only one tutor account can exist, and every account needs an email", async
   }
 })
 
+test("a forgotten password can be reset once, and the old one stops working", async () => {
+  // The answer is the same whether or not the address has an account.
+  const unknown = await call({}, "/api/auth/forgot", {
+    method: "POST",
+    body: JSON.stringify({ email: "nobody@test.local" }),
+  })
+  expect(unknown.status).toBe(200)
+  expect(unknown.body.message).toContain("nobody@test.local")
+  expect(unknown.body.demoToken).toBeUndefined()
+
+  expect((await call({}, "/api/auth/forgot", { method: "POST", body: JSON.stringify({ email: "" }) })).status).toBe(400)
+
+  const asked = await call({}, "/api/auth/forgot", {
+    method: "POST",
+    body: JSON.stringify({ email: "pupil@test.local" }),
+  })
+  expect(asked.status).toBe(200)
+  expect(asked.body.demoToken).toBeTruthy()
+
+  expect(
+    (
+      await call({}, "/api/auth/reset", {
+        method: "POST",
+        body: JSON.stringify({ token: asked.body.demoToken, password: "short" }),
+      })
+    ).status,
+  ).toBe(400)
+  expect(
+    (
+      await call({}, "/api/auth/reset", {
+        method: "POST",
+        body: JSON.stringify({ token: "not-a-token", password: "brandnewpass" }),
+      })
+    ).status,
+  ).toBe(400)
+
+  const reset = await call({}, "/api/auth/reset", {
+    method: "POST",
+    body: JSON.stringify({ token: asked.body.demoToken, password: "brandnewpass" }),
+  })
+  expect(reset.status).toBe(200)
+
+  // The link is single use.
+  expect(
+    (
+      await call({}, "/api/auth/reset", {
+        method: "POST",
+        body: JSON.stringify({ token: asked.body.demoToken, password: "another-one" }),
+      })
+    ).status,
+  ).toBe(400)
+
+  // The old password is dead; the new one works.
+  expect(
+    (
+      await call({}, "/api/auth/login", {
+        method: "POST",
+        body: JSON.stringify({ email: "pupil@test.local", password: "password123" }),
+      })
+    ).status,
+  ).toBe(401)
+  const back = await call({}, "/api/auth/login", {
+    method: "POST",
+    body: JSON.stringify({ email: "pupil@test.local", password: "brandnewpass" }),
+  })
+  expect(back.status).toBe(200)
+
+  // Sessions opened with the old password were ended by the reset.
+  expect((await call(student, "/api/me")).body.user).toBeNull()
+})
+
 test("signing out invalidates the session", async () => {
   const session = { ...student }
   await call(session, "/api/auth/logout", { method: "POST" })
