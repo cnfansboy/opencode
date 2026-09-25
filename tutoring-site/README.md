@@ -76,17 +76,28 @@ and valid for an hour; setting a new password consumes the token and ends every 
 the old one. With no mailer configured the response also returns the token so the demo can show the
 link on screen — set `TUTORING_MAIL` once you wire up real email and it stops being returned.
 
-**Student dashboard** (`#/dashboard`) — a greeting, tiles for courses, topics covered, topics marked
-secure and their tutor's next published slot, a progress ring per course coloured by subject, and a feed of the
-topics the tutor most recently ticked off with their session notes. `#/account` behind it is where
-the student sets their stage, adds or removes courses, and reads the full topic list for each one.
+**Student dashboard** (`#/dashboard`) — three sections and nothing else: the courses they are
+currently taking, with a progress ring each; their next sessions, each with a Zoom joining link; and
+their progress, topic by topic with the tutor's notes. Students cannot add courses or sessions —
+both belong to the tutor.
 
 **Tutor dashboard** (`#/dashboard`) — tiles for students, topics ticked in the last seven days,
-students under 25% covered and the hours released each week; each student with a progress ring and
-a link into their tracker, where every topic is marked _not covered yet_, _covered_ or _secure_ with
-an optional session note. The student sees the same tracker in their own account immediately. The
-dashboard also holds the form to add a student by their registered email, the time-slot release form,
-and the site settings.
+students under 25% covered and the hours released each week; the diary of upcoming sessions; each
+student with a progress ring and a link into their tracker, where the tutor puts them on courses and
+marks every topic _not covered yet_, _covered_ or _secure_ with an optional note. The dashboard also
+holds the forms to add a student, schedule a session, release time slots, and rename the site.
+
+**Sessions** — the tutor schedules a session against a student, a course they are on, a date and
+time, a length and a `https://zoom.us` joining link. The student sees it under "Next sessions"; the
+link turns into a **Join the Zoom meeting** button 15 minutes before the start and stays live until
+the session ends, then the session drops off the list.
+
+**Sign in with Zoom** — with `ZOOM_CLIENT_ID`, `ZOOM_CLIENT_SECRET` and `ZOOM_REDIRECT_URI` set, the
+sign-in page offers "Continue with Zoom". It runs the OAuth authorization-code flow against
+`zoom.us/oauth/authorize` and `zoom.us/oauth/token`, reads the account from `api.zoom.us/v2/users/me`,
+and signs that person in — creating a student account on first use and reusing it afterwards. The
+`state` parameter is stored server-side, single use and expires after 15 minutes. Without those
+variables the button is replaced by a line saying Zoom sign-in is not switched on.
 
 **Website name** — a tutor renames the site from their dashboard. The name is stored in `settings`
 and drives the header, the brand initial, the footer and the browser tab.
@@ -115,7 +126,7 @@ overall. Reviews show on the reviews page and on the relevant course page.
 | `sessions`         | Session cookie tokens and their expiry                              |
 | `courses`          | Title, subject, stage, description, price, session length           |
 | `topics`           | The ordered topic list belonging to a course                        |
-| `interests`        | Courses a student has said they are interested in                   |
+| `enrolments`       | Which courses the tutor has put a student on                        |
 | `teacher_students` | Which tutor works with which student                                |
 | `progress`         | One row per student and topic: status, note, who ticked it and when |
 | `reviews`          | Rating, title and body, optionally attached to a course             |
@@ -127,6 +138,10 @@ overall. Reviews show on the reviews page and on the relevant course page.
 | `GET`    | `/api/site`                 | Anyone                                       |
 | `PUT`    | `/api/site`                 | Tutor                                        |
 | `GET`    | `/api/dashboard`            | Signed in, shaped by role                    |
+| `POST`   | `/api/teacher/enrolments`   | Tutor, own students                          |
+| `DELETE` | `/api/teacher/enrolments`   | Tutor, own students                          |
+| `POST`   | `/api/teacher/lessons`      | Tutor, own students                          |
+| `DELETE` | `/api/teacher/lessons`      | Tutor, own sessions                          |
 | `GET`    | `/api/stages`               | Anyone                                       |
 | `GET`    | `/api/courses`              | Anyone (`?stage=&subject=&q=`)               |
 | `GET`    | `/api/courses/:slug`        | Anyone                                       |
@@ -137,13 +152,13 @@ overall. Reviews show on the reviews page and on the relevant course page.
 | `POST`   | `/api/reviews`              | Signed in                                    |
 | `POST`   | `/api/auth/register`        | Anyone                                       |
 | `POST`   | `/api/auth/login`           | Anyone                                       |
+| `GET`    | `/api/auth/zoom/start`      | Anyone, when Zoom is configured              |
+| `GET`    | `/api/auth/zoom/callback`   | Zoom's redirect back                         |
 | `POST`   | `/api/auth/forgot`          | Anyone; always answers the same              |
 | `POST`   | `/api/auth/reset`           | Anyone holding a valid token                 |
 | `POST`   | `/api/auth/logout`          | Signed in                                    |
 | `GET`    | `/api/me`                   | Anyone (`user` is `null` when signed out)    |
 | `PATCH`  | `/api/me`                   | Signed in                                    |
-| `POST`   | `/api/me/interests`         | Student                                      |
-| `DELETE` | `/api/me/interests`         | Student                                      |
 | `GET`    | `/api/me/progress`          | Student                                      |
 | `GET`    | `/api/teacher/students`     | Tutor                                        |
 | `POST`   | `/api/teacher/students`     | Tutor                                        |

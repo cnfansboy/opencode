@@ -1046,3 +1046,98 @@ table.students th {
 .who {
   font-weight: 600;
 }
+
+/* ---- sessions ---------------------------------------------------------- */
+.lessons {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.lesson {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+.lesson-now {
+  border-color: var(--good);
+  background: var(--good-soft);
+}
+.lesson-when {
+  display: grid;
+  gap: 1px;
+  min-width: 190px;
+}
+.lesson-when strong {
+  font-variant-numeric: tabular-nums;
+}
+.lesson-what {
+  display: grid;
+  gap: 1px;
+  flex: 1 1 200px;
+}
+.lesson-join {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-left: auto;
+}
+.zoom-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: #2d8cff;
+  border-color: #2d8cff;
+  color: #fff;
+}
+.zoom-btn:hover {
+  opacity: 0.92;
+  color: #fff;
+  border-color: #2d8cff;
+}
+.zoom-mark {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  background: #fff;
+  color: #2d8cff;
+  font-weight: 800;
+  font-size: 0.78rem;
+}
+.or-line {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  margin: 18px 0 14px;
+}
+.or-line::before,
+.or-line::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+.chip-x {
+  appearance: none;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  padding: 0 0 0 4px;
+  opacity: 0.7;
+}
+.chip-x:hover {
+  opacity: 1;
+}

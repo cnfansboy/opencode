@@ -1,6 +1,7 @@
 import path from "node:path"
 import { db, DEFAULT_SITE_NAME, PROGRESS_STATUS, siteName, STAGES, theTutor, WEEKDAYS, type ProgressStatus } from "./db"
 import { seed } from "./seed"
+import { authorizeUrl, exchange, takeState, zoomConfigured } from "./zoom"
 import {
   clearCookie,
   createReset,
@@ -51,8 +52,8 @@ function courseProgress(studentId: number) {
   const courses = db
     .query(
       `SELECT courses.id, courses.slug, courses.title, courses.subject, courses.stage, courses.summary
-       FROM interests JOIN courses ON courses.id = interests.course_id
-       WHERE interests.user_id = ?
+       FROM enrolments JOIN courses ON courses.id = enrolments.course_id
+       WHERE enrolments.user_id = ?
        ORDER BY CASE courses.stage WHEN 'ks2' THEN 1 WHEN 'ks3' THEN 2 WHEN 'gcse' THEN 3 ELSE 4 END, courses.title`,
     )
     .all(studentId) as { id: number; slug: string; title: string; subject: string; stage: string; summary: string }[]
@@ -166,7 +167,7 @@ export const server = Bun.serve({
     },
 
     "/api/site": {
-      GET: () => json({ name: siteName(), defaultName: DEFAULT_SITE_NAME, tutor: theTutor() }),
+      GET: () => json({ name: siteName(), defaultName: DEFAULT_SITE_NAME, tutor: theTutor(), zoom: zoomConfigured() }),
       PUT: async (request) => {
         const auth = require_(request, "teacher")
         if (auth.error) return auth.error
@@ -193,11 +194,25 @@ export const server = Bun.serve({
         )
         .all(auth.user.id) as { weekday: number; starts: string; ends: string }[]
 
+      const lessonsFor = (column: string, id: number) =>
+        db
+          .query(
+            `SELECT lessons.id, lessons.starts_at, lessons.minutes, lessons.join_url, lessons.note,
+                    courses.title as course, courses.subject, students.name as student
+             FROM lessons
+             JOIN courses ON courses.id = lessons.course_id
+             JOIN users students ON students.id = lessons.student_id
+             WHERE lessons.${column} = ? AND datetime(lessons.starts_at) >= datetime('now', '-2 hours')
+             ORDER BY lessons.starts_at LIMIT 10`,
+          )
+          .all(id)
+
       if (auth.user.role === "student") {
         const courses = courseProgress(auth.user.id)
         return json({
           role: "student",
           user: publicUser(auth.user),
+          lessons: lessonsFor("student_id", auth.user.id),
           courses,
           tutorHours: db
             .query(
@@ -260,6 +275,7 @@ export const server = Bun.serve({
         role: "teacher",
         user: publicUser(auth.user),
         students: detailed,
+        lessons: lessonsFor("teacher_id", auth.user.id),
         slots,
         weeklyHours:
           Math.round(
@@ -438,6 +454,48 @@ export const server = Bun.serve({
       },
     },
 
+    "/api/auth/zoom/start": () => {
+      if (!zoomConfigured()) return fail(503, "Signing in with Zoom is not set up on this site yet.")
+      return Response.redirect(authorizeUrl(), 302)
+    },
+
+    "/api/auth/zoom/callback": async (request) => {
+      if (!zoomConfigured()) return fail(503, "Signing in with Zoom is not set up on this site yet.")
+      const params = new URL(request.url).searchParams
+      const back = (reason: string) => Response.redirect(`/#/signin/student?zoom=${reason}`, 302)
+
+      if (params.get("error")) return back("declined")
+      if (!takeState(str(params.get("state")))) return back("expired")
+
+      const account = await exchange(str(params.get("code")))
+      if (!account) return back("failed")
+
+      const existing = db.query("SELECT id, role FROM users WHERE email = ? OR zoom_user_id = ?").get(
+        account.email,
+        account.id,
+      ) as { id: number; role: string } | null
+
+      // A first sign-in with Zoom creates the student account it belongs to.
+      const userId =
+        existing?.id ??
+        (
+          db
+            .query(
+              "INSERT INTO users (name, email, password, role, stage, zoom_user_id, zoom_email) VALUES (?, ?, ?, 'student', NULL, ?, ?) RETURNING id",
+            )
+            .get(account.name, account.email, `zoom:${crypto.randomUUID()}`, account.id, account.email) as {
+            id: number
+          }
+        ).id
+
+      db.query("UPDATE users SET zoom_user_id = ?, zoom_email = ? WHERE id = ?").run(account.id, account.email, userId)
+
+      return new Response(null, {
+        status: 302,
+        headers: { Location: "/#/dashboard", "Set-Cookie": sessionCookie(login(userId)) },
+      })
+    },
+
     "/api/auth/forgot": {
       POST: async (request) => {
         const input = await body(request)
@@ -491,9 +549,9 @@ export const server = Bun.serve({
         if (!user) return json({ user: null })
         return json({
           user: publicUser(user),
-          interests: db
+          courses: db
             .query(
-              "SELECT courses.id, courses.slug, courses.title, courses.stage, courses.subject FROM interests JOIN courses ON courses.id = interests.course_id WHERE interests.user_id = ? ORDER BY courses.title",
+              "SELECT courses.id, courses.slug, courses.title, courses.stage, courses.subject FROM enrolments JOIN courses ON courses.id = enrolments.course_id WHERE enrolments.user_id = ? ORDER BY courses.title",
             )
             .all(user.id),
           teachers:
@@ -527,27 +585,71 @@ export const server = Bun.serve({
       },
     },
 
-    "/api/me/interests": {
+    "/api/teacher/enrolments": {
       POST: async (request) => {
-        const auth = require_(request, "student")
+        const auth = require_(request, "teacher")
         if (auth.error) return auth.error
         const input = await body(request)
-        const course = db.query("SELECT id FROM courses WHERE slug = ?").get(str(input?.course)) as {
-          id: number
-        } | null
+        const studentId = Number(input?.studentId)
+        if (!teaches(auth.user.id, studentId)) return fail(403, "That student is not on your list.")
+        const course = db.query("SELECT id FROM courses WHERE slug = ?").get(str(input?.course)) as { id: number } | null
         if (!course) return fail(404, "Course not found.")
-        db.query("INSERT OR IGNORE INTO interests (user_id, course_id) VALUES (?, ?)").run(auth.user.id, course.id)
-        return json({ ok: true })
+        db.query("INSERT OR IGNORE INTO enrolments (user_id, course_id) VALUES (?, ?)").run(studentId, course.id)
+        return json({ ok: true }, { status: 201 })
       },
       DELETE: async (request) => {
-        const auth = require_(request, "student")
+        const auth = require_(request, "teacher")
         if (auth.error) return auth.error
         const input = await body(request)
-        const course = db.query("SELECT id FROM courses WHERE slug = ?").get(str(input?.course)) as {
-          id: number
-        } | null
+        const studentId = Number(input?.studentId)
+        if (!teaches(auth.user.id, studentId)) return fail(403, "That student is not on your list.")
+        const course = db.query("SELECT id FROM courses WHERE slug = ?").get(str(input?.course)) as { id: number } | null
         if (!course) return fail(404, "Course not found.")
-        db.query("DELETE FROM interests WHERE user_id = ? AND course_id = ?").run(auth.user.id, course.id)
+        db.query("DELETE FROM enrolments WHERE user_id = ? AND course_id = ?").run(studentId, course.id)
+        return json({ ok: true })
+      },
+    },
+
+    "/api/teacher/lessons": {
+      POST: async (request) => {
+        const auth = require_(request, "teacher")
+        if (auth.error) return auth.error
+        const input = await body(request)
+        if (!input) return fail(400, "Expected a JSON body.")
+
+        const studentId = Number(input.studentId)
+        if (!teaches(auth.user.id, studentId)) return fail(403, "That student is not on your list.")
+
+        const course = db.query("SELECT id FROM courses WHERE slug = ?").get(str(input.course)) as { id: number } | null
+        if (!course) return fail(404, "Course not found.")
+
+        const startsAt = str(input.startsAt)
+        if (Number.isNaN(Date.parse(startsAt))) return fail(400, "Give the session a date and time.")
+
+        const minutes = Number(input.minutes) || 60
+        if (minutes < 15 || minutes > 240) return fail(400, "A session runs between 15 and 240 minutes.")
+
+        const joinUrl = str(input.joinUrl)
+        if (joinUrl && !/^https:\/\/[\w.-]*zoom\.us\/\S*$/i.test(joinUrl))
+          return fail(400, "The joining link should be a https://zoom.us link.")
+
+        const id = db
+          .query(
+            "INSERT INTO lessons (student_id, teacher_id, course_id, starts_at, minutes, join_url, note) VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING id",
+          )
+          .get(studentId, auth.user.id, course.id, startsAt, minutes, joinUrl, str(input.note).slice(0, 120)) as {
+          id: number
+        }
+        return json({ id: id.id }, { status: 201 })
+      },
+      DELETE: async (request) => {
+        const auth = require_(request, "teacher")
+        if (auth.error) return auth.error
+        const input = await body(request)
+        const removed = db
+          .query("DELETE FROM lessons WHERE id = ? AND teacher_id = ? RETURNING id")
+          .get(Number(input?.id), auth.user.id)
+        if (!removed) return fail(404, "That session is not one of yours.")
         return json({ ok: true })
       },
     },

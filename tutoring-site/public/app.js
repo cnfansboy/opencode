@@ -4,7 +4,7 @@ const toast = document.getElementById("toast")
 
 const state = {
   user: null,
-  interests: [],
+  courses: [],
   stages: [],
   subjects: [],
   site: { name: "Bridgewell Tutoring", tutor: null },
@@ -56,7 +56,7 @@ function applySite() {
 async function refreshUser() {
   const data = await api("/me")
   state.user = data.user
-  state.interests = data.interests ?? []
+  state.courses = data.courses ?? []
   renderAccountNav()
 }
 
@@ -66,13 +66,12 @@ function renderAccountNav() {
     return
   }
   account.innerHTML = `
-    ${state.user.role === "student" ? '<a href="#/account">My courses</a>' : ""}
     <span class="who small muted">${esc(state.user.name)}</span>
     <button class="btn ghost small" id="logout">Sign out</button>`
   document.getElementById("logout").onclick = async () => {
     await api("/auth/logout", { method: "POST" })
     state.user = null
-    state.interests = []
+    state.courses = []
     renderAccountNav()
     notify("Signed out")
     go("/")
@@ -146,7 +145,7 @@ async function subjects() {
                         <p class="small muted">${esc(course.session_length)} · ${esc(course.exam_boards)}</p>
                         <div class="rowline">
                           <a class="btn small" href="#/subjects/${esc(course.slug)}">Topics and reviews</a>
-                          ${state.user?.role === "student" ? `<button class="btn small ${state.interests.some((i) => i.slug === course.slug) ? "" : "primary"}" data-add="${esc(course.slug)}">${state.interests.some((i) => i.slug === course.slug) ? "✓ On my plan" : "Add to my plan"}</button>` : ""}
+                          ${state.courses.some((c) => c.slug === course.slug) ? `<span class="chip good">You're taking this</span>` : ""}
                         </div>
                       </div>
                     </details>`,
@@ -177,21 +176,11 @@ async function subjects() {
         )
         .join("")}
     </div>`
-
-  for (const button of document.querySelectorAll("[data-add]"))
-    button.onclick = async () => {
-      const slug = button.dataset.add
-      const held = state.interests.some((i) => i.slug === slug)
-      await api("/me/interests", { method: held ? "DELETE" : "POST", body: { course: slug } })
-      await refreshUser()
-      notify(held ? "Removed from your plan" : "Added to your plan")
-      subjects()
-    }
 }
 
 async function courseDetail(slug) {
   const { course } = await api(`/courses/${encodeURIComponent(slug)}`)
-  const saved = state.interests.some((interest) => interest.slug === course.slug)
+  const taking = state.courses.some((item) => item.slug === course.slug)
 
   main.innerHTML = `
     <div class="wrap">
@@ -202,11 +191,9 @@ async function courseDetail(slug) {
       <p><strong>${money(course.price_pence)}</strong> per session · ${esc(course.session_length)} · ${course.topics.length} topics</p>
       <div class="row" style="margin-bottom:32px">
         ${
-          state.user?.role === "student"
-            ? `<button class="btn ${saved ? "" : "primary"}" id="interest">${saved ? "✓ In my courses — remove" : "Add to my courses"}</button>`
-            : state.user
-              ? `<span class="muted small">Sign in with a student account to add courses.</span>`
-              : `<a class="btn primary" href="#/register">Create an account to track this course</a>`
+          taking
+            ? `<span class="chip good">You're taking this course</span>`
+            : `<span class="muted small">Your tutor adds courses to your plan — ask them about this one.</span>`
         }
       </div>
 
@@ -232,21 +219,6 @@ async function courseDetail(slug) {
         <a class="btn" href="#/reviews">Leave a review</a>
       </section>
     </div>`
-
-  const button = document.getElementById("interest")
-  if (button)
-    button.onclick = async () => {
-      button.disabled = true
-      try {
-        await api("/me/interests", { method: saved ? "DELETE" : "POST", body: { course: course.slug } })
-        await refreshUser()
-        notify(saved ? "Removed from your courses" : "Added to your courses")
-        courseDetail(slug)
-      } catch (error) {
-        notify(error.message)
-        button.disabled = false
-      }
-    }
 }
 
 async function reviews() {
@@ -421,6 +393,17 @@ async function signIn(role, mode) {
       }
       <button class="btn primary block" type="submit">${creating ? "Create account" : "Sign in"}</button>
     </form>
+    ${
+      state.site.zoom
+        ? `<div class="or-line"><span>or</span></div>
+           <a class="btn block zoom-btn" href="/api/auth/zoom/start">
+             <span class="zoom-mark" aria-hidden="true">Z</span> Continue with Zoom
+           </a>
+           <p class="small muted" style="margin-top:8px">
+             Sign in with Zoom and your session links open straight into your own Zoom account.
+           </p>`
+        : `<p class="small muted" style="margin-top:14px">Signing in with Zoom is not switched on for this site yet.</p>`
+    }
     <p class="small muted auth-swap">
       ${
         creating
@@ -531,8 +514,48 @@ async function dashboard() {
   return teacherDashboard(data)
 }
 
+const LESSON_FORMAT = { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }
+
+function lessonWhen(iso) {
+  const when = new Date(iso)
+  return isNaN(when) ? "" : when.toLocaleString("en-GB", LESSON_FORMAT)
+}
+
+// The joining link goes live a quarter of an hour before the session and stays up until it ends.
+function joinState(lesson) {
+  const starts = new Date(lesson.starts_at).getTime()
+  const now = Date.now()
+  if (isNaN(starts)) return "later"
+  if (now >= starts + lesson.minutes * 60000) return "over"
+  if (now >= starts - 15 * 60000) return "open"
+  return "later"
+}
+
+function lessonRow(lesson, forTutor) {
+  const state = joinState(lesson)
+  return `<li class="lesson ${state === "open" ? "lesson-now" : ""}">
+    <div class="lesson-when">
+      <strong>${esc(lessonWhen(lesson.starts_at))}</strong>
+      <span class="small muted">${lesson.minutes} minutes</span>
+    </div>
+    <div class="lesson-what">
+      <strong>${esc(lesson.course)}</strong>
+      <span class="small muted">${forTutor ? esc(lesson.student) : esc(lesson.subject)}${lesson.note ? ` · ${esc(lesson.note)}` : ""}</span>
+    </div>
+    <div class="lesson-join">
+      ${
+        lesson.join_url
+          ? state === "open"
+            ? `<a class="btn primary small" href="${esc(lesson.join_url)}" target="_blank" rel="noopener">Join the Zoom meeting</a>`
+            : `<a class="btn small" href="${esc(lesson.join_url)}" target="_blank" rel="noopener">Zoom link</a>`
+          : `<span class="small muted">No link yet</span>`
+      }
+      ${forTutor ? `<button class="btn small ghost" data-drop-lesson="${lesson.id}">Cancel</button>` : ""}
+    </div>
+  </li>`
+}
+
 function studentDashboard(data) {
-  const next = (data.tutorHours || []).map((slot) => ({ ...slot, day: WEEKDAY_NAMES[slot.weekday] }))[0]
   const percent = data.totals.total ? Math.round((data.totals.covered / data.totals.total) * 100) : 0
 
   main.innerHTML = `
@@ -543,18 +566,10 @@ function studentDashboard(data) {
           <h1>${esc(data.user.name)}</h1>
           <p class="muted">${esc(data.user.stageLabel ?? "No stage set")}${data.teachers.length ? ` · Tutor: ${esc(data.teachers[0].name)}` : ""}</p>
         </div>
-        <a class="btn" href="#/subjects">Browse subjects</a>
       </header>
 
-      <div class="tiles">
-        <div class="tile"><span class="tile-label">Courses</span><strong>${data.courses.length}</strong><span class="muted small">on your plan</span></div>
-        <div class="tile"><span class="tile-label">Topics covered</span><strong>${data.totals.covered}<span class="of">/${data.totals.total}</span></strong><span class="muted small">${percent}% of your courses</span></div>
-        <div class="tile"><span class="tile-label">Marked secure</span><strong>${data.totals.secure}</strong><span class="muted small">ready for the exam</span></div>
-        <div class="tile"><span class="tile-label">Next tutor slot</span><strong class="tile-small">${next ? esc(next.day) : "—"}</strong><span class="muted small">${next ? `${esc(next.starts)}–${esc(next.ends)} · ${esc(next.subject === "Any" ? "Any subject" : next.subject)}` : "No hours released"}</span></div>
-      </div>
-
       <section class="block">
-        <div class="row between"><h2>Your courses</h2><a href="#/account">Manage courses →</a></div>
+        <h2>Courses you're taking</h2>
         ${
           data.courses.length
             ? `<div class="grid">${data.courses
@@ -568,47 +583,55 @@ function studentDashboard(data) {
                       </div>
                     </div>
                     <p class="small muted">${course.counts.covered} of ${course.counts.total} topics covered · ${course.counts.secure} secure</p>
-                    <a class="btn small" href="#/account">See topics</a>
                   </article>`,
                 )
                 .join("")}</div>`
-            : `<div class="empty">No courses yet. <a href="#/subjects">Pick one from the catalogue</a> and your tutor can start ticking topics off.</div>`
+            : `<div class="empty">Your tutor hasn't put you on a course yet. They add courses from their own dashboard.</div>`
         }
       </section>
 
       <section class="block">
-        <h2>Recent sessions</h2>
+        <h2>Next sessions</h2>
         ${
-          data.recent.length
-            ? `<ul class="feed">${data.recent
-                .map(
-                  (item) => `<li>
-                    <span class="feed-tick ${item.status}">${item.status === "secure" ? "✔✔" : "✔"}</span>
-                    <div>
-                      <strong>${esc(item.topic)}</strong>
-                      <span class="small muted">${esc(item.course)} · ${esc(item.teacher ?? "Tutor")} · ${date(item.updated_at)}</span>
-                      ${item.note ? `<p class="small note-line">“${esc(item.note)}”</p>` : ""}
-                    </div>
-                  </li>`,
-                )
-                .join("")}</ul>`
-            : `<div class="empty">Nothing ticked off yet — your tutor updates this after each session.</div>`
+          data.lessons.length
+            ? `<ul class="lessons">${data.lessons.map((lesson) => lessonRow(lesson, false)).join("")}</ul>
+               <p class="small muted">The joining link opens 15 minutes before the session starts.</p>`
+            : `<div class="empty">No sessions booked in. Your tutor schedules these.</div>`
         }
       </section>
 
-      ${
-        (data.tutorHours || []).length
-          ? `<section class="block">
-              <div class="row between"><h2>When your tutor is free</h2><a href="#/subjects">By subject →</a></div>
-              <ul class="feed">${data.tutorHours
+      <section class="block">
+        <div class="row between">
+          <h2>Progress</h2>
+          <span class="muted small">${data.totals.covered} of ${data.totals.total} topics covered · ${percent}%</span>
+        </div>
+        ${
+          data.courses.length
+            ? data.courses
                 .map(
-                  (slot) => `<li><span class="feed-time">${esc(WEEKDAY_NAMES[slot.weekday])}</span>
-                    <div><strong>${esc(slot.starts)}–${esc(slot.ends)}</strong><span class="small muted">${esc(slot.subject === "Any" ? "Any subject" : slot.subject)}${slot.note ? ` · ${esc(slot.note)}` : ""}</span></div></li>`,
+                  (course, index) => `<details class="course" ${index === 0 ? "open" : ""}>
+                    <summary>
+                      <span>${esc(course.title)} <span class="tag stage">${esc(course.stageLabel)}</span></span>
+                      <span class="muted small">${course.counts.covered}/${course.counts.total} · ${course.counts.percent}%</span>
+                    </summary>
+                    <div class="bar"><span style="width:${course.counts.percent}%"></span></div>
+                    <ul class="topics">
+                      ${course.topics
+                        .map(
+                          (topic) => `<li class="topic ${topic.status}">
+                            <span class="title">${topic.status === "not_started" ? "○" : "✓"} ${esc(topic.title)}</span>
+                            <span class="tag">${STATUS_LABEL[topic.status]}</span>
+                            ${topic.updated_at ? `<span class="meta">${esc(topic.teacher_name ?? "Tutor")} · ${date(topic.updated_at)}${topic.note ? ` · ${esc(topic.note)}` : ""}</span>` : ""}
+                          </li>`,
+                        )
+                        .join("")}
+                    </ul>
+                  </details>`,
                 )
-                .join("")}</ul>
-            </section>`
-          : ""
-      }
+                .join("")
+            : `<div class="empty">Progress appears here once you are on a course.</div>`
+        }
+      </section>
     </div>`
 }
 
@@ -630,6 +653,15 @@ function teacherDashboard(data) {
         <div class="tile"><span class="tile-label">Needs attention</span><strong>${data.needsAttention}</strong><span class="muted small">under 25% covered</span></div>
         <div class="tile"><span class="tile-label">Hours published</span><strong>${data.weeklyHours}</strong><span class="muted small">across ${data.slots.length} slot${data.slots.length === 1 ? "" : "s"} released</span></div>
       </div>
+
+      <section class="block">
+        <div class="row between"><h2>Next sessions</h2><span class="muted small">${data.lessons.length} booked in</span></div>
+        ${
+          data.lessons.length
+            ? `<ul class="lessons">${data.lessons.map((lesson) => lessonRow(lesson, true)).join("")}</ul>`
+            : `<div class="empty">Nothing in the diary. Schedule a session below.</div>`
+        }
+      </section>
 
       <section class="block">
         <h2>Your students</h2>
@@ -661,6 +693,25 @@ function teacherDashboard(data) {
             <button class="btn primary" type="submit">Add student</button>
           </form>
           <div id="add-error"></div>
+        </div>
+        <div class="card">
+          <h3>Schedule a session</h3>
+          <p class="small muted">The student sees it under “Next sessions”, and the Zoom link goes live 15 minutes before.</p>
+          <form id="lesson-form">
+            <div class="field-row">
+              <div><label for="lesson-student">Student</label>
+                <select id="lesson-student">${data.students.map((student) => `<option value="${student.id}">${esc(student.name)}</option>`).join("")}</select></div>
+              <div><label for="lesson-course">Course</label><select id="lesson-course"></select></div>
+            </div>
+            <div class="field-row">
+              <div><label for="lesson-when">Date and time</label><input id="lesson-when" type="datetime-local" required /></div>
+              <div><label for="lesson-minutes">Minutes</label><input id="lesson-minutes" type="number" min="15" max="240" step="15" value="60" required /></div>
+            </div>
+            <div class="field"><label for="lesson-url">Zoom joining link</label><input id="lesson-url" type="url" placeholder="https://zoom.us/j/123456789" /></div>
+            <div class="field"><label for="lesson-note">Note (optional)</label><input id="lesson-note" maxlength="120" placeholder="Circle theorems" /></div>
+            <button class="btn primary" type="submit">Schedule session</button>
+          </form>
+          <div id="lesson-error"></div>
         </div>
         <div class="card">
           <h3>Release time slots</h3>
@@ -721,6 +772,52 @@ function teacherDashboard(data) {
     }
   }
 
+  const lessonForm = document.getElementById("lesson-form")
+  const lessonStudent = document.getElementById("lesson-student")
+  const lessonCourse = document.getElementById("lesson-course")
+
+  const fillCourses = () => {
+    const student = data.students.find((item) => String(item.id) === lessonStudent.value)
+    lessonCourse.innerHTML = (student?.courses ?? [])
+      .map((course) => `<option value="${esc(course.slug)}">${esc(course.title)}</option>`)
+      .join("")
+    if (!lessonCourse.innerHTML) lessonCourse.innerHTML = `<option value="">Put them on a course first</option>`
+  }
+
+  if (lessonStudent) {
+    fillCourses()
+    lessonStudent.onchange = fillCourses
+  }
+
+  if (lessonForm)
+    lessonForm.onsubmit = async (event) => {
+      event.preventDefault()
+      try {
+        await api("/teacher/lessons", {
+          method: "POST",
+          body: {
+            studentId: Number(lessonStudent.value),
+            course: lessonCourse.value,
+            startsAt: new Date(document.getElementById("lesson-when").value).toISOString(),
+            minutes: Number(document.getElementById("lesson-minutes").value),
+            joinUrl: document.getElementById("lesson-url").value.trim(),
+            note: document.getElementById("lesson-note").value,
+          },
+        })
+        notify("Session scheduled")
+        dashboard()
+      } catch (error) {
+        document.getElementById("lesson-error").innerHTML = `<div class="error">${esc(error.message)}</div>`
+      }
+    }
+
+  for (const button of document.querySelectorAll("[data-drop-lesson]"))
+    button.onclick = async () => {
+      await api("/teacher/lessons", { method: "DELETE", body: { id: Number(button.dataset.dropLesson) } })
+      notify("Session cancelled")
+      dashboard()
+    }
+
   document.getElementById("slot-form").onsubmit = async (event) => {
     event.preventDefault()
     try {
@@ -760,44 +857,38 @@ function teacherDashboard(data) {
   }
 }
 
-async function studentArea() {
+async function studentTracker(id) {
   if (!state.user) return go("/")
-  if (state.user.role !== "student") return go("/dashboard")
-  if (!state.stages.length) Object.assign(state, await api("/stages"))
-
-  const [{ courses: tracked }, { courses: all }, me] = await Promise.all([
-    api("/me/progress"),
+  const [{ student, courses: tracked }, { courses: all }] = await Promise.all([
+    api(`/teacher/students/${id}`),
     api("/courses"),
-    api("/me"),
   ])
 
   main.innerHTML = `
     <div class="wrap">
-      <header class="dash-head">
-        <div>
-          <p class="eyebrow">My courses</p>
-          <h1>${esc(state.user.name)}</h1>
-          <p class="muted">Choose your stage and the courses you want tutoring in. Your tutor ticks the topics off as you cover them.</p>
-        </div>
-        <a class="btn" href="#/dashboard">← Dashboard</a>
-      </header>
+      <p class="small"><a href="#/teaching">← My students</a></p>
+      <h1>${esc(student.name)}</h1>
+      <p class="lead muted">${esc(student.stageLabel ?? "No stage set")} · ${esc(student.email)}</p>
 
-      <section class="block grid two">
-        <div class="card">
-          <h3>Stage</h3>
-          <p class="small muted">So tutors pitch sessions at the right level.</p>
-          <div class="field">
-            <label for="stage">Current stage</label>
-            <select id="stage">${state.stages.map((stage) => `<option value="${stage.id}" ${state.user.stage === stage.id ? "selected" : ""}>${esc(stage.label)}</option>`).join("")}</select>
-          </div>
-          ${me.teachers.length ? `<p class="small muted">Your tutor: ${esc(me.teachers[0].name)}</p>` : `<p class="small muted">No tutor linked yet — your tutor adds you using ${esc(state.user.email)}.</p>`}
+      <section class="block card">
+        <h2>Courses</h2>
+        <p class="small muted">You decide what this student is taking. Removing a course keeps the ticks in case you put it back.</p>
+        <div class="rowline" style="margin-bottom:12px">
+          ${
+            tracked.length
+              ? tracked
+                  .map(
+                    (course) => `<span class="chip good">${esc(course.title)}
+                      <button class="chip-x" data-unenrol="${esc(course.slug)}" aria-label="Remove ${esc(course.title)}">×</button></span>`,
+                  )
+                  .join("")
+              : `<span class="muted small">Not on any course yet.</span>`
+          }
         </div>
-        <div class="card">
-          <h3>Add a course</h3>
-          <p class="small muted">Everything we teach: maths to A Level, science to GCSE.</p>
-          <div class="field">
-            <label for="add-course">Course</label>
-            <select id="add-course">
+        <div class="field-row">
+          <div>
+            <label for="enrol">Put them on a course</label>
+            <select id="enrol">
               <option value="">Choose a course…</option>
               ${all
                 .filter((course) => !tracked.some((item) => item.slug === course.slug))
@@ -808,74 +899,8 @@ async function studentArea() {
                 .join("")}
             </select>
           </div>
-          <p class="small muted"><a href="#/subjects">See the slots released</a> for each subject.</p>
         </div>
       </section>
-
-      <section class="block">
-        <h2>Topic progress</h2>
-        ${
-          tracked.length
-            ? tracked
-                .map(
-                  (course, index) => `<details class="course" ${index === 0 ? "open" : ""}>
-                    <summary>
-                      <span>${esc(course.title)} <span class="tag stage">${esc(course.stageLabel)}</span></span>
-                      <span class="muted small">${course.counts.covered}/${course.counts.total} · ${course.counts.percent}%</span>
-                    </summary>
-                    <div class="bar"><span style="width:${course.counts.percent}%"></span></div>
-                    <p class="small muted">${course.counts.secure} topics marked secure.
-                      <button class="btn small ghost" data-remove="${esc(course.slug)}">Remove course</button></p>
-                    <ul class="topics">
-                      ${course.topics
-                        .map(
-                          (topic) => `<li class="topic ${topic.status}">
-                            <span class="title">${topic.status === "not_started" ? "○" : "✓"} ${esc(topic.title)}</span>
-                            <span class="tag">${STATUS_LABEL[topic.status]}</span>
-                            ${topic.updated_at ? `<span class="meta">${esc(topic.teacher_name ?? "Tutor")} · ${date(topic.updated_at)}${topic.note ? ` · ${esc(topic.note)}` : ""}</span>` : ""}
-                          </li>`,
-                        )
-                        .join("")}
-                    </ul>
-                  </details>`,
-                )
-                .join("")
-            : `<div class="empty">No courses yet. Add one above, or <a href="#/subjects">browse the catalogue</a>.</div>`
-        }
-      </section>
-    </div>`
-
-  document.getElementById("stage").onchange = async (event) => {
-    await api("/me", { method: "PATCH", body: { stage: event.target.value } })
-    await refreshUser()
-    notify("Stage updated")
-    studentArea()
-  }
-  document.getElementById("add-course").onchange = async (event) => {
-    if (!event.target.value) return
-    await api("/me/interests", { method: "POST", body: { course: event.target.value } })
-    await refreshUser()
-    notify("Course added")
-    studentArea()
-  }
-  for (const button of document.querySelectorAll("[data-remove]"))
-    button.onclick = async () => {
-      await api("/me/interests", { method: "DELETE", body: { course: button.dataset.remove } })
-      await refreshUser()
-      notify("Course removed")
-      studentArea()
-    }
-}
-
-async function studentTracker(id) {
-  if (!state.user) return go("/login")
-  const { student, courses: tracked } = await api(`/teacher/students/${id}`)
-
-  main.innerHTML = `
-    <div class="wrap">
-      <p class="small"><a href="#/teaching">← My students</a></p>
-      <h1>${esc(student.name)}</h1>
-      <p class="lead muted">${esc(student.stageLabel ?? "No stage set")} · ${esc(student.email)}</p>
       ${
         tracked.length
           ? tracked
@@ -913,6 +938,25 @@ async function studentTracker(id) {
           : `<div class="empty">${esc(student.name)} hasn't added any courses yet. Ask them to choose their courses in their account.</div>`
       }
     </div>`
+
+  const enrol = document.getElementById("enrol")
+  if (enrol)
+    enrol.onchange = async () => {
+      if (!enrol.value) return
+      await api("/teacher/enrolments", { method: "POST", body: { studentId: Number(id), course: enrol.value } })
+      notify("Course added")
+      studentTracker(id)
+    }
+
+  for (const button of document.querySelectorAll("[data-unenrol]"))
+    button.onclick = async () => {
+      await api("/teacher/enrolments", {
+        method: "DELETE",
+        body: { studentId: Number(id), course: button.dataset.unenrol },
+      })
+      notify("Course removed")
+      studentTracker(id)
+    }
 
   const save = async (topicId, status, note) => {
     await api("/teacher/progress", {
@@ -965,7 +1009,6 @@ async function render() {
     else if (parts[0] === "signin" || parts[0] === "login" || parts[0] === "signup" || parts[0] === "register")
       roleChooser()
     else if (parts[0] === "dashboard") await dashboard()
-    else if (parts[0] === "account") await studentArea()
     else if (parts[0] === "teaching" && parts[1]) await studentTracker(parts[1])
     else if (parts[0] === "teaching") await dashboard()
     else main.innerHTML = `<div class="wrap"><h1>Page not found</h1><p><a href="#/">Back to the home page</a></p></div>`

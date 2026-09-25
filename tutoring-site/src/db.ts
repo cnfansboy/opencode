@@ -29,6 +29,8 @@ db.exec(`
     password TEXT NOT NULL,
     role TEXT NOT NULL CHECK (role IN ('student', 'teacher')),
     stage TEXT,
+    zoom_user_id TEXT,
+    zoom_email TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
 
@@ -58,7 +60,7 @@ db.exec(`
     position INTEGER NOT NULL
   );
 
-  CREATE TABLE IF NOT EXISTS interests (
+  CREATE TABLE IF NOT EXISTS enrolments (
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     course_id INTEGER NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
@@ -99,6 +101,26 @@ db.exec(`
   );
 
 
+
+  -- Scheduled one-to-one sessions. Named lessons so as not to collide with sign-in sessions.
+  CREATE TABLE IF NOT EXISTS lessons (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    student_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    teacher_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    course_id INTEGER NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+    starts_at TEXT NOT NULL,
+    minutes INTEGER NOT NULL DEFAULT 60,
+    join_url TEXT NOT NULL DEFAULT '',
+    note TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE INDEX IF NOT EXISTS lessons_student ON lessons(student_id, starts_at);
+
+  CREATE TABLE IF NOT EXISTS oauth_states (
+    state TEXT PRIMARY KEY,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
 
   CREATE TABLE IF NOT EXISTS password_resets (
     token_hash TEXT PRIMARY KEY,

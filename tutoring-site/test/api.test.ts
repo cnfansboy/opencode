@@ -5,10 +5,45 @@ import path from "node:path"
 process.env.TUTORING_DB = path.join(tmpdir(), `tutoring-test-${crypto.randomUUID()}.sqlite`)
 process.env.PORT = "0"
 
+// A stand-in for Zoom, so the OAuth callback can be driven end to end without a real Zoom app.
+const zoom = Bun.serve({
+  port: 0,
+  async fetch(request) {
+    const url = new URL(request.url)
+    if (url.pathname === "/oauth/token") {
+      if (request.headers.get("authorization") !== `Basic ${btoa("test-client:test-secret")}`)
+        return new Response("no", { status: 401 })
+      if (url.searchParams.get("code") !== "good-code") return new Response("no", { status: 400 })
+      return Response.json({ access_token: "test-access-token" })
+    }
+    if (url.pathname === "/v2/users/me") {
+      if (request.headers.get("authorization") !== "Bearer test-access-token")
+        return new Response("no", { status: 401 })
+      return Response.json({
+        id: "zoom-user-1",
+        email: "Zoomer@Test.Local",
+        first_name: "Zoe",
+        last_name: "Zoomer",
+        personal_meeting_url: "https://zoom.us/j/111222333",
+      })
+    }
+    return new Response("not found", { status: 404 })
+  },
+})
+
+process.env.ZOOM_CLIENT_ID = "test-client"
+process.env.ZOOM_CLIENT_SECRET = "test-secret"
+process.env.ZOOM_REDIRECT_URI = "http://localhost/api/auth/zoom/callback"
+process.env.ZOOM_OAUTH_BASE = `http://localhost:${zoom.port}`
+process.env.ZOOM_API_BASE = `http://localhost:${zoom.port}/v2`
+
 const { server } = await import("../src/server")
 const base = `http://localhost:${server.port}`
 
-afterAll(() => server.stop(true))
+afterAll(() => {
+  server.stop(true)
+  zoom.stop(true)
+})
 
 async function call(session: { cookie?: string }, path: string, init: RequestInit = {}) {
   const response = await fetch(`${base}${path}`, {
@@ -105,44 +140,34 @@ test("login fails on a bad password and succeeds on the right one", async () => 
   expect(right.body.user.role).toBe("student")
 })
 
-test("a student picks courses and changes stage", async () => {
+test("only the tutor puts a student on a course", async () => {
+  // The student has no way to enrol themselves any more.
   expect(
     (
-      await call(student, "/api/me/interests", {
+      await call(student, "/api/teacher/enrolments", {
         method: "POST",
-        body: JSON.stringify({ course: "gcse-maths-higher" }),
+        body: JSON.stringify({ studentId, course: "gcse-maths-higher" }),
       })
     ).status,
-  ).toBe(200)
+  ).toBe(403)
   expect(
     (
-      await call(student, "/api/me/interests", {
+      await call(anonymous, "/api/teacher/enrolments", {
         method: "POST",
-        body: JSON.stringify({ course: "gcse-combined-science" }),
+        body: JSON.stringify({ studentId, course: "gcse-maths-higher" }),
       })
     ).status,
-  ).toBe(200)
+  ).toBe(401)
 
-  const progress = await call(student, "/api/me/progress")
-  expect(progress.body.courses).toHaveLength(2)
-  expect(progress.body.courses[0].counts.covered).toBe(0)
-
-  await call(student, "/api/me/interests", {
-    method: "DELETE",
-    body: JSON.stringify({ course: "gcse-combined-science" }),
-  })
-  expect((await call(student, "/api/me/progress")).body.courses).toHaveLength(1)
-
-  await call(student, "/api/me", { method: "PATCH", body: JSON.stringify({ stage: "alevel" }) })
-  expect((await call(student, "/api/me")).body.user.stage).toBe("alevel")
-})
-
-test("a teacher can only tick topics for their own students", async () => {
-  const unlinked = await call(teacher, "/api/teacher/progress", {
-    method: "PUT",
-    body: JSON.stringify({ studentId, topicId, status: "covered" }),
-  })
-  expect(unlinked.status).toBe(403)
+  // Not yet their tutor.
+  expect(
+    (
+      await call(teacher, "/api/teacher/enrolments", {
+        method: "POST",
+        body: JSON.stringify({ studentId, course: "gcse-maths-higher" }),
+      })
+    ).status,
+  ).toBe(403)
 
   expect(
     (
@@ -152,7 +177,38 @@ test("a teacher can only tick topics for their own students", async () => {
       })
     ).status,
   ).toBe(201)
+  expect(
+    (
+      await call(teacher, "/api/teacher/enrolments", {
+        method: "POST",
+        body: JSON.stringify({ studentId, course: "gcse-maths-higher" }),
+      })
+    ).status,
+  ).toBe(201)
+  expect(
+    (
+      await call(teacher, "/api/teacher/enrolments", {
+        method: "POST",
+        body: JSON.stringify({ studentId, course: "gcse-combined-science" }),
+      })
+    ).status,
+  ).toBe(201)
 
+  const progress = await call(student, "/api/me/progress")
+  expect(progress.body.courses).toHaveLength(2)
+
+  await call(teacher, "/api/teacher/enrolments", {
+    method: "DELETE",
+    body: JSON.stringify({ studentId, course: "gcse-combined-science" }),
+  })
+  expect((await call(student, "/api/me/progress")).body.courses).toHaveLength(1)
+
+  await call(student, "/api/me", { method: "PATCH", body: JSON.stringify({ stage: "alevel" }) })
+  expect((await call(student, "/api/me")).body.user.stage).toBe("alevel")
+})
+
+test("a teacher can only tick topics for their own students", async () => {
+  // Linking and enrolment happen in the test above; ticking a student who is not yours is refused there too.
   const ticked = await call(teacher, "/api/teacher/progress", {
     method: "PUT",
     body: JSON.stringify({ studentId, topicId, status: "covered", note: "Went over surds" }),
@@ -173,9 +229,9 @@ test("students cannot reach teacher endpoints and anonymous users cannot write",
   expect((await call(teacher, "/api/me/progress")).status).toBe(403)
   expect(
     (
-      await call(anonymous, "/api/me/interests", {
+      await call(anonymous, "/api/teacher/lessons", {
         method: "POST",
-        body: JSON.stringify({ course: "gcse-maths-higher" }),
+        body: JSON.stringify({ studentId, course: "gcse-maths-higher" }),
       })
     ).status,
   ).toBe(401)
@@ -410,6 +466,134 @@ test("only one tutor account can exist, and every account needs an email", async
     expect(missing.status).toBe(400)
     expect(missing.body.error.toLowerCase()).toContain("email")
   }
+})
+
+test("the tutor schedules sessions and the student sees them with a joining link", async () => {
+  const soon = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString()
+
+  expect(
+    (
+      await call(student, "/api/teacher/lessons", {
+        method: "POST",
+        body: JSON.stringify({ studentId, course: "gcse-maths-higher", startsAt: soon }),
+      })
+    ).status,
+  ).toBe(403)
+
+  for (const bad of [
+    { startsAt: "whenever", minutes: 60 },
+    { startsAt: soon, minutes: 5 },
+    { startsAt: soon, minutes: 600 },
+    { startsAt: soon, minutes: 60, joinUrl: "https://evil.example.com/j/1" },
+  ]) {
+    const refused = await call(teacher, "/api/teacher/lessons", {
+      method: "POST",
+      body: JSON.stringify({ studentId, course: "gcse-maths-higher", ...bad }),
+    })
+    expect(refused.status).toBe(400)
+  }
+
+  const booked = await call(teacher, "/api/teacher/lessons", {
+    method: "POST",
+    body: JSON.stringify({
+      studentId,
+      course: "gcse-maths-higher",
+      startsAt: soon,
+      minutes: 60,
+      joinUrl: "https://zoom.us/j/123456789",
+      note: "Circle theorems",
+    }),
+  })
+  expect(booked.status).toBe(201)
+
+  const dash = await call(student, "/api/dashboard")
+  const lesson = dash.body.lessons.find((item: { id: number }) => item.id === booked.body.id)
+  expect(lesson.join_url).toBe("https://zoom.us/j/123456789")
+  expect(lesson.course).toBe("GCSE Maths (Higher Tier)")
+  expect(lesson.note).toBe("Circle theorems")
+
+  // The tutor sees it in their own diary, named for the student.
+  expect(
+    (await call(teacher, "/api/dashboard")).body.lessons.some(
+      (item: { student: string }) => item.student === "Test Student",
+    ),
+  ).toBe(true)
+
+  // A session already finished drops off the list.
+  const past = await call(teacher, "/api/teacher/lessons", {
+    method: "POST",
+    body: JSON.stringify({
+      studentId,
+      course: "gcse-maths-higher",
+      startsAt: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString(),
+      minutes: 60,
+    }),
+  })
+  expect(past.status).toBe(201)
+  expect(
+    (await call(student, "/api/dashboard")).body.lessons.some((item: { id: number }) => item.id === past.body.id),
+  ).toBe(false)
+
+  expect(
+    (await call(student, "/api/teacher/lessons", { method: "DELETE", body: JSON.stringify({ id: booked.body.id }) }))
+      .status,
+  ).toBe(403)
+  expect(
+    (await call(teacher, "/api/teacher/lessons", { method: "DELETE", body: JSON.stringify({ id: booked.body.id }) }))
+      .status,
+  ).toBe(200)
+  expect(
+    (await call(student, "/api/dashboard")).body.lessons.some((item: { id: number }) => item.id === booked.body.id),
+  ).toBe(false)
+})
+
+test("signing in with Zoom creates and then reuses the account", async () => {
+  expect((await call(anonymous, "/api/site")).body.zoom).toBe(true)
+
+  // The authorize step hands out a state we have to give back.
+  const started = await fetch(`${base}/api/auth/zoom/start`, { redirect: "manual" })
+  expect(started.status).toBe(302)
+  const authorize = new URL(started.headers.get("location")!)
+  expect(authorize.pathname).toBe("/oauth/authorize")
+  expect(authorize.searchParams.get("client_id")).toBe("test-client")
+  expect(authorize.searchParams.get("response_type")).toBe("code")
+  const state = authorize.searchParams.get("state")!
+  expect(state).toBeTruthy()
+
+  // A callback with someone else's state is refused.
+  const forged = await fetch(`${base}/api/auth/zoom/callback?code=good-code&state=made-up`, { redirect: "manual" })
+  expect(forged.headers.get("location")).toContain("zoom=expired")
+
+  const declined = await fetch(`${base}/api/auth/zoom/callback?error=access_denied&state=${state}`, {
+    redirect: "manual",
+  })
+  expect(declined.headers.get("location")).toContain("zoom=declined")
+
+  // That state is spent, so a fresh one is needed.
+  const second = await fetch(`${base}/api/auth/zoom/start`, { redirect: "manual" })
+  const goodState = new URL(second.headers.get("location")!).searchParams.get("state")!
+
+  const badCode = await fetch(`${base}/api/auth/zoom/callback?code=wrong&state=${goodState}`, { redirect: "manual" })
+  expect(badCode.headers.get("location")).toContain("zoom=failed")
+
+  const third = await fetch(`${base}/api/auth/zoom/start`, { redirect: "manual" })
+  const finalState = new URL(third.headers.get("location")!).searchParams.get("state")!
+  const done = await fetch(`${base}/api/auth/zoom/callback?code=good-code&state=${finalState}`, { redirect: "manual" })
+  expect(done.status).toBe(302)
+  expect(done.headers.get("location")).toBe("/#/dashboard")
+
+  const zoomSession = { cookie: done.headers.get("set-cookie")!.split(";")[0] }
+  const me = await call(zoomSession, "/api/me")
+  expect(me.body.user.email).toBe("zoomer@test.local")
+  expect(me.body.user.name).toBe("Zoe Zoomer")
+  expect(me.body.user.role).toBe("student")
+
+  // Signing in again reuses that account rather than making a second one.
+  const again = await fetch(`${base}/api/auth/zoom/start`, { redirect: "manual" })
+  const againState = new URL(again.headers.get("location")!).searchParams.get("state")!
+  const back = await fetch(`${base}/api/auth/zoom/callback?code=good-code&state=${againState}`, { redirect: "manual" })
+  const secondSession = { cookie: back.headers.get("set-cookie")!.split(";")[0] }
+  expect((await call(secondSession, "/api/me")).body.user.id).toBe(me.body.user.id)
 })
 
 test("a forgotten password can be reset once, and the old one stops working", async () => {

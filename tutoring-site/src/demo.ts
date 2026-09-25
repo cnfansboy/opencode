@@ -35,7 +35,7 @@ for (const [email, slugs] of [
   ["tom@example.com", ["ks2-maths-foundations"]],
 ] as const)
   for (const slug of slugs)
-    db.query("INSERT OR IGNORE INTO interests (user_id, course_id) VALUES (?, ?)").run(id(email), courseId(slug))
+    db.query("INSERT OR IGNORE INTO enrolments (user_id, course_id) VALUES (?, ?)").run(id(email), courseId(slug))
 
 // Amira has worked through the first few Higher tier topics with her tutor.
 const topics = db
@@ -71,6 +71,24 @@ for (const [weekday, starts, ends, subject, note] of [
     db.query(
       "INSERT INTO availability (teacher_id, weekday, starts, ends, subject, note) VALUES (?, ?, ?, ?, ?, ?)",
     ).run(teacher, weekday, starts, ends, subject, note)
+
+const soon = (days: number, hour: number) => {
+  const when = new Date()
+  when.setDate(when.getDate() + days)
+  when.setHours(hour, 0, 0, 0)
+  return when.toISOString()
+}
+
+for (const [email, slug, startsAt, minutes, note] of [
+  ["amira@example.com", "gcse-maths-higher", soon(1, 16), 60, "Circle theorems"],
+  ["amira@example.com", "gcse-combined-science", soon(3, 17), 60, "Required practical write-up"],
+  ["amira@example.com", "gcse-maths-higher", soon(8, 16), 60, ""],
+  ["tom@example.com", "ks2-maths-foundations", soon(2, 16), 45, "Short division"],
+] as const)
+  if (!db.query("SELECT 1 as ok FROM lessons WHERE student_id = ? AND starts_at = ?").get(id(email), startsAt))
+    db.query(
+      "INSERT INTO lessons (student_id, teacher_id, course_id, starts_at, minutes, join_url, note) VALUES (?, ?, ?, ?, ?, ?, ?)",
+    ).run(id(email), teacher, courseId(slug), startsAt, minutes, "https://zoom.us/j/9876543210", note)
 
 console.log(`Demo accounts ready (password: ${PASSWORD})`)
 for (const account of accounts) console.log(`  ${account.role.padEnd(7)} ${account.email}`)
