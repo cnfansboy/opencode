@@ -1027,92 +1027,101 @@
     gap: 9px;
   }
 
-  .week {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(168px, 1fr));
-    gap: 10px;
-    margin-bottom: 26px;
-  }
-  .day {
-    background: var(--card);
-    border: 1px solid var(--rule);
-    border-radius: 8px;
-    padding: 13px;
-    display: grid;
-    gap: 7px;
-    align-content: start;
-  }
-  .day h3 {
-    font-family: var(--body);
-    font-size: 0.74rem;
-    text-transform: uppercase;
-    letter-spacing: 0.07em;
-    color: var(--muted);
-  }
-  .day-empty {
-    background: transparent;
-    border-style: dashed;
-  }
-  .week-slot {
-    background: var(--sunk);
-    border-radius: 6px;
-    padding: 9px 10px;
-    display: grid;
-    gap: 2px;
-  }
-  .week-slot.slot-mine {
-    background: var(--covered-wash);
-    border: 1px solid var(--covered);
-  }
   .slot-time {
     font-family: var(--mono);
     font-weight: 500;
     white-space: nowrap;
-  }
-  .slot-who {
-    font-size: 0.84rem;
-    color: var(--muted);
   }
   .slot-note {
     font-size: 0.78rem;
     color: var(--muted);
     font-style: italic;
   }
-  .week-slot .btn {
-    margin-top: 5px;
-    justify-self: start;
+
+  .subject-block {
+    position: relative;
   }
-  .week-strip {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
-    gap: 7px;
-    margin-top: 12px;
+  .subject-block > summary {
+    cursor: pointer;
+    list-style: none;
   }
-  .strip-day {
-    background: var(--card);
-    border: 1px solid var(--rule);
-    border-radius: 6px;
-    padding: 9px;
-    display: grid;
-    gap: 2px;
-    text-align: center;
+  .subject-block > summary::-webkit-details-marker {
+    display: none;
   }
-  .strip-day.strip-empty {
-    border-style: dashed;
-    background: transparent;
-    color: var(--muted);
+  .subject-block > summary::after {
+    content: "▾";
+    color: var(--accent);
+    font-size: 0.85rem;
+    position: absolute;
+    right: 18px;
+    top: 20px;
+    transition: transform 0.2s ease;
   }
-  .strip-name {
-    font-size: 0.7rem;
-    font-weight: 700;
+  .subject-block[open] > summary::after {
+    transform: rotate(180deg);
+    display: inline-block;
+  }
+  .level-chips {
+    padding-right: 20px;
+  }
+  .subject-body {
+    margin-top: 14px;
+    border-top: 1px solid var(--rule);
+    padding-top: 13px;
+  }
+  .section-label {
+    font-family: var(--body);
+    font-size: 0.72rem;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.07em;
     color: var(--muted);
+    margin-bottom: 9px;
   }
-  .strip-time {
+  .subject-body .levels + .section-label {
+    margin-top: 20px;
+  }
+  .chip.slots-count {
+    background: var(--covered-wash);
+    color: var(--covered);
+  }
+  .slot-list {
+    list-style: none;
+    margin: 0 0 8px;
+    padding: 0;
+    display: grid;
+    gap: 5px;
+  }
+  .slot-row {
+    display: flex;
+    gap: 11px;
+    align-items: center;
+    flex-wrap: wrap;
+    background: var(--sunk);
+    border-radius: 6px;
+    padding: 9px 11px;
+    font-size: 0.9rem;
+  }
+  .slot-day {
+    font-weight: 600;
+    min-width: 80px;
+  }
+  .slot-time {
     font-family: var(--mono);
-    font-size: 0.78rem;
+    font-weight: 500;
     white-space: nowrap;
+    min-width: 104px;
+  }
+  .slot-detail {
+    color: var(--muted);
+    font-size: 0.85rem;
+    flex: 1 1 auto;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .slot-row .btn {
+    margin-left: auto;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -1153,7 +1162,6 @@
   <div class="shell">
     <div class="tabs" role="tablist" aria-label="Sections">
       <button class="tab" role="tab" id="tab-subjects" aria-controls="panel-subjects" aria-selected="true" data-tab="subjects">Subjects</button>
-      <button class="tab" role="tab" id="tab-availability" aria-controls="panel-availability" aria-selected="false" data-tab="availability">Availability</button>
       <button class="tab" role="tab" id="tab-reviews" aria-controls="panel-reviews" aria-selected="false" data-tab="reviews">Reviews</button>
       <button class="tab" role="tab" id="tab-dashboard" aria-controls="panel-dashboard" aria-selected="false" data-tab="dashboard">Dashboard</button>
     </div>
@@ -1162,7 +1170,6 @@
 
 <main class="shell">
   <section id="panel-subjects" role="tabpanel" aria-labelledby="tab-subjects"></section>
-  <section id="panel-availability" role="tabpanel" aria-labelledby="tab-availability" hidden></section>
   <section id="panel-reviews" role="tabpanel" aria-labelledby="tab-reviews" hidden></section>
   <section id="panel-dashboard" role="tabpanel" aria-labelledby="tab-dashboard" hidden></section>
 </main>
@@ -1310,6 +1317,9 @@
     if (!time.test(slot.starts) || !time.test(slot.ends)) return flash("Times must look like 16:00.")
     if (slot.ends <= slot.starts) return flash("The finish time must be after the start time.")
 
+    const subjects = ["Any"].concat([...new Set(CATALOGUE.courses.map((c) => c.subject))])
+    if (!subjects.includes(slot.subject)) return flash("Choose a subject these hours are for.")
+
     const mine = mySlots()
     const clash = mine.find((item) => item.weekday === slot.weekday && item.starts < slot.ends && item.ends > slot.starts)
     if (clash) return flash(`That overlaps the ${clash.starts}–${clash.ends} you already published.`)
@@ -1401,6 +1411,16 @@
       .flatMap(([id, doc]) => (doc.slots || []).map((slot, index) => ({ ...slot, owner: id, key: id + ":" + index })))
       .sort((a, b) => a.weekday - b.weekday || a.starts.localeCompare(b.starts))
 
+  // One person tutors here: name whoever has released hours.
+  const tutorName = () => {
+    const owner = [...state.slots.entries()].find(([, doc]) => (doc.slots || []).length)
+    return (owner && nameFor(owner[0], owner[1])) || "your tutor"
+  }
+
+  function slotRows(subject) {
+    return slotList().filter((slot) => slot.subject === subject || slot.subject === "Any")
+  }
+
   function renderSubjects() {
     const mine = myCourses()
     const groups = [...new Set(CATALOGUE.courses.map((c) => c.subject))]
@@ -1410,131 +1430,79 @@
         courses: CATALOGUE.courses
           .filter((c) => c.subject === subject)
           .sort((a, b) => STAGE_RANK[a.stage] - STAGE_RANK[b.stage]),
+        slots: slotRows(subject),
       }))
-    const slots = slotList()
 
     return `
       <div class="panel-head">
         <h1>Subjects</h1>
-        <p>
-          Every subject we tutor and the levels we take it to. Open a level to see the topics it covers — these are
-          the topics your tutor ticks off as you go.
-        </p>
+        <p>Open a subject to see the levels it runs to and the time slots ${esc(tutorName())} has released for it.</p>
       </div>
 
       ${groups
         .map(
-          (group) => `<section class="subject-block ${subjectClass(group.subject)}">
-            <div class="subject-head">
-              <h2>${esc(group.subject)}</h2>
-              <div class="rowline">
-                ${group.courses.map((course) => `<span class="chip level">${esc(levelShort(course.stage))}</span>`).join("")}
-              </div>
-            </div>
-            <p class="muted" style="font-size:0.9rem">
-              Taught from ${esc(levelShort(group.courses[0].stage))} to ${esc(levelShort(group.courses[group.courses.length - 1].stage))}.
-            </p>
-            <div class="levels">
-              ${group.courses
-                .map((course) => {
-                  const held = mine.includes(course.slug)
-                  return `<details class="level-card">
-                    <summary>
-                      <span class="level-name"><strong>${esc(levelShort(course.stage))}</strong>
-                        <span class="muted">${esc(course.title)}</span></span>
-                      <span class="meta">${course.topics.length} topics · ${money(course.price)}</span>
-                    </summary>
-                    <div class="level-body">
-                      <p style="font-size:0.92rem">${esc(course.description)}</p>
-                      <p class="meta">${esc(course.length)} · ${esc(course.boards)}</p>
-                      <ul class="topic-grid">${course.topics.map((t) => `<li>${esc(t)}</li>`).join("")}</ul>
-                      ${
-                        state.account && state.account.role === "student"
-                          ? `<div><button class="btn ${held ? "" : "primary"}" data-course-toggle="${esc(course.slug)}">
-                              ${held ? "Remove from my plan" : "Add to my plan"}
-                            </button></div>`
-                          : `<p class="meta">Sign in as a student on the Dashboard tab to add this level to your plan.</p>`
-                      }
-                    </div>
-                  </details>`
-                })
-                .join("")}
-            </div>
-          </section>`,
-        )
-        .join("")}
-
-      <section>
-        <h2>When our tutors are free</h2>
-        <p class="muted" style="font-size:0.92rem">Sessions are booked into the hours each tutor publishes.</p>
-        ${
-          slots.length
-            ? `<div class="week-strip">${WEEKDAYS.map((day) => {
-                const items = slots.filter((slot) => slot.weekday === day.id)
-                return `<div class="strip-day ${items.length ? "" : "strip-empty"}">
-                  <span class="strip-name">${day.short}</span>
-                  ${items.length ? items.map((slot) => `<span class="strip-time">${esc(slot.starts)}–${esc(slot.ends)}</span>`).join("") : `<span class="strip-time">—</span>`}
-                </div>`
-              }).join("")}</div>`
-            : `<div class="empty">No tutor hours published yet.</div>`
-        }
-      </section>`
-  }
-
-  function renderAvailability() {
-    const slots = slotList()
-    const isTutor = state.account && state.account.role === "tutor"
-
-    return `
-      <div class="panel-head">
-        <h1>Availability</h1>
-        <p>
-          The hours each tutor has published this week.
-          ${isTutor ? "Add your own below — students and parents see them straight away." : `Get in touch to book one of these slots at ${esc(state.site.name)}.`}
-        </p>
-      </div>
-
-      <div class="week">
-        ${WEEKDAYS.map((day) => {
-          const items = slots.filter((slot) => slot.weekday === day.id)
-          return `<div class="day ${items.length ? "" : "day-empty"}">
-            <h3>${day.label}</h3>
-            ${
-              items.length
-                ? items
-                    .map(
-                      (slot) => `<div class="week-slot ${slot.owner === state.uid ? "slot-mine" : ""}">
-                        <span class="slot-time">${esc(slot.starts)}–${esc(slot.ends)}</span>
-                        <span class="slot-who">${esc(nameFor(slot.owner, state.slots.get(slot.owner)))}</span>
-                        ${slot.note ? `<span class="slot-note">${esc(slot.note)}</span>` : ""}
-                        ${slot.owner === state.uid ? `<button class="btn tiny" data-drop-slot="${esc(slot.key)}">Remove</button>` : ""}
-                      </div>`,
-                    )
-                    .join("")
-                : `<p class="meta">No hours published</p>`
-            }
-          </div>`
-        }).join("")}
-      </div>
-
-      ${
-        isTutor
-          ? `<section>
-              <form class="form-card" id="slot-form">
-                <h2>Publish your hours</h2>
-                <p class="muted" style="font-size:0.9rem">Overlapping hours on the same day are refused.</p>
-                <div class="field-row">
-                  <div><label for="weekday">Day</label>
-                    <select id="weekday">${WEEKDAYS.map((day) => `<option value="${day.id}">${day.label}</option>`).join("")}</select></div>
-                  <div><label for="starts">From</label><input id="starts" type="time" value="16:00" required /></div>
-                  <div><label for="ends">Until</label><input id="ends" type="time" value="18:00" required /></div>
+          (group, index) => `<details class="subject-block ${subjectClass(group.subject)}" ${index === 0 ? "open" : ""}>
+            <summary>
+              <div class="subject-head">
+                <h2>${esc(group.subject)}</h2>
+                <div class="rowline level-chips">
+                  ${group.courses.map((course) => `<span class="chip level">${esc(levelShort(course.stage))}</span>`).join("")}
+                  <span class="chip slots-count">${group.slots.length} slot${group.slots.length === 1 ? "" : "s"} free</span>
                 </div>
-                <div><label for="slot-note">Note (optional)</label><input id="slot-note" maxlength="120" placeholder="Online, or at the centre" /></div>
-                <div class="rowline"><button class="btn primary" type="submit">Publish these hours</button></div>
-              </form>
-            </section>`
-          : ""
-      }`
+              </div>
+            </summary>
+
+            <div class="subject-body">
+              <h3 class="section-label">Levels</h3>
+              <div class="levels">
+                ${group.courses
+                  .map((course) => {
+                    const held = mine.includes(course.slug)
+                    return `<details class="level-card">
+                      <summary>
+                        <span class="level-name"><strong>${esc(levelShort(course.stage))}</strong>
+                          <span class="muted">${esc(course.title)}</span></span>
+                        <span class="meta">${course.topics.length} topics · ${money(course.price)}</span>
+                      </summary>
+                      <div class="level-body">
+                        <p style="font-size:0.92rem">${esc(course.description)}</p>
+                        <p class="meta">${esc(course.length)} · ${esc(course.boards)}</p>
+                        <ul class="topic-grid">${course.topics.map((t) => `<li>${esc(t)}</li>`).join("")}</ul>
+                        ${
+                          state.account && state.account.role === "student"
+                            ? `<div><button class="btn ${held ? "" : "primary"}" data-course-toggle="${esc(course.slug)}">
+                                ${held ? "Remove from my plan" : "Add to my plan"}
+                              </button></div>`
+                            : `<p class="meta">Sign in as a student on the Dashboard tab to add this level to your plan.</p>`
+                        }
+                      </div>
+                    </details>`
+                  })
+                  .join("")}
+              </div>
+
+              <h3 class="section-label">Time slots released for ${esc(group.subject)}</h3>
+              ${
+                group.slots.length
+                  ? `<ul class="slot-list">${group.slots
+                      .map(
+                        (slot) => `<li class="slot-row">
+                          <span class="slot-day">${WEEKDAYS[slot.weekday].label}</span>
+                          <span class="slot-time">${esc(slot.starts)}–${esc(slot.ends)}</span>
+                          <span class="slot-detail">
+                            ${slot.subject === "Any" ? `<span class="chip">Any subject</span>` : ""}
+                            ${slot.note ? esc(slot.note) : ""}
+                          </span>
+                        </li>`,
+                      )
+                      .join("")}</ul>
+                     <p class="meta">Sessions run with ${esc(tutorName())}. Get in touch to take one of these slots.</p>`
+                  : `<div class="empty">No slots released for ${esc(group.subject)} yet.</div>`
+              }
+            </div>
+          </details>`,
+        )
+        .join("")}`
   }
 
   function renderReviews() {
@@ -1698,7 +1666,7 @@
                    </button>
                    <button class="role" data-role="tutor">
                      <span class="role-icon" aria-hidden="true">✓</span>
-                     <strong>I'm a tutor</strong>
+                     <strong>I'm the tutor</strong>
                      <span class="muted">See every student, tick off the topics you cover and leave session notes.</span>
                    </button>
                  </div>
@@ -1762,7 +1730,7 @@
         <div class="tile"><span class="tile-label">Courses</span><strong>${mine.length}</strong><span class="muted">on your plan</span></div>
         <div class="tile"><span class="tile-label">Topics covered</span><strong>${totals.covered}<span class="of">/${totals.total}</span></strong><span class="muted">${percent}% of your courses</span></div>
         <div class="tile"><span class="tile-label">Marked secure</span><strong>${totals.secure}</strong><span class="muted">ready for the exam</span></div>
-        <div class="tile"><span class="tile-label">Next tutor slot</span><strong class="small-figure">${booked[0] ? esc(WEEKDAYS[booked[0].weekday].short) + " " + esc(booked[0].starts) : "—"}</strong><span class="muted">${booked[0] ? esc(nameFor(booked[0].owner, state.slots.get(booked[0].owner))) : "No hours published"}</span></div>
+        <div class="tile"><span class="tile-label">Next tutor slot</span><strong class="small-figure">${booked[0] ? esc(WEEKDAYS[booked[0].weekday].short) + " " + esc(booked[0].starts) : "—"}</strong><span class="muted">${booked[0] ? esc(booked[0].subject === "Any" ? "Any subject" : booked[0].subject) : "No hours released"}</span></div>
       </div>
 
       <section>
@@ -1839,12 +1807,12 @@
       ${
         booked.length
           ? `<section>
-              <h2>When your tutor is free</h2>
+              <h2>Slots released this week</h2>
               <ul class="feed">${booked
                 .slice(0, 6)
                 .map(
                   (slot) => `<li><span class="feed-time">${WEEKDAYS[slot.weekday].short}</span>
-                    <div><strong>${esc(slot.starts)}–${esc(slot.ends)}</strong><span class="meta">${esc(nameFor(slot.owner, state.slots.get(slot.owner)))}${slot.note ? " · " + esc(slot.note) : ""}</span></div></li>`,
+                    <div><strong>${esc(slot.starts)}–${esc(slot.ends)}</strong><span class="meta">${esc(slot.subject === "Any" ? "Any subject" : slot.subject)}${slot.note ? " · " + esc(slot.note) : ""}</span></div></li>`,
                 )
                 .join("")}</ul>
             </section>`
@@ -1889,7 +1857,7 @@
         <div class="tile"><span class="tile-label">Students</span><strong>${rows.length}</strong><span class="muted">you tutor</span></div>
         <div class="tile"><span class="tile-label">Topics ticked</span><strong>${ticks}</strong><span class="muted">in the last 7 days</span></div>
         <div class="tile"><span class="tile-label">Needs attention</span><strong>${behind}</strong><span class="muted">under 25% covered</span></div>
-        <div class="tile"><span class="tile-label">Hours published</span><strong>${hours}</strong><span class="muted">across ${mySlots().length} slot${mySlots().length === 1 ? "" : "s"} a week</span></div>
+        <div class="tile"><span class="tile-label">Hours published</span><strong>${hours}</strong><span class="muted">across ${mySlots().length} slot${mySlots().length === 1 ? "" : "s"} released</span></div>
       </div>
 
       <section>
@@ -1915,6 +1883,44 @@
                 .join("")
             : `<div class="empty">No students yet. Anyone who signs in as a student and picks a course appears here.</div>`
         }
+      </section>
+
+      <section>
+        <div class="form-card">
+          <h2>Release time slots</h2>
+          <p class="muted" style="font-size:0.9rem">Students see these under the subject you choose. Overlapping hours on the same day are refused.</p>
+          <form id="slot-form">
+            <div class="field-row">
+              <div><label for="weekday">Day</label>
+                <select id="weekday">${WEEKDAYS.map((day) => `<option value="${day.id}">${day.label}</option>`).join("")}</select></div>
+              <div><label for="slot-subject">Subject</label>
+                <select id="slot-subject">
+                  <option value="Any">Any subject</option>
+                  ${[...new Set(CATALOGUE.courses.map((c) => c.subject))].sort().map((subject) => `<option value="${esc(subject)}">${esc(subject)}</option>`).join("")}
+                </select></div>
+            </div>
+            <div class="field-row">
+              <div><label for="starts">From</label><input id="starts" type="time" value="16:00" required /></div>
+              <div><label for="ends">Until</label><input id="ends" type="time" value="18:00" required /></div>
+            </div>
+            <div><label for="slot-note">Note (optional)</label><input id="slot-note" maxlength="120" placeholder="Online, or at the centre" /></div>
+            <div class="rowline"><button class="btn primary" type="submit">Release these hours</button></div>
+          </form>
+          ${
+            mySlots().length
+              ? `<ul class="slot-list">${mySlots()
+                  .map(
+                    (slot, index) => `<li class="slot-row">
+                      <span class="slot-day">${WEEKDAYS[slot.weekday].label}</span>
+                      <span class="slot-time">${esc(slot.starts)}–${esc(slot.ends)}</span>
+                      <span class="slot-detail"><span class="chip">${esc(slot.subject === "Any" ? "Any subject" : slot.subject)}</span>${slot.note ? esc(slot.note) : ""}</span>
+                      <button class="btn tiny" data-drop-slot="${index}">Remove</button>
+                    </li>`,
+                  )
+                  .join("")}</ul>`
+              : `<p class="meta">No hours released yet.</p>`
+          }
+        </div>
       </section>
 
       <section>
@@ -1953,7 +1959,6 @@
 
   const PANELS = {
     subjects: renderSubjects,
-    availability: renderAvailability,
     reviews: renderReviews,
     dashboard: renderDashboard,
   }
@@ -2001,7 +2006,7 @@
       }
 
     for (const node of panel.querySelectorAll("[data-drop-slot]"))
-      node.onclick = () => removeSlot(Number(node.dataset.dropSlot.split(":")[1]))
+      node.onclick = () => removeSlot(Number(node.dataset.dropSlot))
 
     const slotForm = panel.querySelector("#slot-form")
     if (slotForm)
@@ -2009,6 +2014,7 @@
         event.preventDefault()
         publishSlot({
           weekday: Number(panel.querySelector("#weekday").value),
+          subject: panel.querySelector("#slot-subject").value,
           starts: panel.querySelector("#starts").value,
           ends: panel.querySelector("#ends").value,
           note: panel.querySelector("#slot-note").value.trim().slice(0, 120),
