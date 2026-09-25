@@ -86,8 +86,9 @@ async function home() {
       <div class="hero">
         <h1>Tutoring that shows its working</h1>
         <p class="lead">
-          One-to-one and small-group tuition from KS2 through to A Level. Every family gets an account with a shared
-          topic tracker, so you can see exactly which topics your tutor has covered and which are still to come.
+          Specialist maths tuition from KS2 through to A Level, and science up to GCSE. Every family gets an account
+          with a shared topic tracker, so you can see exactly which topics your tutor has covered and which are still
+          to come.
         </p>
         <div class="row">
           <a class="btn primary" href="#/courses">Browse courses</a>
@@ -95,7 +96,7 @@ async function home() {
         </div>
         <div class="stats">
           <div class="stat"><strong>${courses.length}</strong><span class="muted">courses offered</span></div>
-          <div class="stat"><strong>4 stages</strong><span class="muted">KS2 to A Level</span></div>
+          <div class="stat"><strong>Maths &amp; science</strong><span class="muted">KS2 to A Level</span></div>
           <div class="stat"><strong>${summary.average ?? "—"} / 5</strong><span class="muted">from ${summary.count} reviews</span></div>
         </div>
       </div>

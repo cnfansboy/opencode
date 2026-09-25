@@ -1,6 +1,7 @@
 # Bridgewell Tutoring
 
-A tutoring website with a shared topic tracker: families browse what is offered and leave reviews,
+A tutoring website for maths from KS2 to A Level and science up to GCSE, with a shared topic tracker:
+families browse what is offered and leave reviews,
 students create an account and choose their stage and courses, and tutors tick off the topics they
 have covered with each student.
 
@@ -42,6 +43,9 @@ Demo accounts created by `bun run demo`, all with the password `demopass123`:
 | Student | `tom@example.com`     | KS2, one course, nothing ticked yet               |
 
 ## What the site does
+
+**What is taught** — maths at KS2, KS3, GCSE and A Level, and science at KS3 and GCSE. The catalogue,
+the Saturday timetable and the seeded reviews all follow that rule, and a test enforces it.
 
 **Public pages** — a home page, a course catalogue filterable by stage, subject and free text, a page
 per course listing every topic it covers, and a reviews page with the overall average rating.

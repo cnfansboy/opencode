@@ -49,7 +49,7 @@ beforeAll(async () => {
 
 test("courses are seeded and filterable", async () => {
   const all = await call(anonymous, "/api/courses")
-  expect(all.body.courses.length).toBeGreaterThan(5)
+  expect(all.body.courses.length).toBeGreaterThan(2)
 
   const alevel = await call(anonymous, "/api/courses?stage=alevel")
   expect(alevel.body.courses.every((course: { stage: string }) => course.stage === "alevel")).toBe(true)
@@ -57,6 +57,24 @@ test("courses are seeded and filterable", async () => {
   const detail = await call(anonymous, "/api/courses/gcse-maths-higher")
   expect(detail.body.course.topics.length).toBeGreaterThan(10)
   topicId = detail.body.course.topics[0].id
+})
+
+test("the catalogue is maths to A Level and science to GCSE only", async () => {
+  const { courses } = (await call(anonymous, "/api/courses")).body
+  const { classes } = (await call(anonymous, "/api/saturday-classes")).body
+
+  for (const item of [...courses, ...classes]) {
+    expect(["Maths", "Science"]).toContain(item.subject)
+    if (item.subject === "Science") expect(item.stage).not.toBe("alevel")
+  }
+
+  // Maths runs the whole way, science stops at GCSE.
+  expect(
+    courses.filter((c: { subject: string }) => c.subject === "Maths").map((c: { stage: string }) => c.stage),
+  ).toEqual(["ks2", "ks3", "gcse", "alevel"])
+  expect(courses.some((c: { subject: string; stage: string }) => c.subject === "Science" && c.stage === "gcse")).toBe(
+    true,
+  )
 })
 
 test("registration rejects a student with no stage and a weak password", async () => {
@@ -201,7 +219,7 @@ test("reviews require sign-in and show up in the list", async () => {
 
 test("saturday classes list with spaces and take bookings", async () => {
   const list = await call(anonymous, "/api/saturday-classes")
-  expect(list.body.classes.length).toBeGreaterThan(4)
+  expect(list.body.classes.length).toBeGreaterThan(2)
   const first = list.body.classes[0]
   expect(first.spaces).toBe(first.capacity)
   expect(first.mine).toBe(0)
