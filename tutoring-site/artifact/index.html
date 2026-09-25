@@ -946,6 +946,175 @@
     margin-top: 3px;
   }
 
+  /* subjects and availability ---------------------------------------------- */
+  .subject-block {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-left-width: 4px;
+    border-radius: 8px;
+    padding: 18px;
+    box-shadow: var(--shadow);
+    margin-bottom: 18px;
+  }
+  .subject-block.s-maths {
+    border-left-color: #3f6fae;
+  }
+  .subject-block.s-science {
+    border-left-color: var(--covered);
+  }
+  .subject-head {
+    display: flex;
+    gap: 12px;
+    align-items: baseline;
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+  .chip.level {
+    background: var(--sunk);
+    color: var(--ink);
+    font-weight: 700;
+    border-radius: 999px;
+  }
+  .levels {
+    display: grid;
+    gap: 7px;
+    margin-top: 12px;
+  }
+  .level-card {
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    background: var(--paper);
+  }
+  .level-card > summary {
+    cursor: pointer;
+    list-style: none;
+    padding: 11px 13px;
+    display: flex;
+    gap: 10px;
+    align-items: baseline;
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+  .level-card > summary::-webkit-details-marker {
+    display: none;
+  }
+  .level-card > summary::after {
+    content: "▾";
+    color: var(--accent);
+    font-size: 0.78rem;
+    transition: transform 0.18s ease;
+  }
+  .level-card[open] > summary::after {
+    transform: rotate(180deg);
+    display: inline-block;
+  }
+  .level-name {
+    display: flex;
+    gap: 10px;
+    align-items: baseline;
+    flex-wrap: wrap;
+  }
+  .level-name strong {
+    min-width: 58px;
+  }
+  .level-name .muted {
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+  .level-body {
+    padding: 0 13px 13px;
+    display: grid;
+    gap: 9px;
+  }
+
+  .week {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(168px, 1fr));
+    gap: 10px;
+    margin-bottom: 26px;
+  }
+  .day {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: 13px;
+    display: grid;
+    gap: 7px;
+    align-content: start;
+  }
+  .day h3 {
+    font-family: var(--body);
+    font-size: 0.74rem;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--muted);
+  }
+  .day-empty {
+    background: transparent;
+    border-style: dashed;
+  }
+  .week-slot {
+    background: var(--sunk);
+    border-radius: 6px;
+    padding: 9px 10px;
+    display: grid;
+    gap: 2px;
+  }
+  .week-slot.slot-mine {
+    background: var(--covered-wash);
+    border: 1px solid var(--covered);
+  }
+  .slot-time {
+    font-family: var(--mono);
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .slot-who {
+    font-size: 0.84rem;
+    color: var(--muted);
+  }
+  .slot-note {
+    font-size: 0.78rem;
+    color: var(--muted);
+    font-style: italic;
+  }
+  .week-slot .btn {
+    margin-top: 5px;
+    justify-self: start;
+  }
+  .week-strip {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
+    gap: 7px;
+    margin-top: 12px;
+  }
+  .strip-day {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    padding: 9px;
+    display: grid;
+    gap: 2px;
+    text-align: center;
+  }
+  .strip-day.strip-empty {
+    border-style: dashed;
+    background: transparent;
+    color: var(--muted);
+  }
+  .strip-name {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+  }
+  .strip-time {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    white-space: nowrap;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     * {
       transition: none !important;
@@ -983,8 +1152,8 @@
   </div>
   <div class="shell">
     <div class="tabs" role="tablist" aria-label="Sections">
-      <button class="tab" role="tab" id="tab-courses" aria-controls="panel-courses" aria-selected="true" data-tab="courses">Courses</button>
-      <button class="tab" role="tab" id="tab-saturday" aria-controls="panel-saturday" aria-selected="false" data-tab="saturday">Saturday classes</button>
+      <button class="tab" role="tab" id="tab-subjects" aria-controls="panel-subjects" aria-selected="true" data-tab="subjects">Subjects</button>
+      <button class="tab" role="tab" id="tab-availability" aria-controls="panel-availability" aria-selected="false" data-tab="availability">Availability</button>
       <button class="tab" role="tab" id="tab-reviews" aria-controls="panel-reviews" aria-selected="false" data-tab="reviews">Reviews</button>
       <button class="tab" role="tab" id="tab-dashboard" aria-controls="panel-dashboard" aria-selected="false" data-tab="dashboard">Dashboard</button>
     </div>
@@ -992,8 +1161,8 @@
 </header>
 
 <main class="shell">
-  <section id="panel-courses" role="tabpanel" aria-labelledby="tab-courses"></section>
-  <section id="panel-saturday" role="tabpanel" aria-labelledby="tab-saturday" hidden></section>
+  <section id="panel-subjects" role="tabpanel" aria-labelledby="tab-subjects"></section>
+  <section id="panel-availability" role="tabpanel" aria-labelledby="tab-availability" hidden></section>
   <section id="panel-reviews" role="tabpanel" aria-labelledby="tab-reviews" hidden></section>
   <section id="panel-dashboard" role="tabpanel" aria-labelledby="tab-dashboard" hidden></section>
 </main>
@@ -1001,7 +1170,7 @@
 <footer class="foot shell">
   <p><strong id="foot-name">Bridgewell Tutoring</strong> — maths to A Level and science to GCSE, online and at the centre.</p>
   <p id="foot-note">
-    Interactive demo. Courses you add, Saturday bookings, reviews and topic ticks are shared with everyone who opens
+    Interactive demo. Courses you add, tutor hours, reviews and topic ticks are shared with everyone who opens
     this page.
   </p>
 </footer>
@@ -1009,7 +1178,7 @@
 <div id="flash" role="status" aria-live="polite"></div>
 
 <script>
-  const CATALOGUE = {"courses":[{"slug":"ks2-maths-foundations","title":"KS2 Maths Foundations","subject":"Maths","stage":"ks2","summary":"Number confidence, times tables and problem solving for Years 3-6.","description":"Small-group and one-to-one sessions that rebuild number confidence from the ground up. We work through the KS2 national curriculum at the pace the child needs, with plenty of practical apparatus and low-stakes practice.","price":2800,"length":"45 minutes, weekly","boards":"National curriculum","topics":["Place value to 1,000,000","Addition and subtraction (column method)","Times tables to 12x12","Short and long multiplication","Short and long division","Fractions: equivalence and simplifying","Adding and subtracting fractions","Decimals and percentages","Measurement: length, mass and capacity","Perimeter, area and volume","Angles and 2D shape properties","Reading and drawing charts","Multi-step word problems"]},{"slug":"ks3-maths-bridge","title":"KS3 Maths (Years 7-9)","subject":"Maths","stage":"ks3","summary":"Bridging primary arithmetic into algebra, ratio and geometry.","description":"The KS3 years are where gaps quietly open up before GCSE. This course covers the full Year 7-9 programme of study, with diagnostic checks each half term so we can go back over anything that has not stuck.","price":3200,"length":"1 hour, weekly","boards":"National curriculum","topics":["Negative numbers and order of operations","Prime factors, HCF and LCM","Introduction to algebraic notation","Solving linear equations","Expanding and factorising","Sequences and the nth term","Ratio and proportion","Percentages: increase, decrease and reverse","Straight line graphs","Angles in parallel lines and polygons","Transformations","Averages and data handling","Probability basics"]},{"slug":"ks3-science","title":"KS3 Science (Years 7-9)","subject":"Science","stage":"ks3","summary":"Biology, chemistry and physics fundamentals with practical investigation skills.","description":"A single course covering all three sciences at KS3, with an emphasis on working scientifically: variables, fair tests, graphs and conclusions. Ideal preparation for setting decisions at the end of Year 9.","price":3200,"length":"1 hour, weekly","boards":"National curriculum","topics":["Cells and organisation","Body systems: digestion and circulation","Reproduction and inheritance","Photosynthesis and ecosystems","Particle model and states of matter","Atoms, elements and compounds","Chemical reactions and word equations","Acids and alkalis","Forces and motion","Energy stores and transfers","Electricity and circuits","Light and sound waves","Working scientifically: variables and graphs"]},{"slug":"gcse-combined-science","title":"GCSE Combined Science (Trilogy)","subject":"Science","stage":"gcse","summary":"Biology, chemistry and physics content plus the required practicals.","description":"Covers the combined science specification including all required practicals and the maths skills that appear in the papers. We rotate across the three sciences so nothing is left until the last term.","price":3800,"length":"1 hour, weekly","boards":"AQA · Edexcel · OCR Gateway","topics":["Cell biology and transport","Infection and response","Bioenergetics","Homeostasis and the nervous system","Inheritance, variation and evolution","Atomic structure and the periodic table","Bonding, structure and properties","Quantitative chemistry","Chemical and energy changes","Rates of reaction and organic chemistry","Energy and efficiency","Electricity","Particle model and atomic structure","Forces and motion","Waves and electromagnetism","Required practicals and working scientifically"]},{"slug":"gcse-maths-higher","title":"GCSE Maths (Higher Tier)","subject":"Maths","stage":"gcse","summary":"Full Higher tier coverage with exam technique for grades 6-9.","description":"Complete Higher tier coverage across all exam boards, including the topics that decide grades 7-9: surds, algebraic fractions, circle theorems, vectors and iterative methods. Past paper questions every session.","price":3800,"length":"1 hour, weekly","boards":"AQA · Edexcel · OCR","topics":["Surds and indices","Algebraic fractions","Quadratics: factorising, formula, completing the square","Simultaneous equations (linear and quadratic)","Inequalities and regions","Functions and inverse functions","Iteration and numerical methods","Circle theorems","Trigonometry: SOHCAHTOA","Sine and cosine rules","Vectors and geometric proof","Similarity and congruence","Histograms and cumulative frequency","Probability trees and conditional probability","Direct and inverse proportion","Transformations of graphs"]},{"slug":"alevel-maths","title":"A Level Maths","subject":"Maths","stage":"alevel","summary":"Pure, statistics and mechanics across Years 12 and 13.","description":"Year 12 and Year 13 content taught alongside school, with a focus on the proof and modelling skills that students find hardest in the transition from GCSE. Includes support for the large data set.","price":4500,"length":"1 hour, weekly","boards":"AQA · Edexcel · OCR · MEI","topics":["Proof: deduction, exhaustion and counter-example","Algebraic methods and partial fractions","Binomial expansion","Coordinate geometry and circles","Trigonometric identities and equations","Differentiation from first principles","Chain, product and quotient rules","Integration and areas under curves","Integration by parts and substitution","Exponentials and logarithms","Parametric equations","Numerical methods","Vectors in 2D and 3D","Statistical sampling and the large data set","Probability distributions (binomial and normal)","Hypothesis testing","Kinematics and constant acceleration","Newton's laws and connected particles","Moments"]}],"classes":[{"slug":"sat-ks2-maths-booster","title":"KS2 Maths Booster","subject":"Maths","stage":"ks2","starts":"09:00","ends":"10:00","tutor":"Ms Rowan Blake","room":"Room 1","capacity":8,"price":1800,"description":"Arithmetic fluency and a weekly problem-solving challenge. Groups of no more than eight, split by year group."},{"slug":"sat-gcse-maths-clinic","title":"GCSE Maths Higher Clinic","subject":"Maths","stage":"gcse","starts":"09:00","ends":"10:30","tutor":"Mr Idris Bello","room":"Room 2","capacity":10,"price":2500,"description":"Bring the questions you got stuck on that week. We work them through on the board, then drill the same idea on fresh questions."},{"slug":"sat-gcse-science-lab","title":"GCSE Science Practical Lab","subject":"Science","stage":"gcse","starts":"10:30","ends":"12:00","tutor":"Dr Nina Shah","room":"Laboratory","capacity":12,"price":3000,"description":"The required practicals, actually carried out rather than described, with the exam questions that come from each one."},{"slug":"sat-ks3-maths","title":"KS3 Maths and Problem Solving","subject":"Maths","stage":"ks3","starts":"11:00","ends":"12:00","tutor":"Mr Idris Bello","room":"Room 2","capacity":10,"price":2000,"description":"Keeps Year 7 to 9 ahead of the school scheme of work, with UKMT junior challenge questions once a month."},{"slug":"sat-alevel-maths","title":"A Level Maths Workshop","subject":"Maths","stage":"alevel","starts":"12:00","ends":"13:30","tutor":"Ms Rowan Blake","room":"Room 3","capacity":8,"price":3200,"description":"Pure, statistics and mechanics on a rotation, pitched at the step up from GCSE in Year 12 and revision in Year 13."}]}
+  const CATALOGUE = {"courses":[{"slug":"ks2-maths-foundations","title":"KS2 Maths Foundations","subject":"Maths","stage":"ks2","summary":"Number confidence, times tables and problem solving for Years 3-6.","description":"Small-group and one-to-one sessions that rebuild number confidence from the ground up. We work through the KS2 national curriculum at the pace the child needs, with plenty of practical apparatus and low-stakes practice.","price":2800,"length":"45 minutes, weekly","boards":"National curriculum","topics":["Place value to 1,000,000","Addition and subtraction (column method)","Times tables to 12x12","Short and long multiplication","Short and long division","Fractions: equivalence and simplifying","Adding and subtracting fractions","Decimals and percentages","Measurement: length, mass and capacity","Perimeter, area and volume","Angles and 2D shape properties","Reading and drawing charts","Multi-step word problems"]},{"slug":"ks3-maths-bridge","title":"KS3 Maths (Years 7-9)","subject":"Maths","stage":"ks3","summary":"Bridging primary arithmetic into algebra, ratio and geometry.","description":"The KS3 years are where gaps quietly open up before GCSE. This course covers the full Year 7-9 programme of study, with diagnostic checks each half term so we can go back over anything that has not stuck.","price":3200,"length":"1 hour, weekly","boards":"National curriculum","topics":["Negative numbers and order of operations","Prime factors, HCF and LCM","Introduction to algebraic notation","Solving linear equations","Expanding and factorising","Sequences and the nth term","Ratio and proportion","Percentages: increase, decrease and reverse","Straight line graphs","Angles in parallel lines and polygons","Transformations","Averages and data handling","Probability basics"]},{"slug":"ks3-science","title":"KS3 Science (Years 7-9)","subject":"Science","stage":"ks3","summary":"Biology, chemistry and physics fundamentals with practical investigation skills.","description":"A single course covering all three sciences at KS3, with an emphasis on working scientifically: variables, fair tests, graphs and conclusions. Ideal preparation for setting decisions at the end of Year 9.","price":3200,"length":"1 hour, weekly","boards":"National curriculum","topics":["Cells and organisation","Body systems: digestion and circulation","Reproduction and inheritance","Photosynthesis and ecosystems","Particle model and states of matter","Atoms, elements and compounds","Chemical reactions and word equations","Acids and alkalis","Forces and motion","Energy stores and transfers","Electricity and circuits","Light and sound waves","Working scientifically: variables and graphs"]},{"slug":"gcse-combined-science","title":"GCSE Combined Science (Trilogy)","subject":"Science","stage":"gcse","summary":"Biology, chemistry and physics content plus the required practicals.","description":"Covers the combined science specification including all required practicals and the maths skills that appear in the papers. We rotate across the three sciences so nothing is left until the last term.","price":3800,"length":"1 hour, weekly","boards":"AQA · Edexcel · OCR Gateway","topics":["Cell biology and transport","Infection and response","Bioenergetics","Homeostasis and the nervous system","Inheritance, variation and evolution","Atomic structure and the periodic table","Bonding, structure and properties","Quantitative chemistry","Chemical and energy changes","Rates of reaction and organic chemistry","Energy and efficiency","Electricity","Particle model and atomic structure","Forces and motion","Waves and electromagnetism","Required practicals and working scientifically"]},{"slug":"gcse-maths-higher","title":"GCSE Maths (Higher Tier)","subject":"Maths","stage":"gcse","summary":"Full Higher tier coverage with exam technique for grades 6-9.","description":"Complete Higher tier coverage across all exam boards, including the topics that decide grades 7-9: surds, algebraic fractions, circle theorems, vectors and iterative methods. Past paper questions every session.","price":3800,"length":"1 hour, weekly","boards":"AQA · Edexcel · OCR","topics":["Surds and indices","Algebraic fractions","Quadratics: factorising, formula, completing the square","Simultaneous equations (linear and quadratic)","Inequalities and regions","Functions and inverse functions","Iteration and numerical methods","Circle theorems","Trigonometry: SOHCAHTOA","Sine and cosine rules","Vectors and geometric proof","Similarity and congruence","Histograms and cumulative frequency","Probability trees and conditional probability","Direct and inverse proportion","Transformations of graphs"]},{"slug":"alevel-maths","title":"A Level Maths","subject":"Maths","stage":"alevel","summary":"Pure, statistics and mechanics across Years 12 and 13.","description":"Year 12 and Year 13 content taught alongside school, with a focus on the proof and modelling skills that students find hardest in the transition from GCSE. Includes support for the large data set.","price":4500,"length":"1 hour, weekly","boards":"AQA · Edexcel · OCR · MEI","topics":["Proof: deduction, exhaustion and counter-example","Algebraic methods and partial fractions","Binomial expansion","Coordinate geometry and circles","Trigonometric identities and equations","Differentiation from first principles","Chain, product and quotient rules","Integration and areas under curves","Integration by parts and substitution","Exponentials and logarithms","Parametric equations","Numerical methods","Vectors in 2D and 3D","Statistical sampling and the large data set","Probability distributions (binomial and normal)","Hypothesis testing","Kinematics and constant acceleration","Newton's laws and connected particles","Moments"]}],"stages":[{"id":"ks2","label":"KS2 (Primary, Years 3-6)","short":"KS2","order":1},{"id":"ks3","label":"KS3 (Secondary, Years 7-9)","short":"KS3","order":2},{"id":"gcse","label":"GCSE (Years 10-11)","short":"GCSE","order":3},{"id":"alevel","label":"A Level (Years 12-13)","short":"A Level","order":4}]}
   const STAGES = [
     { id: "ks2", label: "KS2 (Primary, Years 3-6)", short: "KS2" },
     { id: "ks3", label: "KS3 (Secondary, Years 7-9)", short: "KS3" },
@@ -1020,14 +1189,14 @@
   const STAGE_RANK = { ks2: 1, ks3: 2, gcse: 3, alevel: 4 }
 
   const state = {
-    tab: "courses",
+    tab: "subjects",
     db: null,
     user: null,
     uid: null,
     me: null,
     writable: null,
     students: new Map(),
-    bookings: new Map(),
+    slots: new Map(),
     reviews: [],
     profiles: {},
     filters: { stage: "", subject: "", q: "" },
@@ -1084,9 +1253,7 @@
 
   const myDoc = () => (state.uid && state.students.get(state.uid)) || null
   const myCourses = () => (myDoc() || {}).courses || []
-  const myBookings = () => ((state.uid && state.bookings.get(state.uid)) || {}).classes || []
-  const takenSeats = (slug) =>
-    [...state.bookings.values()].filter((row) => (row.classes || []).includes(slug)).length
+  const mySlots = () => ((state.uid && state.slots.get(state.uid)) || {}).slots || []
   const nameFor = (id, doc) => (doc && doc.demoName) || (state.profiles[id] || {}).name || "A student"
 
   function counts(doc, slug) {
@@ -1137,20 +1304,30 @@
     await write(() => state.db.doc("students/" + studentId).set(next))
   }
 
-  async function toggleBooking(slug) {
+  async function publishSlot(slot) {
     if (needsAccount()) return
-    const mine = new Set(myBookings())
-    if (mine.has(slug)) mine.delete(slug)
-    else {
-      const item = CATALOGUE.classes.find((c) => c.slug === slug)
-      if (takenSeats(slug) >= item.capacity) return flash("That class is full — ask us about the waiting list.")
-      mine.add(slug)
-    }
-    const next = { classes: [...mine] }
-    state.bookings.set(state.uid, next)
+    const time = /^([01]\d|2[0-3]):[0-5]\d$/
+    if (!time.test(slot.starts) || !time.test(slot.ends)) return flash("Times must look like 16:00.")
+    if (slot.ends <= slot.starts) return flash("The finish time must be after the start time.")
+
+    const mine = mySlots()
+    const clash = mine.find((item) => item.weekday === slot.weekday && item.starts < slot.ends && item.ends > slot.starts)
+    if (clash) return flash(`That overlaps the ${clash.starts}–${clash.ends} you already published.`)
+
+    const next = { slots: mine.concat(slot).sort((a, b) => a.weekday - b.weekday || a.starts.localeCompare(b.starts)) }
+    state.slots.set(state.uid, Object.assign({}, state.slots.get(state.uid), next))
     render()
-    flash(mine.has(slug) ? "Place booked" : "Place cancelled")
-    await write(() => state.db.doc("bookings/" + state.uid).set(next))
+    flash("Hours published")
+    await write(() => state.db.doc("availability/" + state.uid).set(state.slots.get(state.uid)))
+  }
+
+  async function removeSlot(index) {
+    if (needsAccount()) return
+    const next = { slots: mySlots().filter((_, i) => i !== index) }
+    state.slots.set(state.uid, Object.assign({}, state.slots.get(state.uid), next))
+    render()
+    flash("Slot removed")
+    await write(() => state.db.doc("availability/" + state.uid).set(state.slots.get(state.uid)))
   }
 
   async function addReview(review) {
@@ -1208,143 +1385,156 @@
 
   /* ---- panels ---------------------------------------------------------- */
 
-  function renderCourses() {
-    const list = sortedCourses
-      .filter((c) => !state.filters.stage || c.stage === state.filters.stage)
-      .filter((c) => !state.filters.subject || c.subject === state.filters.subject)
-      .filter((c) => {
-        const q = state.filters.q.trim().toLowerCase()
-        return !q || (c.title + " " + c.summary + " " + c.topics.join(" ")).toLowerCase().includes(q)
-      })
+  const levelShort = (stage) => (CATALOGUE.stages.find((s) => s.id === stage) || {}).short || stage
+  const WEEKDAYS = [
+    { id: 0, label: "Monday", short: "Mon" },
+    { id: 1, label: "Tuesday", short: "Tue" },
+    { id: 2, label: "Wednesday", short: "Wed" },
+    { id: 3, label: "Thursday", short: "Thu" },
+    { id: 4, label: "Friday", short: "Fri" },
+    { id: 5, label: "Saturday", short: "Sat" },
+    { id: 6, label: "Sunday", short: "Sun" },
+  ]
 
+  const slotList = () =>
+    [...state.slots.entries()]
+      .flatMap(([id, doc]) => (doc.slots || []).map((slot, index) => ({ ...slot, owner: id, key: id + ":" + index })))
+      .sort((a, b) => a.weekday - b.weekday || a.starts.localeCompare(b.starts))
+
+  function renderSubjects() {
     const mine = myCourses()
+    const groups = [...new Set(CATALOGUE.courses.map((c) => c.subject))]
+      .sort()
+      .map((subject) => ({
+        subject,
+        courses: CATALOGUE.courses
+          .filter((c) => c.subject === subject)
+          .sort((a, b) => STAGE_RANK[a.stage] - STAGE_RANK[b.stage]),
+      }))
+    const slots = slotList()
+
     return `
       <div class="panel-head">
-        <h1>What we teach</h1>
+        <h1>Subjects</h1>
         <p>
-          Maths from KS2 right through to A Level, and science up to GCSE, planned around your school's exam board.
-          Open a course to see every topic it covers — these are the topics your tutor ticks off as you go.
+          Every subject we tutor and the levels we take it to. Open a level to see the topics it covers — these are
+          the topics your tutor ticks off as you go.
         </p>
       </div>
-      <div class="filters">
-        <div>
-          <label for="f-stage">Stage</label>
-          <select id="f-stage" data-filter="stage">
-            <option value="">All stages</option>
-            ${STAGES.map((s) => `<option value="${s.id}" ${state.filters.stage === s.id ? "selected" : ""}>${esc(s.label)}</option>`).join("")}
-          </select>
-        </div>
-        <div>
-          <label for="f-subject">Subject</label>
-          <select id="f-subject" data-filter="subject">
-            <option value="">All subjects</option>
-            ${subjects.map((s) => `<option value="${esc(s)}" ${state.filters.subject === s ? "selected" : ""}>${esc(s)}</option>`).join("")}
-          </select>
-        </div>
-        <div>
-          <label for="f-q">Search topics</label>
-          <input id="f-q" data-filter="q" value="${esc(state.filters.q)}" placeholder="e.g. circle theorems" />
-        </div>
-      </div>
-      ${
-        list.length
-          ? `<div class="course-list">${list
-              .map((course) => {
-                const held = mine.includes(course.slug)
-                return `<details class="course">
-                  <summary>
-                    <div class="course-title">
-                      <h3>${esc(course.title)}</h3>
-                      <span class="meta">${money(course.price)} · ${esc(course.length)}</span>
-                    </div>
-                    <div class="rowline">
-                      <span class="chip stage">${esc(stageLabel(course.stage))}</span>
-                      <span class="chip">${esc(course.subject)}</span>
-                      <span class="chip">${course.topics.length} topics</span>
-                      <span class="chip">${esc(course.boards)}</span>
-                      ${held ? '<span class="chip good">In my courses</span>' : ""}
-                    </div>
-                    <p style="color:var(--muted);font-size:0.92rem">${esc(course.summary)}</p>
-                  </summary>
-                  <div class="course-body">
-                    <p style="font-size:0.93rem">${esc(course.description)}</p>
-                    <ul class="topic-grid">${course.topics.map((t) => `<li>${esc(t)}</li>`).join("")}</ul>
-                    <div>
+
+      ${groups
+        .map(
+          (group) => `<section class="subject-block ${subjectClass(group.subject)}">
+            <div class="subject-head">
+              <h2>${esc(group.subject)}</h2>
+              <div class="rowline">
+                ${group.courses.map((course) => `<span class="chip level">${esc(levelShort(course.stage))}</span>`).join("")}
+              </div>
+            </div>
+            <p class="muted" style="font-size:0.9rem">
+              Taught from ${esc(levelShort(group.courses[0].stage))} to ${esc(levelShort(group.courses[group.courses.length - 1].stage))}.
+            </p>
+            <div class="levels">
+              ${group.courses
+                .map((course) => {
+                  const held = mine.includes(course.slug)
+                  return `<details class="level-card">
+                    <summary>
+                      <span class="level-name"><strong>${esc(levelShort(course.stage))}</strong>
+                        <span class="muted">${esc(course.title)}</span></span>
+                      <span class="meta">${course.topics.length} topics · ${money(course.price)}</span>
+                    </summary>
+                    <div class="level-body">
+                      <p style="font-size:0.92rem">${esc(course.description)}</p>
+                      <p class="meta">${esc(course.length)} · ${esc(course.boards)}</p>
+                      <ul class="topic-grid">${course.topics.map((t) => `<li>${esc(t)}</li>`).join("")}</ul>
                       ${
                         state.account && state.account.role === "student"
-                          ? `<button class="btn ${held ? "" : "primary"}" data-course-toggle="${esc(course.slug)}">
-                              ${held ? "Remove from my courses" : "Add to my courses"}
-                            </button>`
-                          : `<span class="meta">Sign in as a student on the Dashboard tab to add this course.</span>`
+                          ? `<div><button class="btn ${held ? "" : "primary"}" data-course-toggle="${esc(course.slug)}">
+                              ${held ? "Remove from my plan" : "Add to my plan"}
+                            </button></div>`
+                          : `<p class="meta">Sign in as a student on the Dashboard tab to add this level to your plan.</p>`
                       }
                     </div>
-                  </div>
-                </details>`
-              })
-              .join("")}</div>`
-          : `<div class="empty">No courses match those filters.</div>`
-      }`
+                  </details>`
+                })
+                .join("")}
+            </div>
+          </section>`,
+        )
+        .join("")}
+
+      <section>
+        <h2>When our tutors are free</h2>
+        <p class="muted" style="font-size:0.92rem">Sessions are booked into the hours each tutor publishes.</p>
+        ${
+          slots.length
+            ? `<div class="week-strip">${WEEKDAYS.map((day) => {
+                const items = slots.filter((slot) => slot.weekday === day.id)
+                return `<div class="strip-day ${items.length ? "" : "strip-empty"}">
+                  <span class="strip-name">${day.short}</span>
+                  ${items.length ? items.map((slot) => `<span class="strip-time">${esc(slot.starts)}–${esc(slot.ends)}</span>`).join("") : `<span class="strip-time">—</span>`}
+                </div>`
+              }).join("")}</div>`
+            : `<div class="empty">No tutor hours published yet.</div>`
+        }
+      </section>`
   }
 
-  function renderSaturday() {
-    const slots = [...new Set(CATALOGUE.classes.map((c) => c.starts))].sort()
-    const mine = myBookings()
+  function renderAvailability() {
+    const slots = slotList()
+    const isTutor = state.account && state.account.role === "tutor"
+
     return `
       <div class="panel-head">
-        <h1>Saturday classes</h1>
+        <h1>Availability</h1>
         <p>
-          Small-group classes at the centre every Saturday in term time, 9am to 3pm. Book a regular place, or drop into
-          a single session while a space is free. Places update live as other families book.
+          The hours each tutor has published this week.
+          ${isTutor ? "Add your own below — students and parents see them straight away." : `Get in touch to book one of these slots at ${esc(state.site.name)}.`}
         </p>
       </div>
-      ${mine.length ? `<div class="note" style="margin-bottom:20px">You hold ${mine.length} place${mine.length === 1 ? "" : "s"} this Saturday: ${mine.map((slug) => esc((CATALOGUE.classes.find((c) => c.slug === slug) || {}).title || slug)).join(", ")}.</div>` : ""}
-      <div class="timetable">
-        ${slots
-          .map((slot) => {
-            const items = CATALOGUE.classes.filter((c) => c.starts === slot)
-            return `<div class="slot">
-              <div class="slot-time">${esc(slot)}</div>
-              <div class="slot-classes">
-                ${items
-                  .map((item) => {
-                    const taken = takenSeats(item.slug)
-                    const spaces = Math.max(0, item.capacity - taken)
-                    const booked = mine.includes(item.slug)
-                    return `<article class="class ${booked ? "booked" : ""}">
-                      <div class="class-head">
-                        <h3>${esc(item.title)}</h3>
-                        <span class="meta">${esc(item.starts)}–${esc(item.ends)} · ${esc(item.room)}</span>
-                      </div>
-                      <div class="rowline">
-                        <span class="chip stage">${esc(stageLabel(item.stage))}</span>
-                        <span class="chip">${esc(item.subject)}</span>
-                        <span class="chip">${esc(item.tutor)}</span>
-                      </div>
-                      <p class="desc">${esc(item.description)}</p>
-                      <div class="class-foot">
-                        <div class="rowline">
-                          <span class="meta">${money(item.price)} per session</span>
-                          <span class="seats" role="img" aria-label="${spaces} of ${item.capacity} places free">
-                            ${Array.from({ length: item.capacity }, (_, i) => `<span class="seat ${i < taken ? "taken" : ""}"></span>`).join("")}
-                          </span>
-                          <span class="chip ${spaces ? "good" : "warn"}">${spaces ? spaces + " free" : "Full"}</span>
-                        </div>
-                        ${
-                          state.account && state.account.role === "student"
-                            ? `<button class="btn ${booked ? "" : "primary"}" data-book="${esc(item.slug)}" ${spaces || booked ? "" : "disabled"}>
-                                ${booked ? "Cancel my place" : spaces ? "Book a place" : "Class full"}
-                              </button>`
-                            : `<span class="meta">${spaces ? spaces + " places free" : "Full"}</span>`
-                        }
-                      </div>
-                    </article>`
-                  })
-                  .join("")}
-              </div>
-            </div>`
-          })
-          .join("")}
-      </div>`
+
+      <div class="week">
+        ${WEEKDAYS.map((day) => {
+          const items = slots.filter((slot) => slot.weekday === day.id)
+          return `<div class="day ${items.length ? "" : "day-empty"}">
+            <h3>${day.label}</h3>
+            ${
+              items.length
+                ? items
+                    .map(
+                      (slot) => `<div class="week-slot ${slot.owner === state.uid ? "slot-mine" : ""}">
+                        <span class="slot-time">${esc(slot.starts)}–${esc(slot.ends)}</span>
+                        <span class="slot-who">${esc(nameFor(slot.owner, state.slots.get(slot.owner)))}</span>
+                        ${slot.note ? `<span class="slot-note">${esc(slot.note)}</span>` : ""}
+                        ${slot.owner === state.uid ? `<button class="btn tiny" data-drop-slot="${esc(slot.key)}">Remove</button>` : ""}
+                      </div>`,
+                    )
+                    .join("")
+                : `<p class="meta">No hours published</p>`
+            }
+          </div>`
+        }).join("")}
+      </div>
+
+      ${
+        isTutor
+          ? `<section>
+              <form class="form-card" id="slot-form">
+                <h2>Publish your hours</h2>
+                <p class="muted" style="font-size:0.9rem">Overlapping hours on the same day are refused.</p>
+                <div class="field-row">
+                  <div><label for="weekday">Day</label>
+                    <select id="weekday">${WEEKDAYS.map((day) => `<option value="${day.id}">${day.label}</option>`).join("")}</select></div>
+                  <div><label for="starts">From</label><input id="starts" type="time" value="16:00" required /></div>
+                  <div><label for="ends">Until</label><input id="ends" type="time" value="18:00" required /></div>
+                </div>
+                <div><label for="slot-note">Note (optional)</label><input id="slot-note" maxlength="120" placeholder="Online, or at the centre" /></div>
+                <div class="rowline"><button class="btn primary" type="submit">Publish these hours</button></div>
+              </form>
+            </section>`
+          : ""
+      }`
   }
 
   function renderReviews() {
@@ -1551,10 +1741,7 @@
       { total: 0, covered: 0, secure: 0 },
     )
     const percent = totals.total ? Math.round((totals.covered / totals.total) * 100) : 0
-    const booked = myBookings()
-      .map((slug) => CATALOGUE.classes.find((c) => c.slug === slug))
-      .filter(Boolean)
-      .sort((a, b) => a.starts.localeCompare(b.starts))
+    const booked = slotList()
 
     const progress = (doc && doc.progress) || {}
     const recent = Object.entries(progress)
@@ -1575,7 +1762,7 @@
         <div class="tile"><span class="tile-label">Courses</span><strong>${mine.length}</strong><span class="muted">on your plan</span></div>
         <div class="tile"><span class="tile-label">Topics covered</span><strong>${totals.covered}<span class="of">/${totals.total}</span></strong><span class="muted">${percent}% of your courses</span></div>
         <div class="tile"><span class="tile-label">Marked secure</span><strong>${totals.secure}</strong><span class="muted">ready for the exam</span></div>
-        <div class="tile"><span class="tile-label">Next Saturday</span><strong class="small-figure">${booked[0] ? esc(booked[0].starts) : "—"}</strong><span class="muted">${booked[0] ? esc(booked[0].title) : "No class booked"}</span></div>
+        <div class="tile"><span class="tile-label">Next tutor slot</span><strong class="small-figure">${booked[0] ? esc(WEEKDAYS[booked[0].weekday].short) + " " + esc(booked[0].starts) : "—"}</strong><span class="muted">${booked[0] ? esc(nameFor(booked[0].owner, state.slots.get(booked[0].owner))) : "No hours published"}</span></div>
       </div>
 
       <section>
@@ -1652,11 +1839,12 @@
       ${
         booked.length
           ? `<section>
-              <h2>Your Saturday classes</h2>
+              <h2>When your tutor is free</h2>
               <ul class="feed">${booked
+                .slice(0, 6)
                 .map(
-                  (item) => `<li><span class="feed-time">${esc(item.starts)}</span>
-                    <div><strong>${esc(item.title)}</strong><span class="meta">${esc(item.room)} · ${esc(item.tutor)} · until ${esc(item.ends)}</span></div></li>`,
+                  (slot) => `<li><span class="feed-time">${WEEKDAYS[slot.weekday].short}</span>
+                    <div><strong>${esc(slot.starts)}–${esc(slot.ends)}</strong><span class="meta">${esc(nameFor(slot.owner, state.slots.get(slot.owner)))}${slot.note ? " · " + esc(slot.note) : ""}</span></div></li>`,
                 )
                 .join("")}</ul>
             </section>`
@@ -1675,6 +1863,19 @@
         ).length,
       0,
     )
+    const hours =
+      Math.round(
+        mySlots().reduce(
+          (sum, slot) =>
+            sum +
+            (Number(slot.ends.slice(0, 2)) * 60 +
+              Number(slot.ends.slice(3)) -
+              Number(slot.starts.slice(0, 2)) * 60 -
+              Number(slot.starts.slice(3))) /
+              60,
+          0,
+        ) * 10,
+      ) / 10
     const behind = rows.filter(([, doc]) => {
       const total = (doc.courses || []).reduce((n, slug) => n + counts(doc, slug).total, 0)
       const covered = (doc.courses || []).reduce((n, slug) => n + counts(doc, slug).covered, 0)
@@ -1688,7 +1889,7 @@
         <div class="tile"><span class="tile-label">Students</span><strong>${rows.length}</strong><span class="muted">you tutor</span></div>
         <div class="tile"><span class="tile-label">Topics ticked</span><strong>${ticks}</strong><span class="muted">in the last 7 days</span></div>
         <div class="tile"><span class="tile-label">Needs attention</span><strong>${behind}</strong><span class="muted">under 25% covered</span></div>
-        <div class="tile"><span class="tile-label">Courses taught</span><strong>${CATALOGUE.courses.length}</strong><span class="muted">maths and science</span></div>
+        <div class="tile"><span class="tile-label">Hours published</span><strong>${hours}</strong><span class="muted">across ${mySlots().length} slot${mySlots().length === 1 ? "" : "s"} a week</span></div>
       </div>
 
       <section>
@@ -1751,8 +1952,8 @@
   /* ---- render and events ------------------------------------------------ */
 
   const PANELS = {
-    courses: renderCourses,
-    saturday: renderSaturday,
+    subjects: renderSubjects,
+    availability: renderAvailability,
     reviews: renderReviews,
     dashboard: renderDashboard,
   }
@@ -1799,7 +2000,20 @@
         flash(mine.includes(slug) ? "Removed from your courses" : "Added to your courses")
       }
 
-    for (const node of panel.querySelectorAll("[data-book]")) node.onclick = () => toggleBooking(node.dataset.book)
+    for (const node of panel.querySelectorAll("[data-drop-slot]"))
+      node.onclick = () => removeSlot(Number(node.dataset.dropSlot.split(":")[1]))
+
+    const slotForm = panel.querySelector("#slot-form")
+    if (slotForm)
+      slotForm.onsubmit = (event) => {
+        event.preventDefault()
+        publishSlot({
+          weekday: Number(panel.querySelector("#weekday").value),
+          starts: panel.querySelector("#starts").value,
+          ends: panel.querySelector("#ends").value,
+          note: panel.querySelector("#slot-note").value.trim().slice(0, 120),
+        })
+      }
 
     for (const node of panel.querySelectorAll("[data-role]"))
       node.onclick = () => chooseRole(node.dataset.role)
@@ -1939,6 +2153,7 @@
   async function syncProfiles() {
     if (!state.user) return
     const ids = [...state.students.keys()]
+      .concat([...state.slots.keys()])
       .concat(state.reviews.map((r) => r.by))
       .filter((id) => id && !String(id).startsWith("demo_"))
     const unique = [...new Set(ids)]
@@ -2001,9 +2216,10 @@
       syncProfiles()
     }, onError)
 
-    db.collection("bookings").onSnapshot((snap) => {
-      state.bookings = new Map(snap.docs.map((doc) => [doc.id, doc.data()]))
+    db.collection("availability").onSnapshot((snap) => {
+      state.slots = new Map(snap.docs.map((doc) => [doc.id, doc.data()]))
       render()
+      syncProfiles()
     }, onError)
 
     db.collection("reviews")
