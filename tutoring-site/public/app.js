@@ -7,7 +7,7 @@ const state = {
   courses: [],
   stages: [],
   subjects: [],
-  site: { name: "Bridgewell Tutoring", tutor: null },
+  site: { name: "Bridgewell Tutoring", tutor: null, blurb: { heading: "", body: "", points: [] } },
 }
 
 const esc = (value) =>
@@ -360,13 +360,13 @@ function authShell(inner) {
       <div class="auth">
         <aside class="auth-brand">
           <p class="auth-eyebrow">${esc(state.site.name)}</p>
-          <h2>Every topic, tracked.</h2>
-          <p>Maths from KS2 to A Level and science up to GCSE, taught weekly and ticked off topic by topic so you always know where you are.</p>
-          <ul class="auth-points">
-            <li>See exactly what your tutor has covered</li>
-            <li>Follow the AQA, Edexcel or OCR specification</li>
-            <li>Book into the slots your tutor releases</li>
-          </ul>
+          <h2>${esc(state.site.blurb.heading)}</h2>
+          <p>${esc(state.site.blurb.body)}</p>
+          ${
+            state.site.blurb.points.length
+              ? `<ul class="auth-points">${state.site.blurb.points.map((point) => `<li>${esc(point)}</li>`).join("")}</ul>`
+              : ""
+          }
         </aside>
         <div class="auth-card">${inner}</div>
       </div>
@@ -925,7 +925,20 @@ function teacherDashboard(data) {
           <p class="small muted">The name shown in the header, the footer and the browser tab.</p>
           <form id="site-form">
             <div class="field"><label for="site-name">Website name</label><input id="site-name" value="${esc(state.site.name)}" maxlength="40" required /></div>
-            <button class="btn primary" type="submit">Save name</button>
+            <div class="field">
+              <label for="blurb-heading">Sign-in headline</label>
+              <input id="blurb-heading" value="${esc(state.site.blurb.heading)}" maxlength="60" required />
+            </div>
+            <div class="field">
+              <label for="blurb-body">Sign-in paragraph</label>
+              <textarea id="blurb-body" maxlength="400" required>${esc(state.site.blurb.body)}</textarea>
+            </div>
+            <div class="field">
+              <label for="blurb-points">Bullet points</label>
+              <textarea id="blurb-points" rows="4" placeholder="One per line">${esc(state.site.blurb.points.join("\n"))}</textarea>
+              <p class="small muted" style="margin:6px 0 0">One per line, up to five. Leave empty for none.</p>
+            </div>
+            <button class="btn primary" type="submit">Save site settings</button>
           </form>
           <div id="site-error"></div>
         </div>
@@ -1019,9 +1032,19 @@ function teacherDashboard(data) {
   document.getElementById("site-form").onsubmit = async (event) => {
     event.preventDefault()
     try {
-      state.site = await api("/site", { method: "PUT", body: { name: document.getElementById("site-name").value } })
+      state.site = await api("/site", {
+        method: "PUT",
+        body: {
+          name: document.getElementById("site-name").value,
+          blurb: {
+            heading: document.getElementById("blurb-heading").value,
+            body: document.getElementById("blurb-body").value,
+            points: document.getElementById("blurb-points").value.split("\n"),
+          },
+        },
+      })
       applySite()
-      notify("Website name updated")
+      notify("Site settings saved")
     } catch (error) {
       document.getElementById("site-error").innerHTML = `<div class="error">${esc(error.message)}</div>`
     }

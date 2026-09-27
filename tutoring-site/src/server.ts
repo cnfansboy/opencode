@@ -1,5 +1,15 @@
 import path from "node:path"
-import { db, DEFAULT_SITE_NAME, PROGRESS_STATUS, siteName, STAGES, theTutor, WEEKDAYS, type ProgressStatus } from "./db"
+import {
+  db,
+  DEFAULT_SITE_NAME,
+  PROGRESS_STATUS,
+  siteBlurb,
+  siteName,
+  STAGES,
+  theTutor,
+  WEEKDAYS,
+  type ProgressStatus,
+} from "./db"
 import { seed } from "./seed"
 import { authorizeUrl, exchange, takeState, zoomConfigured } from "./zoom"
 import {
@@ -172,17 +182,55 @@ export const server = Bun.serve({
     },
 
     "/api/site": {
-      GET: () => json({ name: siteName(), defaultName: DEFAULT_SITE_NAME, tutor: theTutor(), zoom: zoomConfigured() }),
+      GET: () =>
+        json({
+          name: siteName(),
+          defaultName: DEFAULT_SITE_NAME,
+          blurb: siteBlurb(),
+          tutor: theTutor(),
+          zoom: zoomConfigured(),
+        }),
       PUT: async (request) => {
         const auth = require_(request, "teacher")
         if (auth.error) return auth.error
         const input = await body(request)
+        const save = (key: string, value: string) =>
+          db
+            .query(
+              "INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value = excluded.value",
+            )
+            .run(key, value)
+
         const name = str(input?.name)
-        if (name.length < 2 || name.length > 40) return fail(400, "The site name must be between 2 and 40 characters.")
-        db.query(
-          "INSERT INTO settings (key, value) VALUES ('site_name', ?) ON CONFLICT (key) DO UPDATE SET value = excluded.value",
-        ).run(name)
-        return json({ name })
+        if (name) {
+          if (name.length < 2 || name.length > 40) return fail(400, "The site name must be between 2 and 40 characters.")
+          save("site_name", name)
+        }
+
+        // The words on the sign-in page are the tutor's to write.
+        const blurb = input?.blurb as Record<string, unknown> | undefined
+        if (blurb) {
+          const heading = str(blurb.heading)
+          const bodyText = str(blurb.body)
+          if (heading.length < 2 || heading.length > 60)
+            return fail(400, "The headline must be between 2 and 60 characters.")
+          if (bodyText.length < 10 || bodyText.length > 400)
+            return fail(400, "The paragraph must be between 10 and 400 characters.")
+
+          const points = (Array.isArray(blurb.points) ? blurb.points : String(blurb.points ?? "").split("\n"))
+            .map((line) => str(line))
+            .filter(Boolean)
+            .slice(0, 5)
+          if (points.some((line) => line.length > 80))
+            return fail(400, "Each bullet point must be 80 characters or fewer.")
+
+          save("blurb_heading", heading)
+          save("blurb_body", bodyText)
+          save("blurb_points", points.join("\n"))
+        }
+
+        if (!name && !blurb) return fail(400, "Nothing to save.")
+        return json({ name: siteName(), blurb: siteBlurb() })
       },
     },
 

@@ -160,6 +160,34 @@ export const WEEKDAYS = [
 
 export const DEFAULT_SITE_NAME = "Bridgewell Tutoring"
 
+export const DEFAULT_BLURB = {
+  heading: "Every topic, tracked.",
+  body: "Maths from KS2 to A Level and science up to GCSE, taught weekly and ticked off topic by topic so you always know where you are.",
+  points: [
+    "See exactly what your tutor has covered",
+    "Follow the AQA, Edexcel or OCR specification",
+    "Book into the slots your tutor releases",
+  ],
+}
+
+export function siteBlurb() {
+  const rows = db
+    .query("SELECT key, value FROM settings WHERE key IN ('blurb_heading', 'blurb_body', 'blurb_points')")
+    .all() as { key: string; value: string }[]
+  const stored = Object.fromEntries(rows.map((row) => [row.key, row.value]))
+  return {
+    heading: stored.blurb_heading || DEFAULT_BLURB.heading,
+    body: stored.blurb_body || DEFAULT_BLURB.body,
+    points:
+      stored.blurb_points === undefined
+        ? DEFAULT_BLURB.points
+        : stored.blurb_points
+            .split("\n")
+            .map((line) => line.trim())
+            .filter(Boolean),
+  }
+}
+
 export function siteName() {
   const row = db.query("SELECT value FROM settings WHERE key = 'site_name'").get() as { value: string } | null
   return row?.value || DEFAULT_SITE_NAME

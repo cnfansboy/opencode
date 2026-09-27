@@ -293,6 +293,50 @@ test("the site names the one tutor, and only a teacher may rename the site", asy
   await call(teacher, "/api/site", { method: "PUT", body: JSON.stringify({ name: "Bridgewell Tutoring" }) })
 })
 
+test("the tutor writes the words on the sign-in page", async () => {
+  const before = (await call(anonymous, "/api/site")).body.blurb
+  expect(before.heading).toBe("Every topic, tracked.")
+  expect(before.points.length).toBe(3)
+
+  const blurb = {
+    heading: "Maths that finally clicks",
+    body: "Weekly one-to-one sessions with one tutor who knows exactly where your child is up to.",
+    points: ["Taught by one tutor, every week", "", "Sessions on Zoom or at the centre"],
+  }
+
+  expect((await call(student, "/api/site", { method: "PUT", body: JSON.stringify({ blurb }) })).status).toBe(403)
+  expect(
+    (await call(teacher, "/api/site", { method: "PUT", body: JSON.stringify({ blurb: { ...blurb, heading: "x" } }) }))
+      .status,
+  ).toBe(400)
+  expect(
+    (await call(teacher, "/api/site", { method: "PUT", body: JSON.stringify({ blurb: { ...blurb, body: "short" } }) }))
+      .status,
+  ).toBe(400)
+  expect(
+    (
+      await call(teacher, "/api/site", {
+        method: "PUT",
+        body: JSON.stringify({ blurb: { ...blurb, points: ["a".repeat(90)] } }),
+      })
+    ).status,
+  ).toBe(400)
+
+  expect((await call(teacher, "/api/site", { method: "PUT", body: JSON.stringify({ blurb }) })).status).toBe(200)
+
+  const after = (await call(anonymous, "/api/site")).body.blurb
+  expect(after.heading).toBe("Maths that finally clicks")
+  expect(after.points).toEqual(["Taught by one tutor, every week", "Sessions on Zoom or at the centre"])
+
+  // Saving a name on its own leaves the words alone.
+  await call(teacher, "/api/site", { method: "PUT", body: JSON.stringify({ name: "Bridgewell Tutoring" }) })
+  expect((await call(anonymous, "/api/site")).body.blurb.heading).toBe("Maths that finally clicks")
+
+  // Emptying the bullets is allowed.
+  await call(teacher, "/api/site", { method: "PUT", body: JSON.stringify({ blurb: { ...blurb, points: [] } }) })
+  expect((await call(anonymous, "/api/site")).body.blurb.points).toEqual([])
+})
+
 test("each role gets its own dashboard", async () => {
   expect((await call(anonymous, "/api/dashboard")).status).toBe(401)
 

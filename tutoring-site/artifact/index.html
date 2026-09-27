@@ -1264,6 +1264,64 @@
     opacity: 0.7;
   }
 
+  .who {
+    appearance: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: none;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    padding: 4px 10px 4px 4px;
+    font: inherit;
+    font-size: 0.82rem;
+    color: var(--muted);
+    cursor: pointer;
+  }
+  .who:hover {
+    border-color: var(--rule);
+    background: var(--sunk);
+    color: var(--ink);
+  }
+  .who strong {
+    color: var(--ink);
+  }
+  .child-list {
+    list-style: none;
+    margin: 0 0 12px;
+    padding: 0;
+    display: grid;
+    gap: 6px;
+  }
+  .child-list li {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    background: var(--sunk);
+    border-radius: 6px;
+    padding: 9px 11px;
+    font-size: 0.9rem;
+  }
+  .child-block + .child-block {
+    border-top: 1px solid var(--rule);
+    padding-top: 20px;
+  }
+  .own-reviews {
+    list-style: none;
+    margin: 14px 0 0;
+    padding: 0;
+    display: grid;
+    gap: 5px;
+    font-size: 0.88rem;
+  }
+  .slot-help > summary {
+    cursor: pointer;
+    font-size: 0.86rem;
+    color: var(--accent);
+    margin-top: 10px;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     * {
       transition: none !important;
@@ -1303,7 +1361,6 @@
     <div class="tabs" role="tablist" aria-label="Sections">
       <button class="tab" role="tab" id="tab-dashboard" aria-controls="panel-dashboard" aria-selected="true" data-tab="dashboard">Dashboard</button>
       <button class="tab" role="tab" id="tab-subjects" aria-controls="panel-subjects" aria-selected="false" data-tab="subjects">Subjects</button>
-      <button class="tab" role="tab" id="tab-reviews" aria-controls="panel-reviews" aria-selected="false" data-tab="reviews">Reviews</button>
     </div>
   </div>
 </header>
@@ -1311,7 +1368,6 @@
 <main class="shell">
   <section id="panel-dashboard" role="tabpanel" aria-labelledby="tab-dashboard"></section>
   <section id="panel-subjects" role="tabpanel" aria-labelledby="tab-subjects" hidden></section>
-  <section id="panel-reviews" role="tabpanel" aria-labelledby="tab-reviews" hidden></section>
 </main>
 
 <footer class="foot shell">
@@ -1358,7 +1414,18 @@
     authRole: null,
     authView: "chooser",
     forgotEmail: "",
-    site: { name: "Bridgewell Tutoring" },
+    site: {
+      name: "Bridgewell Tutoring",
+      blurb: {
+        heading: "Every topic, tracked.",
+        body: "Maths from KS2 to A Level and science up to GCSE, taught weekly and ticked off topic by topic so you always know where you are.",
+        points: [
+          "See exactly what your tutor has covered",
+          "Follow the AQA, Edexcel or OCR specification",
+          "Book into the slots your tutor releases",
+        ],
+      },
+    },
   }
 
   const SIGNED_OUT = "bridgewell:signed-out"
@@ -1471,6 +1538,60 @@
     render()
     flash("Session scheduled")
     await write(() => state.db.doc("lessons/" + lesson.student).set(next))
+  }
+
+  async function bookLesson(childId, lesson) {
+    if (needsAccount()) return
+    const when = new Date(lesson.startsAt)
+    if (isNaN(when.getTime())) return flash("Choose a date and time for the lesson.")
+    if (when.getTime() < Date.now()) return flash("That time has already passed.")
+
+    const course = courseBySlug(lesson.course)
+    if (!course) return flash("Choose a course.")
+
+    const weekday = (when.getDay() + 6) % 7
+    const pad = (n) => String(n).padStart(2, "0")
+    const start = `${pad(when.getHours())}:${pad(when.getMinutes())}`
+    const endMinutes = when.getHours() * 60 + when.getMinutes() + lesson.minutes
+    const end = `${pad(Math.floor(endMinutes / 60))}:${pad(endMinutes % 60)}`
+
+    const inHours = slotList().some(
+      (slot) =>
+        slot.weekday === weekday &&
+        slot.starts <= start &&
+        slot.ends >= end &&
+        (slot.subject === "Any" || slot.subject === course.subject),
+    )
+    if (!inHours) return flash("That time is outside the hours the tutor has released for this subject.")
+
+    const clash = allLessons().some((other) => {
+      const otherStart = Date.parse(other.startsAt)
+      return otherStart < when.getTime() + lesson.minutes * 60000 && otherStart + other.minutes * 60000 > when.getTime()
+    })
+    if (clash) return flash("The tutor already has a lesson booked then. Please pick another time.")
+
+    const current = state.lessons.get(childId) || { lessons: [] }
+    const next = {
+      lessons: (current.lessons || []).concat({
+        ...lesson,
+        id: crypto.randomUUID().slice(0, 8),
+        joinUrl: state.site.joinUrl || "",
+      }),
+    }
+    state.lessons.set(childId, next)
+    render()
+    flash("Lesson booked")
+    await write(() => state.db.doc("lessons/" + childId).set(next))
+  }
+
+  async function addChild(name, stage) {
+    if (needsAccount()) return
+    const id = "child_" + crypto.randomUUID().slice(0, 8)
+    const child = { name, stage, parent: state.uid, courses: [], progress: {} }
+    state.students.set(id, child)
+    render()
+    flash("Child added")
+    await write(() => state.db.doc("students/" + id).set(child))
   }
 
   async function cancelLesson(studentId, lessonId) {
@@ -1589,6 +1710,7 @@
     state.email = address
     state.authView = "chooser"
     state.authRole = null
+    state.dashView = "home"
     state.account = { role, at: new Date().toISOString() }
     state.accounts.set(state.uid, state.account)
     writeSignedOut(false)
@@ -1602,11 +1724,11 @@
     if (role === "student") await write(() => state.db.doc("students/" + state.uid).set(state.students.get(state.uid)))
   }
 
-  async function renameSite(name) {
-    state.site = { name }
+  async function saveSite(site) {
+    state.site = site
     applySite()
     render()
-    await write(() => state.db.doc("settings/site").set({ name }), "Website name updated")
+    await write(() => state.db.doc("settings/site").set(site), "Site settings saved")
   }
 
   async function write(run, message) {
@@ -1728,73 +1850,144 @@
             </div>
           </details>`,
         )
-        .join("")}`
+        .join("")}
+
+      <section>
+        <h2>What families say</h2>
+        ${state.reviews.length ? `<div class="review-grid">${reviewCards(3)}</div>` : `<div class="empty">No reviews yet.</div>`}
+        ${state.account ? `<p class="meta">Leave a review from your account settings.</p>` : ""}
+      </section>`
   }
 
-  function renderReviews() {
+  function renderAccount() {
+    const doc = myDoc()
+    const mine = myCourses()
+    const past = lessonsPast(state.uid)
     const average = state.reviews.length
       ? (state.reviews.reduce((sum, r) => sum + Number(r.rating || 0), 0) / state.reviews.length).toFixed(1)
       : null
+    const ownReviews = state.reviews.filter((review) => review.by && review.by === state.uid)
+    const parent = state.account && state.account.role === "parent"
+    const children = [...state.students.entries()].filter(([, child]) => child.parent === state.uid)
+
     return `
-      <div class="panel-head">
-        <h1>Reviews</h1>
-        <p>Written by the families and students we work with. Anyone using this page can add one.</p>
-      </div>
+      <header class="dash-head">
+        <div>
+          <p class="eyebrow">Account</p>
+          <h1>${esc((state.me && state.me.name) || "Your account")}</h1>
+          <p class="muted">${esc(state.email || "No email")} · ${esc(parent ? "Parent" : state.account && state.account.role === "tutor" ? "Tutor" : "Student")}${doc && doc.stage ? " · " + esc(stageLabel(doc.stage)) : ""}</p>
+        </div>
+        <div class="rowline">
+          <button class="btn tiny" data-dash-view="home">← Dashboard</button>
+          <button class="btn tiny" id="sign-out">Sign out</button>
+        </div>
+      </header>
+
+      <section>
+        <div class="form-card">
+          <h2>Your details</h2>
+          <div class="field-row">
+            <div><label for="account-name">Name</label><input id="account-name" value="${esc((state.me && state.me.name) || "")}" disabled /></div>
+            <div><label for="account-email-2">Email</label><input id="account-email-2" value="${esc(state.email || "")}" /></div>
+          </div>
+          <p class="muted" style="font-size:0.8rem">
+            Your name comes from the claude.ai account you are signed in with. On the deployed site this is where you
+            change your name and password — here there is no password to change.
+          </p>
+          <div class="rowline"><button class="btn" id="save-email">Save email</button></div>
+        </div>
+      </section>
+
       ${
-        average
-          ? `<div class="score" style="margin-bottom:20px"><strong>${average}</strong>
-              <span><span class="stars">${stars(average)}</span><br /><span class="meta">${state.reviews.length} review${state.reviews.length === 1 ? "" : "s"}</span></span></div>`
+        parent
+          ? `<section>
+              <div class="form-card">
+                <h2>Your children</h2>
+                <p class="muted" style="font-size:0.9rem">Each child gets their own record, and you book their lessons.</p>
+                ${
+                  children.length
+                    ? `<ul class="child-list">${children
+                        .map(
+                          ([id, child]) => `<li>
+                            <span><strong>${esc(child.demoName || child.name || "Child")}</strong>
+                              <span class="meta"> · ${esc(child.stage ? stageLabel(child.stage) : "No stage")}</span></span>
+                            <span class="meta">${(child.courses || []).length} course${(child.courses || []).length === 1 ? "" : "s"}</span>
+                          </li>`,
+                        )
+                        .join("")}</ul>`
+                    : `<p class="meta">No children set up yet.</p>`
+                }
+                <form id="child-form">
+                  <div class="field-row">
+                    <div><label for="child-name">Child's name</label><input id="child-name" required /></div>
+                    <div><label for="child-stage">Stage</label>
+                      <select id="child-stage">${STAGES.map((stage) => `<option value="${stage.id}">${esc(stage.label)}</option>`).join("")}</select></div>
+                  </div>
+                  <div class="rowline"><button class="btn primary" type="submit">Add child</button></div>
+                </form>
+              </div>
+            </section>`
           : ""
       }
+
       <section>
-        <form class="form-card" id="review-form">
-          <h2>Leave a review</h2>
-          <div class="field-row">
-            <div>
-              <label for="r-course">Course</label>
-              <select id="r-course">
-                <option value="">Overall experience</option>
-                ${sortedCourses.map((c) => `<option value="${esc(c.slug)}">${esc(c.title)}</option>`).join("")}
-              </select>
-            </div>
-            <div>
-              <label for="r-rating">Rating</label>
-              <select id="r-rating">${[5, 4, 3, 2, 1].map((n) => `<option value="${n}">${stars(n)} (${n})</option>`).join("")}</select>
-            </div>
-          </div>
-          <div>
-            <label for="r-title">Title</label>
-            <input id="r-title" placeholder="Sum it up in a few words" required />
-          </div>
-          <div>
-            <label for="r-body">Your review</label>
-            <textarea id="r-body" placeholder="What went well? What would you tell another family?" required></textarea>
-          </div>
-          <div class="rowline">
-            <button class="btn primary" type="submit">Publish review</button>
-            <span class="meta">${state.uid ? "Posting as " + esc((state.me && state.me.name) || "you") : "Sign in to post"}</span>
-          </div>
-        </form>
-      </section>
-      <section>
-        <h2 style="margin-bottom:14px">What families say</h2>
+        <h2>Lessons had</h2>
         ${
-          state.reviews.length
-            ? `<div class="review-grid">${state.reviews
-                .map(
-                  (review) => `<article class="review">
-                    <span class="stars" aria-label="${esc(review.rating)} out of 5">${stars(review.rating)}</span>
-                    <h3>${esc(review.title)}</h3>
-                    <p class="text">${esc(review.body)}</p>
-                    <p class="meta">
-                      ${esc(review.demoName || nameFor(review.by, null))}${review.course ? " · " + esc((courseBySlug(review.course) || {}).title || review.course) : ""}${review.at ? " · " + esc(when(review.at)) : ""}
-                    </p>
-                  </article>`,
-                )
-                .join("")}</div>`
-            : `<div class="empty">No reviews yet — yours would be the first.</div>`
+          past.length
+            ? `<ul class="lessons">${past
+                .map((lesson) => {
+                  const course = courseBySlug(lesson.course) || {}
+                  return `<li class="lesson">
+                    <div class="lesson-when"><strong>${esc(lessonWhen(lesson.startsAt))}</strong><span class="meta">${lesson.minutes} minutes</span></div>
+                    <div class="lesson-what"><strong>${esc(course.title || lesson.course)}</strong><span class="meta">${lesson.note ? esc(lesson.note) : ""}</span></div>
+                  </li>`
+                })
+                .join("")}</ul>`
+            : `<div class="empty">No lessons yet. Once a session has finished it appears here.</div>`
         }
+      </section>
+
+      <section>
+        <div class="form-card">
+          <h2>Leave a review</h2>
+          <p class="muted" style="font-size:0.9rem">
+            Reviews show on the Subjects tab and on each course.${average ? ` The site averages ${average} out of 5 from ${state.reviews.length}.` : ""}
+          </p>
+          <form id="review-form">
+            <div class="field-row">
+              <div><label for="r-course">Course</label>
+                <select id="r-course"><option value="">Overall experience</option>
+                  ${sortedCourses.map((c) => `<option value="${esc(c.slug)}">${esc(c.title)}</option>`).join("")}</select></div>
+              <div><label for="r-rating">Rating</label>
+                <select id="r-rating">${[5, 4, 3, 2, 1].map((n) => `<option value="${n}">${stars(n)} (${n})</option>`).join("")}</select></div>
+            </div>
+            <div><label for="r-title">Title</label><input id="r-title" required placeholder="Sum it up in a few words" /></div>
+            <div><label for="r-body">Your review</label><textarea id="r-body" required placeholder="What went well?"></textarea></div>
+            <div class="rowline"><button class="btn primary" type="submit">Publish review</button></div>
+          </form>
+          ${
+            ownReviews.length
+              ? `<ul class="own-reviews">${ownReviews
+                  .map((review) => `<li><span class="stars">${stars(review.rating)}</span> <strong>${esc(review.title)}</strong> <span class="meta">${esc(when(review.at))}</span></li>`)
+                  .join("")}</ul>`
+              : ""
+          }
+        </div>
       </section>`
+  }
+
+  function reviewCards(limit) {
+    return state.reviews
+      .slice(0, limit)
+      .map(
+        (review) => `<article class="review">
+          <span class="stars" aria-label="${esc(review.rating)} out of 5">${stars(review.rating)}</span>
+          <h3>${esc(review.title)}</h3>
+          <p class="text">${esc(review.body)}</p>
+          <p class="meta">${esc(review.demoName || nameFor(review.by, null))}${review.course ? " · " + esc((courseBySlug(review.course) || {}).title || review.course) : ""}</p>
+        </article>`,
+      )
+      .join("")
   }
 
   function trackerMarkup(doc, slug, editable) {
@@ -1875,9 +2068,15 @@
   const ROLE_COPY = {
     student: {
       title: "Student sign in",
-      blurb: "For students and parents following their topics.",
-      label: "I'm a student or parent",
-      detail: "Pick your courses, set your stage and follow every topic your tutor has covered.",
+      blurb: "For students following their own topics.",
+      label: "I'm a student",
+      detail: "Follow the courses you are on and every topic your tutor has covered.",
+    },
+    parent: {
+      title: "Parent sign in",
+      blurb: "For parents booking and following their child's lessons.",
+      label: "I'm a parent",
+      detail: "Set up your child's account, book their lessons and watch their progress from one place.",
     },
     tutor: {
       title: "Tutor sign in",
@@ -1892,13 +2091,13 @@
       <div class="auth">
         <aside class="auth-brand">
           <p class="auth-eyebrow">${esc(state.site.name)}</p>
-          <h2>Every topic, tracked.</h2>
-          <p>Maths from KS2 to A Level and science up to GCSE, taught weekly and ticked off topic by topic so you always know where you are.</p>
-          <ul class="auth-points">
-            <li>See exactly what your tutor has covered</li>
-            <li>Follow the AQA, Edexcel or OCR specification</li>
-            <li>Book into the slots your tutor releases</li>
-          </ul>
+          <h2>${esc(state.site.blurb.heading)}</h2>
+          <p>${esc(state.site.blurb.body)}</p>
+          ${
+            state.site.blurb.points.length
+              ? `<ul class="auth-points">${state.site.blurb.points.map((point) => `<li>${esc(point)}</li>`).join("")}</ul>`
+              : ""
+          }
         </aside>
         <div class="auth-card">${inner}</div>
       </div>`
@@ -1919,7 +2118,7 @@
       <h1 class="auth-title">Sign in</h1>
       <p class="muted">Who is signing in?</p>
       <div class="role-picker">
-        ${["student", "tutor"]
+        ${["student", "parent", "tutor"]
           .map((role) => {
             const taken = role === "tutor" && tutorTaken()
             return taken
@@ -1929,7 +2128,7 @@
                   <span class="muted">${esc(tutorHolder())} already holds it. Only one person tutors here.</span>
                 </div>`
               : `<button class="role" data-pick-role="${role}">
-                  <span class="role-icon" aria-hidden="true">${role === "student" ? "✎" : "✓"}</span>
+                  <span class="role-icon" aria-hidden="true">${role === "student" ? "✎" : role === "parent" ? "☂" : "✓"}</span>
                   <strong>${esc(ROLE_COPY[role].label)}</strong>
                   <span class="muted">${esc(ROLE_COPY[role].detail)}</span>
                 </button>`
@@ -2008,8 +2207,101 @@
 
   function renderDashboard() {
     if (!state.account || !state.account.role) return renderSignIn()
+    if (state.dashView === "account") return renderAccount()
     if (state.account.role === "tutor") return state.openStudent ? renderTracker() : renderTutorDash()
+    if (state.account.role === "parent") return renderParentDash()
     return renderStudentDash()
+  }
+
+  const lessonsPast = (studentId) =>
+    (((state.lessons.get(studentId) || {}).lessons || []).filter(
+      (lesson) => Date.parse(lesson.startsAt) + lesson.minutes * 60000 < Date.now(),
+    ) || []).sort((a, b) => b.startsAt.localeCompare(a.startsAt))
+
+  function renderParentDash() {
+    const children = [...state.students.entries()].filter(([, child]) => child.parent === state.uid)
+
+    return `
+      ${dashHead((state.me && state.me.name) || "Your family", `${children.length} ${children.length === 1 ? "child" : "children"} · you book their lessons`, "")}
+
+      ${
+        children.length
+          ? children
+              .map(([id, child]) => {
+                const courses = child.courses || []
+                const total = courses.reduce((sum, slug) => sum + counts(child, slug).total, 0)
+                const covered = courses.reduce((sum, slug) => sum + counts(child, slug).covered, 0)
+                const lessons = lessonsFor(id)
+                return `<section class="child-block">
+                  <div class="tracker-head">
+                    <h2>${esc(child.demoName || child.name || "Child")}</h2>
+                    <span class="meta">${esc(child.stage ? stageLabel(child.stage) : "No stage set")} · ${covered}/${total} topics</span>
+                  </div>
+
+                  <h3 class="section-label">Courses</h3>
+                  ${
+                    courses.length
+                      ? `<div class="dash-grid">${courses
+                          .map((slug) => {
+                            const course = courseBySlug(slug)
+                            const c = counts(child, slug)
+                            return `<article class="dash-card ${subjectClass(course.subject)}">
+                              <div class="dash-card-top">${ring(c.percent, course.subject)}
+                                <div><h3>${esc(course.title)}</h3><p class="meta">${esc(stageLabel(course.stage))}</p></div></div>
+                              <p class="muted" style="font-size:0.88rem">${c.covered} of ${c.total} topics covered</p>
+                            </article>`
+                          })
+                          .join("")}</div>`
+                      : `<div class="empty">The tutor hasn't put them on a course yet.</div>`
+                  }
+
+                  <h3 class="section-label">Next lessons</h3>
+                  ${
+                    lessons.length
+                      ? `<ul class="lessons">${lessons.map((lesson) => lessonRow({ ...lesson, student: id }, true)).join("")}</ul>`
+                      : `<div class="empty">No lessons booked yet.</div>`
+                  }
+
+                  ${
+                    courses.length
+                      ? `<div class="form-card" style="margin-top:14px">
+                          <h3>Book a lesson</h3>
+                          <p class="muted" style="font-size:0.88rem">Pick a time inside the hours the tutor has released for that subject.</p>
+                          <form class="book-form" data-child="${esc(id)}">
+                            <div class="field-row">
+                              <div><label for="bc-${esc(id)}">Course</label>
+                                <select id="bc-${esc(id)}" class="book-course">
+                                  ${courses.map((slug) => `<option value="${esc(slug)}">${esc((courseBySlug(slug) || {}).title || slug)}</option>`).join("")}
+                                </select></div>
+                              <div><label for="bw-${esc(id)}">Date and time</label><input id="bw-${esc(id)}" class="book-when" type="datetime-local" required /></div>
+                              <div><label for="bm-${esc(id)}">Minutes</label>
+                                <select id="bm-${esc(id)}" class="book-minutes"><option>30</option><option>45</option><option selected>60</option><option>90</option></select></div>
+                            </div>
+                            <div><label for="bn-${esc(id)}">Note for the tutor (optional)</label><input id="bn-${esc(id)}" class="book-note" maxlength="120" /></div>
+                            <div class="rowline"><button class="btn primary" type="submit">Book this lesson</button></div>
+                          </form>
+                          <details class="slot-help">
+                            <summary>When is the tutor free?</summary>
+                            <ul class="slot-list">
+                              ${slotList()
+                                .map(
+                                  (slot) => `<li class="slot-row">
+                                    <span class="slot-day">${WEEKDAYS[slot.weekday].label}</span>
+                                    <span class="slot-time">${esc(slot.starts)}–${esc(slot.ends)}</span>
+                                    <span class="slot-detail">${slot.subject === "Any" ? "Any subject" : esc(slot.subject)}</span>
+                                  </li>`,
+                                )
+                                .join("")}
+                            </ul>
+                          </details>
+                        </div>`
+                      : ""
+                  }
+                </section>`
+              })
+              .join("")
+          : `<div class="empty">No children set up yet. Add one in <button class="btn tiny" data-dash-view="account">account settings</button> and you can book their lessons here.</div>`
+      }`
   }
 
   function dashHead(title, sub, action) {
@@ -2230,7 +2522,20 @@
               <label for="site-name">Website name</label>
               <input id="site-name" value="${esc(state.site.name)}" maxlength="40" required />
             </div>
-            <div class="rowline"><button class="btn primary" type="submit">Save name</button></div>
+            <div>
+              <label for="blurb-heading">Sign-in headline</label>
+              <input id="blurb-heading" value="${esc(state.site.blurb.heading)}" maxlength="60" required />
+            </div>
+            <div>
+              <label for="blurb-body">Sign-in paragraph</label>
+              <textarea id="blurb-body" maxlength="400" required>${esc(state.site.blurb.body)}</textarea>
+            </div>
+            <div>
+              <label for="blurb-points">Bullet points</label>
+              <textarea id="blurb-points" rows="4" placeholder="One per line">${esc(state.site.blurb.points.join("\n"))}</textarea>
+              <p class="muted" style="font-size:0.8rem">One per line, up to five. Leave empty for none.</p>
+            </div>
+            <div class="rowline"><button class="btn primary" type="submit">Save site settings</button></div>
           </form>
         </div>
       </section>`
@@ -2282,9 +2587,8 @@
   /* ---- render and events ------------------------------------------------ */
 
   const PANELS = {
-    subjects: renderSubjects,
-    reviews: renderReviews,
     dashboard: renderDashboard,
+    subjects: renderSubjects,
   }
 
   function applySite() {
@@ -2379,6 +2683,7 @@
         state.email = ""
         state.authView = "chooser"
         state.authRole = null
+        state.dashView = "home"
         writeSignedOut(true)
         render()
         flash("Signed out")
@@ -2457,13 +2762,62 @@
         await write(() => state.db.doc("students/" + state.openStudent).set(next))
       }
 
+    for (const node of panel.querySelectorAll("[data-dash-view]"))
+      node.onclick = () => {
+        state.dashView = node.dataset.dashView
+        render()
+      }
+
+    const saveEmail = panel.querySelector("#save-email")
+    if (saveEmail)
+      saveEmail.onclick = async () => {
+        const address = panel.querySelector("#account-email-2").value.trim()
+        if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(address)) return flash("Please enter a valid email address.")
+        state.email = address
+        flash("Email saved")
+        await write(() => state.db.doc("data/users/" + state.uid + "/profile").set({ email: address }))
+      }
+
+    const childForm = panel.querySelector("#child-form")
+    if (childForm)
+      childForm.onsubmit = (event) => {
+        event.preventDefault()
+        addChild(panel.querySelector("#child-name").value.trim(), panel.querySelector("#child-stage").value)
+      }
+
+    for (const form of panel.querySelectorAll(".book-form"))
+      form.onsubmit = (event) => {
+        event.preventDefault()
+        bookLesson(form.dataset.child, {
+          course: form.querySelector(".book-course").value,
+          startsAt: new Date(form.querySelector(".book-when").value).toISOString(),
+          minutes: Number(form.querySelector(".book-minutes").value) || 60,
+          note: form.querySelector(".book-note").value.trim().slice(0, 120),
+        })
+      }
+
     const siteForm = panel.querySelector("#site-form")
     if (siteForm)
       siteForm.onsubmit = (event) => {
         event.preventDefault()
         const name = panel.querySelector("#site-name").value.trim()
+        const heading = panel.querySelector("#blurb-heading").value.trim()
+        const bodyText = panel.querySelector("#blurb-body").value.trim()
+        const points = panel
+          .querySelector("#blurb-points")
+          .value.split("\n")
+          .map((line) => line.trim())
+          .filter(Boolean)
+          .slice(0, 5)
+
         if (name.length < 2 || name.length > 40) return flash("The site name must be between 2 and 40 characters.")
-        renameSite(name)
+        if (heading.length < 2 || heading.length > 60)
+          return flash("The headline must be between 2 and 60 characters.")
+        if (bodyText.length < 10 || bodyText.length > 400)
+          return flash("The paragraph must be between 10 and 400 characters.")
+        if (points.some((line) => line.length > 80)) return flash("Each bullet point must be 80 characters or fewer.")
+
+        saveSite({ name, blurb: { heading, body: bodyText, points } })
       }
 
     for (const node of panel.querySelectorAll("[data-open-student]"))
@@ -2554,10 +2908,18 @@
     }
     const name = (state.me && state.me.name) || "your account"
     node.innerHTML =
+      '<button class="who" id="open-account" title="Account settings">' +
       (state.me && state.me.avatarUrl ? '<img alt="" src="' + esc(state.me.avatarUrl) + '" />' : "") +
       "<span>Signed in as <strong>" +
       esc(name) +
-      "</strong></span>"
+      "</strong></span></button>"
+    const open = document.getElementById("open-account")
+    if (open)
+      open.onclick = () => {
+        state.tab = "dashboard"
+        state.dashView = "account"
+        render()
+      }
   }
 
   render()
@@ -2610,7 +2972,15 @@
     db.doc("settings/site").onSnapshot((snap) => {
       const stored = snap.exists ? snap.data() : null
       if (stored && stored.name) {
-        state.site = { name: String(stored.name) }
+        const blurb = stored.blurb || {}
+        state.site = {
+          name: String(stored.name),
+          blurb: {
+            heading: blurb.heading || state.site.blurb.heading,
+            body: blurb.body || state.site.blurb.body,
+            points: Array.isArray(blurb.points) ? blurb.points : state.site.blurb.points,
+          },
+        }
         applySite()
         render()
       }

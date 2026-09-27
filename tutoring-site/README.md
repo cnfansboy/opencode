@@ -113,8 +113,10 @@ and signs that person in — creating a student account on first use and reusing
 `state` parameter is stored server-side, single use and expires after 15 minutes. Without those
 variables the button is replaced by a line saying Zoom sign-in is not switched on.
 
-**Website name** — a tutor renames the site from their dashboard. The name is stored in `settings`
-and drives the header, the brand initial, the footer and the browser tab.
+**Website name and sign-in words** — a tutor edits both from their dashboard. The name drives the
+header, the brand initial, the footer and the browser tab. The headline, paragraph and bullet points
+on the sign-in page are theirs to write too: stored in `settings`, validated for length, and rendered
+for everyone who lands on the site.
 
 **Subjects** (`#/subjects`) — one tab for everything taught. Open a subject to see the levels it runs
 to — each level opens to its summary, session length and exam boards — and the time slots released
@@ -133,7 +135,7 @@ overall. Reviews show on the reviews page and on the relevant course page.
 
 | Table              | Holds                                                               |
 | ------------------ | ------------------------------------------------------------------- |
-| `settings`         | Site-wide settings, currently the website name                      |
+| `settings`         | Site-wide settings: website name, sign-in words, tutor meeting room |
 | `password_resets`  | Hashed single-use reset tokens with an expiry                       |
 | `users`            | Name, email, bcrypt password, role (`student` / `teacher`), stage   |
 | `saturday_classes` | Timetabled class: time, tutor, room, capacity and price             |
