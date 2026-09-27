@@ -922,7 +922,7 @@ function teacherDashboard(data) {
         </div>
         <div class="card">
           <h3>Site settings</h3>
-          <p class="small muted">The name shown in the header, the footer and the browser tab.</p>
+          <p class="small muted">The name shown in the header, the footer and the browser tab, and the words beside the sign-in form.</p>
           <form id="site-form">
             <div class="field"><label for="site-name">Website name</label><input id="site-name" value="${esc(state.site.name)}" maxlength="40" required /></div>
             <div class="field">
